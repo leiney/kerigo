@@ -1,0 +1,6 @@
+{
+  "appId": "com.kerigo.app",
+  "appName": "KeriGo",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
