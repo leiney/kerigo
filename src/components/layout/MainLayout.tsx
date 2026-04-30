@@ -61,7 +61,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* For now, focus on Mobile bottom nav as per wireframe */}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border px-2 py-1 flex justify-around items-center sm:hidden h-16">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border  py-1 flex justify-around items-center sm:hidden h-16">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -69,7 +69,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               key={item.label}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 min-w-[64px] transition-colors",
+                "flex flex-col items-center justify-center gap-1 min-w-16 transition-colors",
                 isActive ? "text-primary font-medium" : "text-foreground/60"
               )}
             >

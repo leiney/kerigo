@@ -74,11 +74,11 @@ export const LoginPage: React.FC = () => {
 
         <Button 
           type="submit" 
-          className="w-full h-14 rounded-2xl text-lg font-bold flex justify-between px-8"
+          className="w-full h-14 rounded-2xl text-lg font-bold flex gap-2 px-8"
           icon={<ArrowRight className="h-6 w-6" />}
         >
           Login
-        </Button>
+        </Button>``
       </form>
 
       <div className="relative my-10">

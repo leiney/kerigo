@@ -20,10 +20,12 @@ import { CartPage } from './pages/customer/CartPage';
 import { CheckoutPage } from './pages/customer/CheckoutPage';
 
 // Vendor Pages
+import { VendorLandingPage } from './pages/vendor/VendorLandingPage';
 import { VendorOnboarding } from './pages/vendor/VendorOnboarding';
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
 
 // Rider Pages
+import { RiderLandingPage } from './pages/rider/RiderLandingPage';
 import { RiderOnboarding } from './pages/rider/RiderOnboarding';
 import { RiderDashboard } from './pages/rider/RiderDashboard';
 
@@ -58,6 +60,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
+          <Route path="/vendor-landing" element={<VendorLandingPage />} />
+          <Route path="/rider-landing" element={<RiderLandingPage />} />
 
           {/* Protected Role Selection */}
           <Route path="/role-selection" element={
