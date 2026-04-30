@@ -9,13 +9,14 @@ export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white text-[15px] sm:text-base">
+    <div className="min-h-screen bg-white text-[15px] sm:text-base px-2">
       {/* Header / Hero */}
       <div className="relative overflow-hidden pt-5 px-4 sm:px-6">
-        <div className="flex items-start gap-3 sm:gap-6">
-          <div className="min-w-0 flex-1">
-            <header className="mb-2 sm:mb-8">
-              <img src='logo.png' alt="KeriGo Logo" className="h-30 sm:h-24" />
+        <div className="relative flex items-start gap-3 sm:gap-6 mt-6">
+          
+          <div className="min-w-0 mt-6">
+            <header className="mb-6 sm:mb-8">
+              <img src='kerigo.png' alt="KeriGo Logo" className="h-14 sm:h-28" />
             </header>
 
             <motion.div 
@@ -27,7 +28,7 @@ export const WelcomePage: React.FC = () => {
                 Everything you 
                 <br />
                 need, 
-                <span className="text-primary italic">delivered.</span>
+                <span className="text-primary">delivered.</span>
               </h2>
               <p className="text-[10px] sm:text-sm text-foreground/70 leading-4 sm:leading-6">
                 Food, groceries, pharmacy and more 
@@ -38,18 +39,18 @@ export const WelcomePage: React.FC = () => {
           </div>
 
           {/* Floating Illustration Placeholder */}
-          <div className="relative w-32 h-32 sm:w-64 sm:h-64 shrink-0 mt-10 sm:mt-10 -mr-2 sm:mr-0 rotate-12 opacity-90 pointer-events-none">
+          <div className="absolute -right-6 -bottom-8 w-56 h-56 sm:w-64 sm:h-64 shrink-0 opacity-90 pointer-events-none">
              <img 
-              src="https://picsum.photos/seed/rider-moto/400/400" 
+              src="shopping-bag.png" 
               alt="Delivery illustration" 
-              className="w-full h-full object-contain rounded-3xl"
+              className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
             />
           </div>
         </div>
 
         {/* Search Bar Placeholder */}
-        <div className="relative mt-6 mb-6 sm:mt-8 group">
+        <div className="relative mt-12 mb-6 sm:mt-8 ">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <Search className="h-4 w-4 sm:h-5 sm:w-5 text-foreground/40" />
           </div>
@@ -70,7 +71,7 @@ export const WelcomePage: React.FC = () => {
       <section className="px-4 sm:px-6 py-8 sm:py-12 bg-secondary">
         <h3 className="text-base sm:text-lg font-extrabold mb-4 sm:mb-6">Why Choose KeriGo?</h3>
         <div className="grid grid-cols-3 gap-2 sm:gap-4">
-          <Card variant="default" className="border-none shadow-sm bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
+          <Card variant="default" className="border border-border/70   bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
             <CardContent className="flex flex-col items-center text-center gap-2 p-2 sm:p-6">
               <div className="w-9 h-9 sm:w-14 sm:h-14 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
                 <ShieldCheck className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
@@ -82,7 +83,7 @@ export const WelcomePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card variant="default" className="border-none shadow-sm bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
+          <Card variant="default" className="border border-border/70   bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
             <CardContent className="flex flex-col items-center text-center gap-2 p-2 sm:p-6">
               <div className="w-9 h-9 sm:w-14 sm:h-14 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
                 <Clock className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
@@ -94,7 +95,7 @@ export const WelcomePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card variant="default" className="border-none shadow-sm bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
+          <Card variant="default" className="border border-border/70   bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
             <CardContent className="flex flex-col items-center text-center gap-2 p-2 sm:p-6">
               <div className="w-9 h-9 sm:w-14 sm:h-14 bg-primary/10 rounded-2xl flex items-center justify-center shrink-0">
                 <CheckCircle2 className="h-5 w-5 sm:h-7 sm:w-7 text-primary" />
@@ -113,7 +114,7 @@ export const WelcomePage: React.FC = () => {
         <motion.div 
           whileHover={{ scale: 1.02 }}
           onClick={() => navigate('/rider-landing')}
-          className="relative bg-primary/5 rounded-4xl sm:rounded-[2.5rem] p-5 sm:p-8 overflow-hidden cursor-pointer group"
+          className="relative bg-primary/5 rounded-lg sm:rounded-[2.5rem] px-5 py-3 sm:p-8 overflow-hidden cursor-pointer group"
         >
           <div className="relative z-0 max-w-[55%] sm:max-w-[60%]">
             <h3 className="text-base sm:text-lg font-extrabold text-primary mb-1 sm:mb-2">Become a Rider</h3>
@@ -122,11 +123,11 @@ export const WelcomePage: React.FC = () => {
               <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
-          <div className="absolute -right-6 -bottom-4.5 w-36 h-36 sm:w-48 sm:h-48 opacity-20 sm:opacity-100 transition-transform group-hover:scale-110">
+          <div className="absolute right-2 bottom-1/2 translate-y-1/2 w-32 h-32 sm:w-48 sm:h-48  transition-transform group-hover:scale-110">
             <img 
-              src="https://picsum.photos/seed/rider-moto/400/400" 
+              src="/rider.png" 
               alt="Rider" 
-              className="w-full h-full object-cover rounded-3xl"
+              className="w-full h-full object-contain "
               referrerPolicy="no-referrer"
             />
           </div>
@@ -135,7 +136,7 @@ export const WelcomePage: React.FC = () => {
         <motion.div 
           whileHover={{ scale: 1.02 }}
           onClick={() => navigate('/vendor-landing')}
-          className="relative bg-[#FFF7ED] rounded-4xl sm:rounded-[2.5rem] p-5 sm:p-8 overflow-hidden cursor-pointer group border border-[#FED7AA]/30"
+          className="relative bg-[#FFF7ED] rounded-lg sm:rounded-[2.5rem] px-5 py-3 sm:p-8 overflow-hidden cursor-pointer group border border-[#FED7AA]/30"
         >
           <div className="relative z-0 max-w-[55%] sm:max-w-[60%]">
             <h3 className="text-base sm:text-lg font-extrabold text-[#C2410C] mb-1 sm:mb-2">Become a Vendor</h3>
@@ -144,29 +145,29 @@ export const WelcomePage: React.FC = () => {
               <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
           </div>
-          <div className="absolute -right-6 -bottom-4.5 w-36 h-36 sm:w-48 sm:h-48 opacity-20 sm:opacity-100 transition-transform group-hover:scale-110">
+          <div className="absolute right-2 bottom-1/2 translate-y-1/2 w-32 h-32 sm:w-48 sm:h-48  transition-transform group-hover:scale-110">
             <img 
-              src="https://picsum.photos/seed/vendor-store/400/400" 
+              src="/store.png" 
               alt="Vendor" 
-              className="w-full h-full object-cover rounded-3xl"
+              className="w-full h-full object-contain "
               referrerPolicy="no-referrer"
             />
           </div>
         </motion.div>
       </section>
 
-      {/* Footer Nav Simulation (as per wireframe) */}
+      {/* Footer Nav Simulation */}
       <div className="h-20" />
-      <div className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-border px-6 sm:px-8 flex justify-around items-center">
+      <div className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-border px-4 sm:px-8 flex justify-around items-center">
         <div className="flex flex-col items-center gap-1 text-primary">
           <Home className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Home</span>
         </div>
-        <div className="flex flex-col items-center gap-1 text-foreground/40" onClick={() => navigate('/login')}>
+        <div className="flex flex-col items-center gap-1 text-foreground/40" /* onClick={() => navigate('/login')} */>
           <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Orders</span>
         </div>
-        <div className="flex flex-col items-center gap-1 text-foreground/40" onClick={() => navigate('/login')}>
+        <div className="flex flex-col items-center gap-1 text-foreground/40" /* onClick={() => navigate('/login')} */>
           <User className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">Account</span>
         </div>

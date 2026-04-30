@@ -58,10 +58,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </main>
 
       {/* Desktop Sidebar (Intelligent expansion) */}
-      {/* For now, focus on Mobile bottom nav as per wireframe */}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border  py-1 flex justify-around items-center sm:hidden h-16">
+      <nav className="fixed bottom-0 left-0 right-0 z-50  border-t border-border   py-1 flex justify-around items-center sm:hidden h-16">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (

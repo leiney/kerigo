@@ -12,7 +12,7 @@ export const VendorLandingPage: React.FC = () => {
       {/* Header */}
       <div className="relative overflow-hidden pt-5 px-4 sm:px-6">
         <header className="mb-8 sm:mb-10">
-          <img src='logo.png' alt="KeriGo Logo" className="h-20 sm:h-24" />
+          <img src='kerigo.png' alt="KeriGo Logo" className="h-20 sm:h-24" />
         </header>
 
         {/* Hero Section */}

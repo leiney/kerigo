@@ -12,7 +12,7 @@ export const RiderLandingPage: React.FC = () => {
       {/* ── HEADER ── */}
       <div className="relative overflow-hidden bg-white px-4 sm:px-6 pt-5">
         <header className="mb-6 sm:mb-8 flex justify-center">
-          <img src="logo.png" alt="KeriGo Logo" className="h-20 sm:h-24" />
+          <img src="kerigo.png" alt="KeriGo Logo" className="h-20 sm:h-24" />
         </header>
 
         {/* ── HERO ROW ── */}

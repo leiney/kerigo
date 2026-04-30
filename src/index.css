@@ -1,11 +1,11 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
 @theme {
   --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
-  
-  /* @stackloop/ui theme variables */
-  --color-primary: #10b981; /* Green brand color matching KeriGo */
+
+  --color-primary: #3f940e; /* Green brand color matching KeriGo */
   --color-border: #e5e5e5;
   --color-border-dark: #d4d4d4;
   --color-secondary: #fafafa;
