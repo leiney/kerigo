@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, CardContent } from '@stackloop/ui';
-import { Search, MapPin, ShieldCheck, Clock, CheckCircle2, ArrowRight, Home, ShoppingBag, User } from 'lucide-react';
+import { Search, MapPin, ShieldCheck, Clock, CheckCircle2, ArrowRight, Home, ShoppingBag, User, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const WelcomePage: React.FC = () => {
@@ -15,7 +15,7 @@ export const WelcomePage: React.FC = () => {
         <div className="relative flex items-start gap-3 sm:gap-6 mt-6">
           
           <div className="min-w-0 mt-6">
-            <header className="mb-6 sm:mb-8">
+            <header className="mb-9 sm:mb-8">
               <img src='kerigo.png' alt="KeriGo Logo" className="h-14 sm:h-28" />
             </header>
 
@@ -24,7 +24,7 @@ export const WelcomePage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mb-5 sm:mb-8 "
             >
-              <h2 className="text-[1.1rem] sm:text-3xl font-extrabold text-foreground mb-2 sm:mb-4 leading-[1.02] sm:leading-[1.1]">
+              <h2 className="text-[1.1rem] sm:text-3xl font-extrabold text-foreground mb-3 sm:mb-4 leading-[1.02] sm:leading-[1.1]">
                 Everything you 
                 <br />
                 need, 
@@ -60,15 +60,13 @@ export const WelcomePage: React.FC = () => {
             className="w-full h-12 sm:h-14 pl-11 sm:pl-12 pr-12 bg-white border border-border rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-[11px] sm:text-sm"
           />
           <div className="absolute inset-y-0 right-4 flex items-center">
-            <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-sm">
-              <div className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full rotate-45" />
-            </div>
+            <SlidersHorizontal className="h-5 w-5 sm:h-5 sm:w-5 text-primary" />
           </div>
         </div>
       </div>
 
       {/* Why Choose KeriGo? */}
-      <section className="px-4 sm:px-6 py-8 sm:py-12 bg-secondary">
+      <section className="px-4 sm:px-6 py-8 sm:py-12 bg-background">
         <h3 className="text-base sm:text-lg font-extrabold mb-4 sm:mb-6">Why Choose KeriGo?</h3>
         <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <Card variant="default" className="border border-border/70   bg-white rounded-[1.25rem] p-1.5 sm:rounded-[1.75rem] sm:p-2 min-w-0">
@@ -78,7 +76,7 @@ export const WelcomePage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <h4 className="font-extrabold text-[10px] sm:text-base mb-0.5 sm:mb-1 leading-tight">Secure Payments</h4>
-                <p className="text-[8px] sm:text-[11px] text-foreground/50 leading-3 sm:leading-5">Your payments are safe with us.</p>
+                <p className="text-[8px] sm:text-[11px] text-foreground/90 leading-3 sm:leading-5">Your payments are safe with us.</p>
               </div>
             </CardContent>
           </Card>
@@ -90,7 +88,7 @@ export const WelcomePage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <h4 className="font-extrabold text-[10px] sm:text-base mb-0.5 sm:mb-1 leading-tight">Fast Delivery</h4>
-                <p className="text-[8px] sm:text-[11px] text-foreground/50 leading-3 sm:leading-5">Get your orders delivered quickly.</p>
+                <p className="text-[8px] sm:text-[11px] text-foreground/90 leading-3 sm:leading-5">Get your orders delivered quickly.</p>
               </div>
             </CardContent>
           </Card>
@@ -102,7 +100,7 @@ export const WelcomePage: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <h4 className="font-extrabold text-[10px] sm:text-base mb-0.5 sm:mb-1 leading-tight">Trusted Vendors</h4>
-                <p className="text-[8px] sm:text-[11px] text-foreground/50 leading-3 sm:leading-5">We partner with reliable local stores.</p>
+                <p className="text-[8px] sm:text-[11px] text-foreground/90 leading-3 sm:leading-5">We partner with reliable local stores.</p>
               </div>
             </CardContent>
           </Card>
@@ -110,7 +108,7 @@ export const WelcomePage: React.FC = () => {
       </section>
 
       {/* Become a Rider / Vendor Banners */}
-      <section className="px-4 sm:px-6 py-10 sm:py-12 space-y-4 sm:space-y-6">
+      <section className="px-4 sm:px-6 py-10 sm:py-12 space-y-2 sm:space-y-6">
         <motion.div 
           whileHover={{ scale: 1.02 }}
           onClick={() => navigate('/rider-landing')}
