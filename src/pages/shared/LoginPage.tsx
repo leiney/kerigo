@@ -26,30 +26,31 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white px-6 pt-12">
-      <header className="mb-10 text-center">
-        <div className="inline-flex flex-col items-center mb-10">
-          <h1 className="text-3xl font-extrabold text-primary italic leading-tight">
-            KeriGo <span className="inline-block" style={{ transform: 'skewX(-10deg)' }}>🛵</span>
-          </h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-foreground opacity-60">Fast. Local. Reliable.</p>
-        </div>
-        
-        <div className="absolute top-10 right-0 w-32 h-32 opacity-10 pointer-events-none">
-           <img 
-            src="https://picsum.photos/seed/welcome-bag/400/400" 
-            alt="Welcome" 
-            className="w-full h-full object-contain"
-          />
+    <div className="min-h-screen bg-white px-6 pt-12 px-2">     
+      <div className="relative flex items-start gap-3 sm:gap-6 mt-6">                
+          <div className="min-w-0 mt-6">
+            <header className="mb-6 sm:mb-8">
+              <img src='kerigo.png' alt="KeriGo Logo" className="h-14 sm:h-28" />
+            </header>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <h2 className="text-3xl font-black text-foreground mb-2">Welcome!</h2>
+              <p className="text-sm text-foreground/50">Login to continue ordering <br /> your favorites with ease.</p>
+            </motion.div>
+          </div>
+
+          {/* Floating Illustration Placeholder */}
+          <div className="absolute -right-6 -bottom-8 w-52 h-52 sm:w-64 sm:h-64 shrink-0 opacity-90 pointer-events-none">
+              <img 
+              src="shopping-bag.png" 
+              alt="Delivery illustration" 
+              className="w-full h-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <h2 className="text-3xl font-black text-foreground mb-2">Welcome!</h2>
-          <p className="text-sm text-foreground/50">Login to continue ordering your favorites with ease.</p>
-        </motion.div>
-      </header>
-
-      <form onSubmit={handleLogin} className="space-y-6">
+      <form onSubmit={handleLogin} className="space-y-4 mt-10">
         <Input 
           label="Email or Phone number"
           placeholder="Enter email or phone number"
@@ -74,14 +75,13 @@ export const LoginPage: React.FC = () => {
 
         <Button 
           type="submit" 
-          className="w-full h-14 rounded-2xl text-lg font-bold flex gap-2 px-8"
-          icon={<ArrowRight className="h-6 w-6" />}
+          className="w-full h-14 rounded-2xl text-lg font-bold flex gap-2 py-3 px-8"
         >
           Login
         </Button>``
       </form>
 
-      <div className="relative my-10">
+      <div className="relative mb-4">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
@@ -103,7 +103,7 @@ export const LoginPage: React.FC = () => {
         Your data is safe and secure with us.
       </div>
 
-      <div className="mt-12 text-center text-sm">
+      <div className="mt-8 text-center text-sm">
         <span className="text-foreground/50">Don't have an account? </span>
         <button onClick={() => navigate('/register')} className="text-primary font-bold">Sign up</button>
       </div>
