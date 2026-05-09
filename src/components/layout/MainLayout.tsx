@@ -57,7 +57,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {children}
       </main>
 
-      {/* Desktop Sidebar (Intelligent expansion) */}
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50  border-t border-border   py-1 flex justify-around items-center sm:hidden h-16">
