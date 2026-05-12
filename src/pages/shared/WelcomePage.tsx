@@ -4,8 +4,6 @@ import { Button, Card, CardContent } from '@stackloop/ui';
 import { 
   Search, 
   ShieldCheck, 
-  Clock, 
-  CheckCircle2, 
   ArrowRight, 
   Home, 
   ShoppingBag, 

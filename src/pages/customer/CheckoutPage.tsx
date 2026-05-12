@@ -33,7 +33,7 @@ export const CheckoutPage: React.FC = () => {
              </div>
           </Card>
 
-          <Button className="w-full h-14 rounded-2xl font-bold text-lg" onClick={() => navigate('/customer/')}>
+          <Button className="w-full h-14 rounded-2xl font-bold text-lg " onClick={() => navigate('/customer/')}>
             Track Order
           </Button>
         </motion.div>
