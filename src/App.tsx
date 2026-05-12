@@ -19,7 +19,9 @@ import { RiderLandingPage } from './pages/rider/RiderLandingPage';
 import { useAuthStore } from './store/authStore';
 import { ChooseAccountType } from './pages/vendor/AccountType';
 import { BasicDetails } from './pages/vendor/BasicDetails';
+import { CompanyDetails } from './pages/vendor/CompanyDetails';
 import { KYCDocuments } from './pages/vendor/KYCDocuments';
+import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments';
 import { AddYourStores } from './pages/vendor/AddYourStores';
 import { ManageMultipleStores } from './pages/vendor/ManageMultipleStores';
 import { StoreDetails } from './pages/vendor/StoreDetails';
@@ -69,7 +71,9 @@ export default function App() {
           <Route path="/vendor/onboarding" element={<Navigate to="/vendor/choose-account" replace />} />
           <Route path="/vendor/choose-account" element={<ChooseAccountType />} />
           <Route path="/vendor/basic-details" element={<BasicDetails />} />
+          <Route path="/vendor/company-details" element={<CompanyDetails />} />
           <Route path="/vendor/kyc-documents" element={<KYCDocuments />} />
+          <Route path="/vendor/company-kyc-documents" element={<CompanyKYCDocuments />} />
           <Route path="/vendor/add-store" element={<Navigate to="/vendor/add-your-stores" replace />} />
           <Route path="/vendor/add-your-stores" element={<AddYourStores />} />
           <Route path='/vendor/manage-multiple-stores' element={<ManageMultipleStores />} />

@@ -16,6 +16,14 @@ export const ChooseAccountType: React.FC = () => {
   const navigate = useNavigate();
   const [accountType, setAccountType] = useState<'individual' | 'company'>('individual');
 
+  const handleContinue = () => {
+    if (accountType === 'company') {
+      navigate('/vendor/company-details');
+    } else {
+      navigate('/vendor/basic-details');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
       
@@ -138,7 +146,7 @@ export const ChooseAccountType: React.FC = () => {
       {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white">
         <Button 
-          onClick={() => navigate('/vendor/basic-details')}
+          onClick={handleContinue}
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

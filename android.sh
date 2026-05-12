@@ -67,3 +67,4 @@ echo "Opening Android Studio..."
 open -a "Android Studio" android
 
 echo "DONE!"
+

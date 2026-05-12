@@ -15,6 +15,7 @@ import { StepDots } from '../../components/shared/StepDots';
 
 export const ManageMultipleStores: React.FC = () => {
   const navigate = useNavigate();
+  
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">

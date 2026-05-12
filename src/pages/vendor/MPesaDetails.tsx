@@ -93,7 +93,7 @@ export const MPesaDetails: React.FC = () => {
           </div>
 
           {/* Account Name */}
-          <Input
+         {/*  <Input
             label="Account Name"
             placeholder="Enter name as registered on M-Pesa"
             value={formData.accountName}
@@ -101,7 +101,7 @@ export const MPesaDetails: React.FC = () => {
             leftIcon={<User className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
           />
-
+ */}
         </motion.div>
 
       </div>

@@ -45,8 +45,8 @@ export const CreatePassword: React.FC = () => {
     requirements.match;
 
   const handleContinue = () => {
+    navigate('/vendor/review-confirmation');
     if (isFormValid) {
-      navigate('/vendor/review-confirmation');
     }
   };
 
@@ -148,9 +148,9 @@ export const CreatePassword: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
-          disabled={!isFormValid}
+         /*  disabled={!isFormValid} */
           className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${
-            isFormValid ? 'shadow-primary/20' : 'opacity-50 cursor-not-allowed shadow-none'
+            isFormValid ? 'shadow-primary/20' : ''
           }`}
         >
           Continue

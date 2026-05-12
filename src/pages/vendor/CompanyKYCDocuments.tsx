@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@stackloop/ui';
 import { 
   FileText, 
-  Camera, 
   MapPin, 
   CheckCircle2, 
   Circle,
@@ -63,33 +62,34 @@ const AttachButton: React.FC<{
   );
 };
 
-export const KYCDocuments: React.FC = () => {
+export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocumentItem[]>([
     {
-      id: 'national-id',
-      label: 'National ID / Passport',
-      description: 'Front and back',
+      id: 'business-certificate',
+      label: 'Business Certificate',
+      description: 'Certificate of incorporation or registration',
       icon: <FileText className="w-5 h-5 text-primary" />,
       file: null,
       acceptedFormats: 'image/*,.pdf'
     },
     {
-      id: 'selfie',
-      label: 'Selfie',
-      description: 'Clear photo of your face',
-      icon: <Camera className="w-5 h-5 text-primary" />,
-      file: null,
-      acceptedFormats: 'image/*'
-    },
-    {
-      id: 'proof-of-address',
-      label: 'Proof of Address',
-      description: 'Utility bill or bank statement',
-      icon: <MapPin className="w-5 h-5 text-primary" />,
+      id: 'kra-pin-certificate',
+      label: 'KRA PIN Certificate',
+      description: 'Tax registration certificate',
+      icon: <FileText className="w-5 h-5 text-primary" />,
       file: null,
       acceptedFormats: 'image/*,.pdf'
-    }
+    },
+    {
+      id: 'director-id',
+      label: 'Company Director ID',
+      description: 'National ID of authorized director',
+      icon: <FileText className="w-5 h-5 text-primary" />,
+      file: null,
+      acceptedFormats: 'image/*,.pdf'
+    },
+    
   ]);
 
   const handleFileUpload = (id: string, file: File) => {
@@ -152,7 +152,7 @@ export const KYCDocuments: React.FC = () => {
             KYC Documents
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-[280px] mx-auto">
-            Verify your identity or business.
+            Verify your business documents.
           </p>
         </motion.div>
 
@@ -250,11 +250,11 @@ export const KYCDocuments: React.FC = () => {
           className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${
             allDocumentsUploaded 
               ? 'shadow-primary/20' 
-              : ''
+              : 'shadow-gray-200'
           }`}
+          icon={<ArrowRight className="w-5 h-5" />}
         >
           Continue
-          <ArrowRight className="w-5 h-5" />
         </Button>
       </div>
 
