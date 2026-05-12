@@ -95,14 +95,17 @@ export const StoreDetails: React.FC = () => {
           />
 
           {/* Business Type */}
-          <Select
-            label="Business Type"
-            placeholder="Select business type"
-            options={businessTypeOptions}
-            value={formData.businessType}
-            onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
-            className="rounded-2xl h-14"
-          />
+          <div className='pb-4'>
+
+            <Select
+              label="Business Type"
+              placeholder="Select business type"
+              options={businessTypeOptions}
+              value={formData.businessType}
+              onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
+              className="rounded-2xl h-14"
+            />
+          </div>
 
           {/* Store Location */}
           <Input

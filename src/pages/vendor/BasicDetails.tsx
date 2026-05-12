@@ -88,15 +88,16 @@ export const BasicDetails: React.FC = () => {
           </div>
 
           {/* Phone Number */}
-          <div>
-            <PhoneInput
+          <div className='pb-4'>
+            <Input
               label="Phone Number"
               placeholder="Enter your phone number"
               value={formData.phoneNumber}
-              onChange={(value) => setFormData({ ...formData, phoneNumber: value })}
+              onChange={(value) => setFormData({ ...formData, phoneNumber: String(value) })}
               defaultCountry="KE"
               autoDetect={false}
               className="h-14 rounded-2xl"
+              type='tel'
               required
             />
           </div>

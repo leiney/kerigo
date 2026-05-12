@@ -112,8 +112,8 @@ export const KYCDocuments: React.FC = () => {
   const allDocumentsUploaded = documents.every(doc => doc.file !== null);
 
   const handleContinue = () => {
+    navigate('/vendor/add-your-stores');
     if (allDocumentsUploaded) {
-      navigate('/vendor/add-your-stores');
     }
   };
 
@@ -246,7 +246,7 @@ export const KYCDocuments: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
-          disabled={!allDocumentsUploaded}
+          /* disabled={!allDocumentsUploaded} */
           className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${
             allDocumentsUploaded 
               ? 'shadow-primary/20' 

@@ -11,7 +11,7 @@ import { motion } from 'motion/react';
 export const OTPPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '']);
   const [timer, setTimer] = useState(53);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const params = new URLSearchParams(location.search);
@@ -110,63 +110,68 @@ export const OTPPage: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* OTP Inputs */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex justify-between gap-2 sm:gap-3 mb-10"
-          onPaste={handlePaste}
-        >
-          {otp.map((digit, i) => (
-            <input
-              key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(i, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(i, e)}
-              onFocus={(e) => e.target.select()}
-              className={`
-                w-full h-14 sm:h-16 text-center text-xl sm:text-2xl font-bold rounded-xl outline-none transition-all duration-200
-                ${otp[i] 
-                  ? 'bg-primary/5 border-2 border-primary text-primary' 
-                  : 'bg-secondary border border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20'}
-              `}
-            />
-          ))}
-        </motion.div>
+        <div className="flex-1 flex flex-col justify-center">
+             {/* OTP Inputs */}
 
-        {/* Timer */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-8"
-        >
-          <p className={`text-sm font-bold ${timer > 0 ? 'text-primary' : 'text-foreground/40'}`}>
-            Resend in 00:{timer.toString().padStart(2, '0')}
-          </p>
-        </motion.div>
+             {/* Timer */}
 
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex justify-between gap-2 sm:gap-3 mb-10"
+              onPaste={handlePaste}
+            >
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { inputRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  onFocus={(e) => e.target.select()}
+                  className={`
+                    w-full h-14 sm:h-16 text-center text-xl sm:text-2xl font-bold rounded-xl outline-none transition-all duration-200
+                    ${otp[i] 
+                      ? 'bg-primary/5 border-2 border-primary text-primary' 
+                      : 'bg-secondary border border-border text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20'}
+                  `}
+                />
+              ))}
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-center mb-8"
+            >
+              <p className={`text-sm font-bold ${timer > 0 ? 'text-primary' : 'text-foreground/40'}`}>
+                Resend in 00:{timer.toString().padStart(2, '0')}
+              </p>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className=""
+            >
+              <button 
+                onClick={() => navigate(-1)}
+                className="flex items-center justify-center gap-2 text-sm font-bold text-foreground hover:text-primary transition-colors mx-auto"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Choose a different verification method
+              </button>
+            </motion.div>
+
+        </div>
+
+       
         {/* Change Method Link */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mt-auto"
-        >
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex items-center justify-center gap-2 text-sm font-bold text-foreground hover:text-primary transition-colors mx-auto"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Choose a different verification method
-          </button>
-        </motion.div>
-
+        
       </div>
 
       {/* Decorative Leaves Background */}

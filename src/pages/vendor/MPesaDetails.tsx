@@ -79,15 +79,18 @@ export const MPesaDetails: React.FC = () => {
           </div>
 
           {/* M-Pesa Number */}
-          <Input
-            label="M-Pesa Number"
-            type="phone"
-            placeholder="Enter M-Pesa number"
-            value={formData.mpesaNumber}
-            onChange={(value) => setFormData({ ...formData, mpesaNumber: String(value) })}
-            defaultCountry="KE"
-            className="rounded-2xl h-14"
-          />
+          <div className='pb-4'>
+            <Input
+              label="M-Pesa Number"
+              type="phone"
+              placeholder="Enter M-Pesa number"
+              value={formData.mpesaNumber}
+              onChange={(value) => setFormData({ ...formData, mpesaNumber: String(value) })}
+              defaultCountry="KE"
+              className="rounded-2xl h-14"
+            />
+
+          </div>
 
           {/* Account Name */}
           <Input

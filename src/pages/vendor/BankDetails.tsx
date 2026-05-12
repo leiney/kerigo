@@ -82,14 +82,17 @@ export const BankDetails: React.FC = () => {
         >
           
           {/* Select Bank */}
-          <Select
-            label="Select your bank"
-            placeholder="Choose your bank"
-            options={bankOptions}
-            value={formData.bank}
-            onChange={(value) => setFormData({ ...formData, bank: String(value) })}
-            className="rounded-2xl h-14"
-          />
+          <div className='pb-4'>
+
+            <Select
+              label="Select your bank"
+              placeholder="Choose your bank"
+              options={bankOptions}
+              value={formData.bank}
+              onChange={(value) => setFormData({ ...formData, bank: String(value) })}
+              className="rounded-2xl h-14"
+            />
+          </div>
 
           {/* Account Number */}
           <Input

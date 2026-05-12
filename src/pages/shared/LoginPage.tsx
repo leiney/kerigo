@@ -54,7 +54,7 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Header / Logo */}
-      <div className="pt-6 pb-4 flex justify-center relative z-10">
+      <div className="pt-8 pb-4 flex justify-start relative z-10">
         <img 
           src="kerigo.png" 
           alt="KeriGo Logo" 
@@ -64,7 +64,7 @@ export const LoginPage: React.FC = () => {
 
       {/* Hero Section */}
       <section className="relative flex flex-col mb-8">
-        <div className="flex flex-col sm:flex-row items-start gap-4">
+        <div className="flex sm:flex-row items-start gap-4">
           {/* Text Content */}
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
