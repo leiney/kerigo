@@ -1,15 +1,29 @@
-
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Input } from '@stackloop/ui';
-import { Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
+import { 
+  Eye, 
+  EyeOff, 
+  ArrowRight, 
+  ShieldCheck, 
+  User, 
+  Lock,
+  Leaf
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuthStore } from '../../store/authStore';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const setUser = useAuthStore((state) => state.setUser);
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    emailOrPhone: '',
+    password: ''
+  });
+
+  const source = (location.state as { source?: 'vendor' | 'rider' } | null)?.source;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,94 +33,195 @@ export const LoginPage: React.FC = () => {
       name: 'John Doe',
       email: 'john@example.com',
       phone: '+254712345678',
-      roles: ['customer', 'vendor', 'rider'], // Mocked for easy switching
+      roles: ['customer', 'vendor', 'rider'],
       avatar: 'https://picsum.photos/seed/avatar/200/200'
     });
-    navigate('/role-selection');
+    navigate('/verify-identity', { state: { source } });
   };
 
   return (
-    <div className="min-h-screen bg-white px-6 pt-12 px-2">     
-      <div className="relative flex items-start gap-3 sm:gap-6 mt-6">                
-          <div className="min-w-0 mt-6">
-            <header className="mb-6 sm:mb-8">
-              <img src='kerigo.png' alt="KeriGo Logo" className="h-14 sm:h-28" />
-            </header>
+    <div className="min-h-screen bg-white text-foreground font-sans antialiased px-5 pb-10 relative overflow-hidden">
+      
+      {/* Decorative Leaves Background */}
+      <div className="absolute top-20 right-0 w-32 h-32 opacity-20 pointer-events-none">
+        <Leaf className="w-full h-full text-primary rotate-12" />
+      </div>
+      <div className="absolute bottom-40 left-0 w-24 h-24 opacity-20 pointer-events-none">
+        <Leaf className="w-full h-full text-primary -rotate-12" />
+      </div>
+      <div className="absolute bottom-20 right-10 w-20 h-20 opacity-20 pointer-events-none">
+        <Leaf className="w-full h-full text-primary rotate-45" />
+      </div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-              <h2 className="text-3xl font-black text-foreground mb-2">Welcome!</h2>
-              <p className="text-sm text-foreground/50">Login to continue ordering <br /> your favorites with ease.</p>
-            </motion.div>
-          </div>
+      {/* Header / Logo */}
+      <div className="pt-6 pb-4 flex justify-center relative z-10">
+        <img 
+          src="kerigo.png" 
+          alt="KeriGo Logo" 
+          className="h-12 sm:h-14 object-contain" 
+        />
+      </div>
 
-          {/* Floating Illustration Placeholder */}
-          <div className="absolute -right-6 -bottom-8 w-52 h-52 sm:w-64 sm:h-64 shrink-0 opacity-90 pointer-events-none">
-              <img 
+      {/* Hero Section */}
+      <section className="relative flex flex-col mb-8">
+        <div className="flex flex-col sm:flex-row items-start gap-4">
+          {/* Text Content */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex-1"
+          >
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-3">
+              Welcome!
+            </h2>
+            <p className="text-sm sm:text-base text-foreground/60 font-medium leading-relaxed">
+              Login to continue ordering your favorites with ease.
+            </p>
+          </motion.div>
+
+          {/* Shopping Bag Illustration */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="w-48 h-48 sm:w-56 sm:h-56 shrink-0"
+          >
+            <img 
               src="shopping-bag.png" 
-              alt="Delivery illustration" 
-              className="w-full h-full object-contain"
-              referrerPolicy="no-referrer"
+              alt="Shopping bag" 
+              className="w-full h-full object-contain drop-shadow-lg" 
             />
-          </div>
+          </motion.div>
         </div>
+      </section>
 
-      <form onSubmit={handleLogin} className="space-y-4 mt-10">
-        <Input 
+      {/* Login Form */}
+      <motion.form 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        onSubmit={handleLogin} 
+        className="space-y-4 relative z-10"
+      >
+        {/* Email or Phone Input */}
+        <Input
           label="Email or Phone number"
           placeholder="Enter email or phone number"
+          value={formData.emailOrPhone}
+          onChange={(value) => setFormData({ ...formData, emailOrPhone: String(value) })}
+          leftIcon={<User className="w-5 h-5 text-foreground/40" />}
           className="rounded-2xl h-14"
         />
         
-        <Input 
+        {/* Password Input */}
+        <Input
           type={showPassword ? "text" : "password"}
           label="Password"
           placeholder="Enter password"
-          className="rounded-2xl h-14"
+          value={formData.password}
+          onChange={(value) => setFormData({ ...formData, password: String(value) })}
+          leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
           rightIcon={
-            <button type="button" onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? <EyeOff className="h-5 w-5 opacity-40" /> : <Eye className="h-5 w-5 opacity-40" />}
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(!showPassword)}
+              className="focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5 text-foreground/40" />
+              ) : (
+                <Eye className="h-5 w-5 text-foreground/40" />
+              )}
             </button>
           }
+          className="rounded-2xl h-14"
         />
 
+        {/* Forgot Password Link */}
         <div className="flex justify-end">
-          <button type="button" className="text-sm text-primary font-bold">Forgot password?</button>
+          <button 
+            type="button" 
+            className="text-sm text-primary font-bold hover:text-primary/80 transition-colors"
+          >
+            Forgot password?
+          </button>
         </div>
 
+        {/* Login Button */}
         <Button 
           type="submit" 
-          className="w-full h-14 rounded-2xl text-lg font-bold flex gap-2 py-3 px-8"
+          className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
+          icon={<ArrowRight className="w-5 h-5" />}
         >
           Login
-        </Button>``
-      </form>
+        </Button>
+      </motion.form>
 
-      <div className="relative mb-4">
+      {/* OR Divider */}
+      <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-4 text-foreground/40 font-bold">OR</span>
+        <div className="relative flex justify-center">
+          <span className="bg-white px-4 text-xs font-bold text-foreground/40 uppercase tracking-wider">
+            OR
+          </span>
         </div>
       </div>
 
-      <Button 
-        variant="outline" 
-        className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border"
+      {/* Google Sign In Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
       >
-        <img src="https://www.google.com/favicon.ico" className="h-5 w-5" alt="Google" />
-        <span className="font-bold text-foreground/80">Continue with Google</span>
-      </Button>
+        <Button 
+          variant="outline" 
+          className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary"
+        >
+          <img 
+            src="https://www.google.com/favicon.ico" 
+            className="h-5 w-5" 
+            alt="Google" 
+          />
+          <span className="font-bold text-foreground/80">Continue with Google</span>
+        </Button>
+      </motion.div>
 
-      <div className="mt-8 text-center flex items-center justify-center gap-2 text-[11px] text-foreground/40 font-medium">
+      {/* Security Message */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="mt-8 text-center flex items-center justify-center gap-2 text-xs text-foreground/50 font-medium"
+      >
         <ShieldCheck className="h-4 w-4 text-primary" />
         Your data is safe and secure with us.
+      </motion.div>
+
+      {/* Sign Up Link */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+        className="mt-8 text-center text-sm"
+      >
+        <span className="text-foreground/50">Don't have an account? </span>
+        <button 
+          onClick={() => navigate('/register')} 
+          className="text-primary font-bold hover:text-primary/80 transition-colors"
+        >
+          Sign up
+        </button>
+      </motion.div>
+
+      {/* Bottom Decorative Leaves */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none overflow-hidden">
+        <div className="absolute bottom-4 left-8 w-6 h-6 bg-primary/20 rounded-full blur-xl" />
+        <div className="absolute bottom-8 right-12 w-8 h-8 bg-primary/15 rounded-full blur-xl" />
+        <div className="absolute bottom-2 left-1/3 w-4 h-4 bg-primary/30 rounded-full blur-lg" />
       </div>
 
-      <div className="mt-8 text-center text-sm">
-        <span className="text-foreground/50">Don't have an account? </span>
-        <button onClick={() => navigate('/register')} className="text-primary font-bold">Sign up</button>
-      </div>
     </div>
   );
 };

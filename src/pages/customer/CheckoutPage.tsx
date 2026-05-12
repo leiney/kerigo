@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, CreditCard, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
 import { Button, Card, CardContent, Input, Badge } from '@stackloop/ui';
 import { motion } from 'motion/react';
 
@@ -51,7 +51,6 @@ export const CheckoutPage: React.FC = () => {
       </header>
 
       <div className="p-6 space-y-6">
-        {/* Delivery Address */}
         <section>
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-black uppercase tracking-widest text-foreground/40">Delivery Address</h3>
