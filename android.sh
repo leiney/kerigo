@@ -39,6 +39,7 @@ npx cap add android
 echo "Downgrading AGP to 8.0.2..."
 
 find android -name "*.gradle" -type f -exec sed -i '' \
+
 's/com.android.tools.build:gradle:[0-9.]*/com.android.tools.build:gradle:8.0.2/g' {} \;
 
 echo "Downgrading Gradle wrapper..."
