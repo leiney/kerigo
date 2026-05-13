@@ -35,6 +35,21 @@ import { LoginPage } from './pages/shared/LoginPage';
 import { VerifyIdentityPage } from './pages/shared/VerifyIdentityPage';
 import { OTPPage } from './pages/shared/OTPPage';
 import { RegisterPage } from './pages/customer/RegisterPage';
+import { RiderTypeSelection } from './pages/rider/RiderTypeSelection';
+import { BasicDetails as RiderBasicDetails } from './pages/rider/BasicDetails';
+import { OrganisationDetails } from './pages/rider/OrganisationDetails';
+import { AdministratorDetails } from './pages/rider/AdministratorDetails';
+import { AddRiders } from './pages/rider/AddRiders';
+import { VehicleInformation3A } from './pages/rider/VehicleInformation3A';
+import { VehicleInformation } from './pages/rider/VehicleInformation';
+import { PayoutDetails } from './pages/rider/PayoutDetails';
+import { KYCDocuments as RiderKYCDocuments } from './pages/rider/KYCDocuments';
+import { CompanyKYCDocuments as RiderCompanyKYCDocuments } from './pages/rider/CompanyKYCDocuments';
+import { CreatePassword as RiderCreatePassword } from './pages/rider/CreatePassword';
+import { ReviewAndConfirm } from './pages/rider/ReviewAndConfirm';
+import { SuccessPage } from './pages/rider/SuccessPage';
+import { BankDetails as RiderBankDetails } from './pages/rider/BankDetails';
+import { MPesaDetails as RiderMPesaDetails } from './pages/rider/MPesaDetails';
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { isLoggedIn, currentRole } = useAuthStore();
@@ -90,7 +105,26 @@ export default function App() {
 
 
           <Route path="/rider-landing" element={<RiderLandingPage />} />
-          <Route path="/rider/onboarding" element={<Navigate to="/register" replace />} />
+          <Route path="/rider/onboarding" element={<RiderTypeSelection />} />
+          <Route path="/rider/dashboard" element={<Navigate to="/rider-landing" replace />} />
+          <Route path="/individual/basic-details" element={<RiderBasicDetails />} />
+          <Route path="/individual/vehicle-information" element={<VehicleInformation />} />
+          <Route path="/individual/payout-details" element={<PayoutDetails />} />
+          <Route path="/individual/bank-details" element={<RiderBankDetails />} />
+          <Route path="/individual/mpesa-details" element={<RiderMPesaDetails />} />
+          <Route path="/individual/kyc-documents" element={<RiderKYCDocuments />} />
+          <Route path="/individual/create-password" element={<RiderCreatePassword />} />
+          <Route path="/company/organisation-details" element={<OrganisationDetails />} />
+          <Route path="/company/administrator-details" element={<AdministratorDetails />} />
+          <Route path="/company/add-riders" element={<AddRiders />} />
+          <Route path="/company/vehicle-information" element={<VehicleInformation3A />} />
+          <Route path="/company/payout-details" element={<PayoutDetails />} />
+          <Route path="/company/bank-details" element={<RiderBankDetails />} />
+          <Route path="/company/mpesa-details" element={<RiderMPesaDetails />} />
+          <Route path="/company/kyc-documents" element={<RiderCompanyKYCDocuments />} />
+          <Route path="/company/create-password" element={<RiderCreatePassword />} />
+          <Route path="/rider/review-confirmation" element={<ReviewAndConfirm />} />
+          <Route path="/rider/success" element={<SuccessPage />} />
          
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
