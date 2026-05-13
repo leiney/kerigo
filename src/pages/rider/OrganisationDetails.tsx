@@ -126,8 +126,8 @@ export const OrganisationDetails: React.FC = () => {
           {/* Tax Identification Number (Optional) */}
           <div>
             <Input
-              label="Tax Identification Number (Optional)"
-              placeholder="Enter TIN"
+              label="KRA PIN (Optional)"
+              placeholder="Enter KRA PIN"
               value={formData.taxId}
               onChange={(value) => setFormData({ ...formData, taxId: String(value) })}
               leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}

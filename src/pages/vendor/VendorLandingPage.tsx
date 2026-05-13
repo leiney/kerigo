@@ -49,7 +49,7 @@ export const VendorLandingPage: React.FC = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="absolute right-0 top-0 w-64 h-64 sm:w-80 sm:h-80 pointer-events-none"
+          className="absolute -right-4 top-0 w-50 h-50 sm:w-80 sm:h-80 pointer-events-none"
         >
           <img 
             src="/store.png" 

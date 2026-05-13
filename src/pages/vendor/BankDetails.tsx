@@ -17,6 +17,7 @@ export const BankDetails: React.FC = () => {
   const [formData, setFormData] = useState({
     bank: '',
     accountNumber: '',
+    branchCode: '',
     accountName: ''
   });
 
@@ -93,6 +94,16 @@ export const BankDetails: React.FC = () => {
               className="rounded-2xl h-14"
             />
           </div>
+
+
+          <Input
+            label="Branch Code (Optional)"
+            placeholder="Enter branch code"
+            value={formData.branchCode}
+            onChange={(value) => setFormData({ ...formData, branchCode: String(value) })}
+            leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
+            className="rounded-2xl h-14"
+          />
 
           {/* Account Number */}
           <Input
