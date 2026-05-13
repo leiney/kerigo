@@ -114,12 +114,7 @@ export const OrganisationDetails: React.FC = () => {
           {/* Organisation Number (Optional) */}
           <div>
             <Input
-              label={
-                <span className="flex items-center gap-1">
-                  Organisation Number
-                  <span className="text-xs text-foreground/40 font-normal">(Optional)</span>
-                </span>
-              }
+              label="Organisation Number (Optional)"
               placeholder="Enter registration number"
               value={formData.organisationNumber}
               onChange={(value) => setFormData({ ...formData, organisationNumber: String(value) })}
@@ -131,12 +126,7 @@ export const OrganisationDetails: React.FC = () => {
           {/* Tax Identification Number (Optional) */}
           <div>
             <Input
-              label={
-                <span className="flex items-center gap-1">
-                  Tax Identification Number
-                  <span className="text-xs text-foreground/40 font-normal">(Optional)</span>
-                </span>
-              }
+              label="Tax Identification Number (Optional)"
               placeholder="Enter TIN"
               value={formData.taxId}
               onChange={(value) => setFormData({ ...formData, taxId: String(value) })}

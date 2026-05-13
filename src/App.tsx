@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { setupRippleEffects, ToastProvider } from '@stackloop/ui';
 import '@stackloop/ui/theme.css';
 
@@ -14,6 +14,22 @@ import { WelcomePage } from './pages/shared/WelcomePage';
 import { VendorLandingPage } from './pages/vendor/VendorLandingPage';
 // Rider Pages
 import { RiderLandingPage } from './pages/rider/RiderLandingPage';
+import { RiderTypeSelection } from './pages/rider/RiderTypeSelection';
+import { BasicDetails as RiderBasicDetails } from './pages/rider/BasicDetails';
+import { OrganisationDetails } from './pages/rider/OrganisationDetails';
+import { KYCDocuments as RiderKYCDocuments } from './pages/rider/KYCDocuments';
+import { CompanyKYCDocuments as RiderCompanyKYCDocuments } from './pages/rider/CompanyKYCDocuments';
+import { AddRiders } from './pages/rider/AddRiders';
+import { AdministratorDetails } from './pages/rider/AdministratorDetails';
+import { BankDetails as RiderBankDetails } from './pages/rider/BankDetails';
+import { MPesaDetails as RiderMPesaDetails } from './pages/rider/MPesaDetails';
+import { PayoutDetails } from './pages/rider/PayoutDetails';
+import { CreatePassword as RiderCreatePassword } from './pages/rider/CreatePassword';
+import { ReviewAndConfirm, ReviewAndConfirm as RiderReviewAndConfirm } from './pages/rider/ReviewAndConfirm';
+import { SuccessPage as RiderSuccessPage, SuccessPage } from './pages/rider/SuccessPage';
+import { VehicleInformation } from './pages/rider/VehicleInformation';
+import { VehicleInformation3A } from './pages/rider/VehicleInformation3A';
+
 
 
 import { useAuthStore } from './store/authStore';
@@ -71,8 +87,7 @@ export default function App() {
 
   return (
     <ToastProvider position="bottom-center">
-      <Router>
-        <Routes>
+      <Routes>
           <Route path="/" element={<WelcomePage />} />
 
           <Route path="/login" element={<LoginPage />} />
@@ -103,12 +118,32 @@ export default function App() {
 
 
           <Route path="/rider-landing" element={<RiderLandingPage />} />
-          <Route path="/rider/onboarding" element={<Navigate to="/register" replace />} />
+          <Route path="/rider/onboarding" element={<RiderTypeSelection />} />
+          <Route path="/rider/dashboard" element={<Navigate to="/rider-landing" replace />} />
+          <Route path="/individual/basic-details" element={<RiderBasicDetails />} />
+          <Route path="/individual/vehicle-information" element={<VehicleInformation />} />
+          <Route path="/individual/payout-details" element={<PayoutDetails />} />
+          <Route path="/individual/bank-details" element={<RiderBankDetails />} />
+          <Route path="/individual/mpesa-details" element={<RiderMPesaDetails />} />
+          <Route path="/individual/kyc-documents" element={<RiderKYCDocuments />} />
+          <Route path="/individual/create-password" element={<RiderCreatePassword />} />
+          <Route path="/company/organisation-details" element={<OrganisationDetails />} />
+          <Route path="/company/administrator-details" element={<AdministratorDetails />} />
+          <Route path="/company/add-riders" element={<AddRiders />} />
+          <Route path="/company/vehicle-information" element={<VehicleInformation3A />} />
+          <Route path="/company/payout-details" element={<PayoutDetails />} />
+          <Route path="/company/bank-details" element={<RiderBankDetails />} />
+          <Route path="/company/mpesa-details" element={<RiderMPesaDetails />} />
+          <Route path="/company/kyc-documents" element={<RiderCompanyKYCDocuments />} />
+          <Route path="/company/create-password" element={<RiderCreatePassword />} />
+          <Route path="/rider/review-confirmation" element={<ReviewAndConfirm />} />
+          <Route path="/rider/success" element={<SuccessPage />} />
+
+         
          
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
     </ToastProvider>
   );
 }
