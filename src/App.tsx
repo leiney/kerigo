@@ -51,6 +51,8 @@ import { LoginPage } from './pages/shared/LoginPage';
 import { VerifyIdentityPage } from './pages/shared/VerifyIdentityPage';
 import { OTPPage } from './pages/shared/OTPPage';
 import { RegisterPage } from './pages/customer/RegisterPage';
+import { CartPage } from './pages/customer/CartPage';
+import { VendorStorePage } from './pages/customer/VendorStorePage';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
@@ -94,8 +96,10 @@ export default function App() {
           <Route path="/verify-identity" element={<VerifyIdentityPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
+          <Route path="/cart" element={<CartPage />} />
 
           <Route path="/vendor-landing" element={<VendorLandingPage />} />
+          <Route path="/vendor-store" element={<VendorStorePage />} />
           <Route path="/vendor/onboarding" element={<Navigate to="/vendor/choose-account" replace />} />
           <Route path="/vendor/choose-account" element={<ChooseAccountType />} />
           <Route path="/vendor/basic-details" element={<BasicDetails />} />
@@ -114,7 +118,7 @@ export default function App() {
           <Route path='/vendor/review-confirmation' element={<ReviewConfirm />} />
           <Route path='/vendor/setup-completed' element={<SetupComplete />} />
           <Route path='/vendor/dashboard' element={<Navigate to="/vendor-landing" replace />} />
-
+          <Route path="/vendor/:name" element={<VendorStorePage />} />
 
 
           <Route path="/rider-landing" element={<RiderLandingPage />} />

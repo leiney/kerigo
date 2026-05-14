@@ -1,117 +1,282 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, CreditCard, ChevronRight } from 'lucide-react';
-import { Button, Card, CardContent } from '@stackloop/ui';
-import { motion } from 'motion/react';
+import { Button } from '@stackloop/ui';
+import {
+  ArrowLeft, Trash2, Minus, Plus, ShoppingBag, Truck, Percent, MapPin, ChevronRight, Home, User
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import BottomNav from '../../components/BottomNav';
 
-const CART_ITEMS = [
-  { id: '1', name: 'Classic Cheeseburger', price: 850, quantity: 1, image: 'https://picsum.photos/seed/burger-menu/200/200' },
-  { id: '2', name: 'French Fries (Large)', price: 350, quantity: 2, image: 'https://picsum.photos/seed/fries/200/200' },
-];
+interface CartItem {
+  id: string;
+  name: string;
+  store: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
-  const subtotal = CART_ITEMS.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const [cartItems, setCartItems] = useState<CartItem[]>([
+    {
+      id: '1',
+      name: 'Fresh Apples',
+      store: 'Local Store',
+      price: 120,
+      quantity: 2,
+      image: '/apple.jpeg'
+    },
+    {
+      id: '2',
+      name: 'Milk 500ml',
+      store: 'Local Store',
+      price: 120,
+      quantity: 1,
+      image: '/milk.jpeg'
+    }
+  ]);
+
   const deliveryFee = 150;
-  const total = subtotal + deliveryFee;
+  const serviceFee = 50;
+  const freeDeliveryThreshold = 500;
+  
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = subtotal + deliveryFee + serviceFee;
+  const amountToFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
+  const deliveryProgress = Math.min(100, (subtotal / freeDeliveryThreshold) * 100);
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCartItems(items => items.map(item => 
+      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+    ));
+  };
+
+  const removeItem = (id: string) => setCartItems(items => items.filter(item => item.id !== id));
+  const clearCart = () => setCartItems([]);
 
   return (
-    <div className="bg-secondary min-h-screen pb-32">
-      <header className="bg-white px-6 pt-12 pb-6 flex items-center gap-4 sticky top-0 z-20 border-b border-border">
-         <button onClick={() => navigate(-1)} className="h-10 w-10 flex items-center justify-center rounded-full bg-secondary border border-border">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-xl font-black">Your Cart</h1>
-      </header>
+    <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32">
+      
+      {/* --- FIXED: Header Layout --- */}
+      <div className="px-5 pt-6 pb-4">
+        {/* Row 1: Back Arrow & Clear Button */}
+        <div className="flex items-start justify-between mb-2">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-foreground" />
+          </motion.button>
 
-      <div className="p-6 space-y-6">
-        {/* Vendor Mini Card */}
-        <div className="bg-white rounded-[1.5rem] p-4 flex items-center gap-4 shadow-sm">
-           <img src="https://picsum.photos/seed/burger-mini/100/100" className="h-12 w-12 rounded-xl object-cover" />
-           <div>
-             <h4 className="font-bold text-sm">Burger King</h4>
-             <p className="text-[10px] text-foreground/40 font-medium">1.2 km away • Fast Food</p>
-           </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={clearCart}
+            className="flex flex-col items-center gap-1 text-error/70 hover:text-error transition-colors"
+          >
+            <Trash2 className="w-5 h-5" />
+            <span className="text-xs font-medium">Clear</span>
+          </motion.button>
         </div>
 
-        {/* Cart Items */}
-        <div className="space-y-4">
-          {CART_ITEMS.map((item) => (
-            <motion.div key={item.id} layout>
-              <Card className="rounded-[1.5rem] border-none shadow-sm bg-white overflow-hidden">
-                <CardContent className="p-4 flex gap-4">
-                   <img src={item.image} alt={item.name} className="h-20 w-20 rounded-2xl object-cover" />
-                   <div className="flex-1 flex flex-col justify-between">
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-bold text-sm line-clamp-1">{item.name}</h4>
-                        <button className="text-red-500/40 hover:text-red-500">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="flex justify-between items-end">
-                        <span className="font-black text-primary italic">KES {item.price}</span>
-                        <div className="flex items-center gap-3 bg-secondary rounded-xl p-1 border border-border">
-                           <button className="h-7 w-7 flex items-center justify-center bg-white rounded-lg shadow-sm">
-                             <Minus className="h-3 w-3" />
-                           </button>
-                           <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                           <button className="h-7 w-7 flex items-center justify-center bg-primary text-white rounded-lg shadow-sm">
-                             <Plus className="h-3 w-3" />
-                           </button>
-                        </div>
-                      </div>
-                   </div>
-                </CardContent>
-              </Card>
+        {/* Row 2 & 3: Title & Subtitle */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-2xl font-bold text-foreground">Your Cart</h1>
+          <p className="text-sm text-foreground/60 mt-1">Review your items and proceed to checkout</p>
+        </motion.div>
+      </div>
+
+      {/* --- Cart Items --- */}
+      <div className="px-5 space-y-4">
+        <AnimatePresence>
+          {cartItems.map((item, index) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ delay: index * 0.05 }}
+              className="relative bg-white border border-border rounded-2xl p-4 shadow-sm flex gap-4 items-start"
+            >
+              {/* Product Image - Fixed vertical spacing */}
+              <div className="w-24 h-28 rounded-xl overflow-hidden shrink-0 bg-secondary flex items-center justify-center">
+                <img 
+                  src={item.image} 
+                  alt={item.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Product Details */}
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <h3 className="font-bold text-base text-foreground leading-tight">{item.name}</h3>
+                <div className="flex items-center gap-1">
+                  <ShoppingBag className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-xs text-foreground/60">{item.store}</span>
+                </div>
+                <p className="text-sm text-primary font-semibold">KES {item.price} each</p>
+
+                {/* Quantity & Item Total Row */}
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center gap-2 bg-primary/5 rounded-xl">
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </motion.button>
+                    <span className="w-8 text-center font-bold text-foreground text-sm">{item.quantity}</span>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                  <span className="font-bold text-foreground text-sm">KES {(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => removeItem(item.id)}
+                className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-error hover:bg-error/5 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </motion.button>
             </motion.div>
           ))}
-        </div>
-
-        {/* Summary Card */}
-        <Card className="rounded-[2rem] border-none shadow-sm bg-white p-2">
-          <CardContent className="p-6 space-y-4">
-             <div className="flex justify-between text-sm">
-                <span className="text-foreground/40 font-medium">Subtotal</span>
-                <span className="font-bold text-foreground/70">KES {subtotal}</span>
-             </div>
-             <div className="flex justify-between text-sm">
-                <span className="text-foreground/40 font-medium">Delivery Fee</span>
-                <span className="font-bold text-foreground/70">KES {deliveryFee}</span>
-             </div>
-             <div className="h-px bg-border w-full" />
-             <div className="flex justify-between items-center pt-2">
-                <span className="font-black text-lg">Total</span>
-                <span className="font-black text-2xl text-primary italic">KES {total}</span>
-             </div>
-          </CardContent>
-        </Card>
-
-        {/* Payment Method Quick Select */}
-        <div className="bg-white rounded-[2rem] p-6 flex items-center justify-between shadow-sm border border-white">
-           <div className="flex items-center gap-4">
-              <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                 <CreditCard className="h-5 w-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm">M-Pesa</h4>
-                <p className="text-[10px] text-foreground/40">Default Payment Method</p>
-              </div>
-           </div>
-           <ChevronRight className="h-4 w-4 text-foreground/20" />
-        </div>
+        </AnimatePresence>
       </div>
 
-      {/* Floating Checkout Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-border flex flex-col gap-4">
-        <Button 
-          onClick={() => navigate('/customer/checkout')}
-          className="w-full h-14 rounded-2xl text-lg font-bold flex justify-between px-8"
-          icon={<ChevronRight className="h-6 w-6" />}
+      {/* --- Free Delivery Progress --- */}
+      {amountToFreeDelivery > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mx-5 mt-4 bg-primary/5 border border-primary/10 rounded-2xl p-4"
         >
-          Checkout
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                Add KES {amountToFreeDelivery.toLocaleString()} more
+              </p>
+              <p className="text-xs text-foreground/60 mt-0.5">to get free delivery!</p>
+            </div>
+            <span className="text-xs font-semibold text-primary">
+              KES {amountToFreeDelivery.toLocaleString()} to go
+            </span>
+          </div>
+          <div className="mt-3 h-2 bg-white rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${deliveryProgress}%` }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="h-full bg-primary rounded-full"
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* --- Order Summary --- */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mx-5 mt-4 bg-white border border-border rounded-2xl p-4 shadow-sm"
+      >
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                <ShoppingBag className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm text-foreground/70">Subtotal</span>
+            </div>
+            <span className="font-semibold text-foreground">KES {subtotal.toLocaleString()}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                <Truck className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm text-foreground/70">Delivery Fee</span>
+            </div>
+            <span className="font-semibold text-foreground">KES {deliveryFee.toLocaleString()}</span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                <Percent className="w-4 h-4 text-primary" />
+              </div>
+              <span className="text-sm text-foreground/70">Service Fee</span>
+            </div>
+            <span className="font-semibold text-foreground">KES {serviceFee.toLocaleString()}</span>
+          </div>
+
+          <div className="border-t border-border pt-3 mt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-base font-bold text-foreground">Total</span>
+              <span className="text-lg font-bold text-primary">KES {total.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* --- Delivery Address --- */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mx-5 mt-4 mb-15 bg-white border border-border rounded-2xl p-4 shadow-sm"
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+            <MapPin className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-primary font-semibold mb-0.5">Deliver to</p>
+            <h4 className="text-sm font-bold text-foreground">Westlands, Nairobi</h4>
+            <p className="text-xs text-foreground/60 mt-1">
+              Estimated delivery time <span className="text-primary font-medium">~25 mins</span>
+            </p>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            className="p-2 text-foreground/40 hover:text-foreground transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* --- Checkout Button --- */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="fixed bottom-24 left-0 right-0 px-5"
+      >
+        <Button
+          onClick={() => navigate('/checkout')}
+          className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+        >
+          Checkout • KES {total.toLocaleString()}
         </Button>
-      </div>
+      </motion.div>
+
+      {/* --- Bottom Navigation --- */}
+      <BottomNav cartCount={cartItems.length} />
+
     </div>
   );
 };
