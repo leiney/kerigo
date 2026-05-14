@@ -159,22 +159,22 @@ export const VendorStorePage: React.FC = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.08 }}
-                className="flex gap-4 items-start"
+                className="flex gap-4 items-center "
               >
                 {/* Item Image */}
-                <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 bg-secondary">
+                <div className="w-22 h-22 rounded-2xl  overflow-hidden shrink-0 bg-secondary">
                   <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
                 </div>
 
                 {/* Item Details */}
-                <div className="flex-1 min-w-0 pt-1">
-                  <h4 className="font-bold text-base text-foreground leading-tight">{item.name}</h4>
-                  <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed">{item.desc}</p>
-                  <div className="flex items-center justify-between mt-3">
+                <div className="flex-1 min-w-0 pt-1 border-b-2 border-border/60 pb-2">
+                  <h4 className="font-bold text-base text-foreground leading-tight truncate">{item.name}</h4>
+                  <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed min-h-10">{item.desc}</p>
+                  <div className="flex items-center justify-between relative">
                     <span className="font-bold text-sm text-foreground">KSh {item.price.toLocaleString()}</span>
                     <motion.button 
                       whileTap={{ scale: 0.9 }}
-                      className="h-8 w-8 bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
+                      className="h-8 w-8 absolute right-2 bottom-2 bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
                     >
                       <Plus className="h-5 w-5" />
                     </motion.button>

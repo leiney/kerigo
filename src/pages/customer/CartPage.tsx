@@ -97,7 +97,7 @@ export const CartPage: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.05 }}
-              className="relative bg-white border border-border rounded-2xl p-4 shadow-sm flex gap-4 items-start"
+              className="relative bg-white border border-border rounded-2xl p-4  flex gap-4 items-start"
             >
               {/* Product Image - Fixed vertical spacing */}
               <div className="w-24 h-28 rounded-xl overflow-hidden shrink-0 bg-secondary flex items-center justify-center">
@@ -190,7 +190,7 @@ export const CartPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="mx-5 mt-4 bg-white border border-border rounded-2xl p-4 shadow-sm"
+        className="mx-5 mt-4 bg-white border border-border rounded-2xl p-4"
       >
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -237,7 +237,7 @@ export const CartPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="mx-5 mt-4 mb-15 bg-white border border-border rounded-2xl p-4 shadow-sm"
+        className="mx-5 mt-4 mb-15 bg-white border border-border rounded-2xl p-4"
       >
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
