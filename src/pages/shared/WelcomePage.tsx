@@ -94,7 +94,7 @@ export const WelcomePage: React.FC = () => {
                 transition={{ delay: 0.4 + index * 0.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate(`/vendor/${vendor.name.toLowerCase().replace(/\s+/g, '-')}`)}
-                className="flex flex-col items-center cursor-pointer group"
+                className="flex flex-col items-center   cursor-pointer group"
               >
                 <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white border border-border rounded-2xl flex items-center justify-center shadow-sm group-hover:border-primary/50 transition-colors overflow-hidden">
                   <img
@@ -107,7 +107,7 @@ export const WelcomePage: React.FC = () => {
                     }}
                   />
                 </div>
-                <span className="text-[11px] sm:text-xs font-bold text-foreground mt-2 text-center leading-tight line-clamp-2">
+                <span className="text-[11px] sm:text-xs font-bold text-foreground mt-2 text-center leading-tight line-clamp-2 min-h-8">
                   {vendor.name}
                 </span>
                 <span className="text-[10px] sm:text-[11px] text-foreground/50 font-medium">
