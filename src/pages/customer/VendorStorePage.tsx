@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
+import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
 
 // --- Mock Data ---
 const vendor = {
@@ -37,8 +38,24 @@ const menuItems = [
 export const VendorStorePage: React.FC = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('Buckets');
-  const cartCount = 2;
-  const cartTotal = 1000;
+  const [searchQuery, setSearchQuery] = useState('');
+  const cartItems = useCartStore((state) => state.items);
+  const addItem = useCartStore((state) => state.addItem);
+  const cartCount = selectCartCount(cartItems);
+  const cartTotal = selectCartTotal(cartItems);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredMenuItems = normalizedQuery
+    ? menuItems.filter((item) =>
+        [item.name, item.desc, vendor.category].some((value) =>
+          value.toLowerCase().includes(normalizedQuery)
+        )
+      )
+    : menuItems;
+
+  const recommendedItems = normalizedQuery
+    ? (filteredMenuItems.length > 0 ? filteredMenuItems : menuItems).slice(0, 3)
+    : [];
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32">
@@ -104,12 +121,59 @@ export const VendorStorePage: React.FC = () => {
           <input 
             type="text" 
             placeholder={`Search for ${vendor.category.toLowerCase()} items...`}
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             className="w-full h-12 pl-12 pr-12 bg-white border border-border rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium placeholder:text-foreground/30"
           />
           <button className="absolute inset-y-0 right-2 flex items-center justify-center p-2 text-foreground/50 hover:text-foreground transition-colors">
             <SlidersHorizontal className="h-5 w-5" />
           </button>
         </motion.div>
+
+        {normalizedQuery && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 rounded-2xl border border-border bg-white shadow-sm p-3"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-foreground/40">Recommended</p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-xs font-semibold text-primary"
+              >
+                Clear
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {recommendedItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    addItem({ id: item.id, name: item.name, store: vendor.name, price: item.price, image: item.img });
+                    setSearchQuery(item.name);
+                  }}
+                  className="w-full flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2 text-left hover:bg-primary/5 transition-colors"
+                >
+                  <div className="h-12 w-12 rounded-lg overflow-hidden bg-secondary shrink-0">
+                    <img src={item.img} alt={item.name} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-foreground truncate">{item.name}</p>
+                    <p className="text-xs text-foreground/50 truncate">{item.desc}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-primary">KSh {item.price.toLocaleString()}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/40">Tap to add</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* --- Category Tabs --- */}
@@ -120,7 +184,7 @@ export const VendorStorePage: React.FC = () => {
               key={cat.name}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveCategory(cat.name)}
-              className={`flex flex-col items-center gap-1 min-w-[64px] transition-all ${
+              className={`flex flex-col items-center gap-1 min-w-16 transition-all ${
                 activeCategory === cat.name ? 'text-primary' : 'text-foreground/50'
               }`}
             >
@@ -153,7 +217,7 @@ export const VendorStorePage: React.FC = () => {
           <h3 className="text-lg font-bold text-foreground mb-4">Popular</h3>
           
           <div className="space-y-5">
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 15 }}
@@ -167,13 +231,14 @@ export const VendorStorePage: React.FC = () => {
                 </div>
 
                 {/* Item Details */}
-                <div className="flex-1 min-w-0 pt-1 border-b-2 border-border/60 pb-2">
+                <div className="flex-1 min-w-0 pt-1 border-b-2 border-border/40 pb-2">
                   <h4 className="font-bold text-base text-foreground leading-tight truncate">{item.name}</h4>
                   <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed min-h-10">{item.desc}</p>
                   <div className="flex items-center justify-between relative">
                     <span className="font-bold text-sm text-foreground">KSh {item.price.toLocaleString()}</span>
                     <motion.button 
                       whileTap={{ scale: 0.9 }}
+                      onClick={() => addItem({ id: item.id, name: item.name, store: vendor.name, price: item.price, image: item.img })}
                       className="h-8 w-8 absolute right-2 bottom-2 bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
                     >
                       <Plus className="h-5 w-5" />
@@ -182,18 +247,28 @@ export const VendorStorePage: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+
+            {normalizedQuery && filteredMenuItems.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-border bg-secondary/40 p-5 text-center">
+                <p className="font-bold text-foreground">No exact matches found</p>
+                <p className="text-sm text-foreground/60 mt-1">Try one of the recommended items above.</p>
+              </div>
+            )}
           </div>
         </motion.div>
       </section>
 
       {/* --- Floating Cart Summary Bar --- */}
-      <motion.div 
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="fixed bottom-20 left-4 right-4 z-40"
-      >
-        <div className="bg-primary/20 border border-primary/20 rounded-2xl p-3 flex items-center justify-between backdrop-blur-sm">
+      {cartCount > 0 && (
+        <motion.button 
+          type="button"
+          onClick={() => navigate('/cart')}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="fixed bottom-20 left-4 right-4 z-40"
+        >
+          <div className="bg-primary/20 border border-primary/20 rounded-2xl p-3 flex items-center justify-between backdrop-blur-sm w-full">
           <div className="flex items-center gap-3">
             <div className="relative">
               <ShoppingCart className="h-5 w-5 text-primary" />
@@ -207,8 +282,9 @@ export const VendorStorePage: React.FC = () => {
             <span className="text-sm font-bold">KSh {cartTotal.toLocaleString()}</span>
             <ChevronRight className="h-4 w-4" />
           </div>
-        </div>
-      </motion.div>
+          </div>
+        </motion.button>
+      )}
 
       {/* --- Bottom Navigation --- */}
       <BottomNav cartCount={cartCount} />

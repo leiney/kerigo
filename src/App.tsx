@@ -51,6 +51,7 @@ import { LoginPage } from './pages/shared/LoginPage';
 import { VerifyIdentityPage } from './pages/shared/VerifyIdentityPage';
 import { OTPPage } from './pages/shared/OTPPage';
 import { RegisterPage } from './pages/customer/RegisterPage';
+import { CustomerHomePage } from './pages/customer/CustomerHomePage';
 import { CartPage } from './pages/customer/CartPage';
 import { VendorStorePage } from './pages/customer/VendorStorePage';
 import { Capacitor } from '@capacitor/core';
@@ -96,6 +97,7 @@ export default function App() {
           <Route path="/verify-identity" element={<VerifyIdentityPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
+          <Route path="/customer/" element={<CustomerHomePage />} />
           <Route path="/cart" element={<CartPage />} />
 
           <Route path="/vendor-landing" element={<VendorLandingPage />} />

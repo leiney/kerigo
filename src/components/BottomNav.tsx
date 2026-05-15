@@ -7,7 +7,7 @@ export const BottomNav: React.FC<{ cartCount?: number }> = ({ cartCount }) => {
   const location = useLocation();
 
   const activeItem =
-    location.pathname === '/' ? 'home' :
+    location.pathname === '/customer/' || location.pathname === '/' ? 'home' :
     location.pathname.startsWith('/orders') ? 'orders' :
     location.pathname.startsWith('/cart') ? 'cart' :
     location.pathname.startsWith('/account') ? 'account' :
@@ -19,8 +19,8 @@ export const BottomNav: React.FC<{ cartCount?: number }> = ({ cartCount }) => {
     }`;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 h-16 bg-white rounded-[2rem] border border-border shadow-lg flex justify-around items-center z-50">
-      <div onClick={() => navigate('/')} className={itemClasses(activeItem === 'home')}>
+    <div className="fixed bottom-4 left-4 right-4 h-16 bg-white rounded-4xl border border-border shadow-lg flex justify-around items-center z-50">
+      <div onClick={() => navigate('/customer/')} className={itemClasses(activeItem === 'home')}>
         <Home className={`h-6 w-6 ${activeItem === 'home' ? 'text-primary' : 'text-current'}`} />
         <span className="text-[10px] font-bold">Home</span>
       </div>

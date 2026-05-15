@@ -6,54 +6,58 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
-
-interface CartItem {
-  id: string;
-  name: string;
-  store: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: '1',
-      name: 'Fresh Apples',
-      store: 'Local Store',
-      price: 120,
-      quantity: 2,
-      image: '/apple.jpeg'
-    },
-    {
-      id: '2',
-      name: 'Milk 500ml',
-      store: 'Local Store',
-      price: 120,
-      quantity: 1,
-      image: '/milk.jpeg'
-    }
-  ]);
+  const cartItems = useCartStore((state) => state.items);
+  const increaseItem = useCartStore((state) => state.increaseItem);
+  const decreaseItem = useCartStore((state) => state.decreaseItem);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const clearCart = useCartStore((state) => state.clearCart);
 
   const deliveryFee = 150;
   const serviceFee = 50;
   const freeDeliveryThreshold = 500;
-  
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = selectCartTotal(cartItems);
   const total = subtotal + deliveryFee + serviceFee;
   const amountToFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
   const deliveryProgress = Math.min(100, (subtotal / freeDeliveryThreshold) * 100);
 
-  const updateQuantity = (id: string, delta: number) => {
-    setCartItems(items => items.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-    ));
-  };
+  const cartCount = selectCartCount(cartItems);
 
-  const removeItem = (id: string) => setCartItems(items => items.filter(item => item.id !== id));
-  const clearCart = () => setCartItems([]);
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32 flex flex-col">
+        <div className="px-5 pt-6 pb-4">
+          <div className="flex items-start justify-between mb-2">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => navigate(-1)}
+              className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6 text-foreground" />
+            </motion.button>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Your Cart</h1>
+          <p className="text-sm text-foreground/60 mt-1">Your selected items will appear here.</p>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center px-5">
+          <div className="w-full max-w-sm bg-white border border-border rounded-3xl p-6 text-center shadow-sm">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Your cart is empty</h2>
+            <p className="text-sm text-foreground/60 mt-2">Go back to a store and add items to continue.</p>
+            <Button className="mt-5 w-full h-12 rounded-2xl font-bold" onClick={() => navigate('/vendor-store')}>
+              Continue Shopping
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32">
@@ -122,7 +126,7 @@ export const CartPage: React.FC = () => {
                   <div className="flex items-center gap-2 bg-primary/5 rounded-xl">
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => updateQuantity(item.id, -1)}
+                      onClick={() => decreaseItem(item.id)}
                       className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     >
                       <Minus className="w-4 h-4" />
@@ -130,7 +134,7 @@ export const CartPage: React.FC = () => {
                     <span className="w-8 text-center font-bold text-foreground text-sm">{item.quantity}</span>
                     <motion.button
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => updateQuantity(item.id, 1)}
+                      onClick={() => increaseItem(item.id)}
                       className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
                     >
                       <Plus className="w-4 h-4" />
@@ -267,7 +271,7 @@ export const CartPage: React.FC = () => {
         className="fixed bottom-24 left-0 right-0 px-5"
       >
         <Button
-          onClick={() => navigate('/checkout')}
+          onClick={() => navigate('/customer/')}
           className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
         >
           Checkout • KES {total.toLocaleString()}
@@ -275,7 +279,7 @@ export const CartPage: React.FC = () => {
       </motion.div>
 
       {/* --- Bottom Navigation --- */}
-      <BottomNav cartCount={cartItems.length} />
+      <BottomNav cartCount={cartCount} />
 
     </div>
   );
