@@ -1,0 +1,399 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  X,
+  MapPin,
+  CheckCircle,
+  Bell,
+  Clock,
+  ArrowRightCircle,
+  Zap,
+  ChevronDown,
+  User,
+  Star,
+  Minus,
+  Plus,
+  Lock,
+} from 'lucide-react';
+import { Button, Badge, Toggle } from '@stackloop/ui';
+import { motion } from 'motion/react';
+
+// --- Mock Data ---
+const orderData = {
+  id: 'KR1021',
+  status: 'Preparing',
+  time: '10:25 AM',
+  type: 'Delivery',
+  items: ['Chicken 1kg', 'Potatoes', 'Carrots'],
+  amount: 1560,
+  customer: 'John M.',
+  distance: '2.4 km',
+  paymentStatus: 'Paid',
+};
+
+const riders = [
+  {
+    id: '1',
+    name: 'John Kamau',
+    rating: 4.8,
+    totalOrders: 256,
+    distance: '1.2 km',
+    eta: '~3 mins',
+    status: 'available',
+    recommended: true,
+    avatar: '/rider1.png',
+  },
+  {
+    id: '2',
+    name: 'Peter Mwangi',
+    rating: 4.6,
+    totalOrders: 189,
+    distance: '1.8 km',
+    eta: '~4 mins',
+    status: 'busy',
+    recommended: false,
+    avatar: '/rider2.png',
+  },
+  {
+    id: '3',
+    name: 'Steve Otieno',
+    rating: 4.5,
+    totalOrders: 142,
+    distance: '2.3 km',
+    eta: '~6 mins',
+    status: 'busy',
+    recommended: false,
+    avatar: '/rider3.png',
+  },
+];
+
+export const MarkAsReadyAssignRider: React.FC = () => {
+  const navigate = useNavigate();
+  const [selectedRider, setSelectedRider] = useState<string>('1');
+  const [autoAssign, setAutoAssign] = useState(false);
+  const [pickupTime, setPickupTime] = useState(5);
+  const [note, setNote] = useState('');
+
+  const handleIncrementTime = () => {
+    if (pickupTime < 60) setPickupTime(pickupTime + 1);
+  };
+
+  const handleDecrementTime = () => {
+    if (pickupTime > 1) setPickupTime(pickupTime - 1);
+  };
+
+  const handleMarkAsReady = () => {
+    // Handle mark as ready logic
+    console.log('Marking as ready:', {
+      orderId: orderData.id,
+      riderId: selectedRider,
+      pickupTime,
+      note,
+    });
+    navigate('/vendor/dashboard');
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-8">
+      {/* --- Header --- */}
+      <header className="px-4 pt-5 pb-4 flex items-center justify-between sticky top-0 bg-background z-40">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-base font-bold text-foreground">
+              Mark as Ready & Assign Rider
+            </h1>
+            <p className="text-[11px] text-foreground/60 mt-0.5 leading-tight">
+              Order will be marked ready and a rider will be assigned for pickup.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 -mr-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <X className="w-5 h-5 text-foreground/50" />
+          </button>
+        </div>
+      </header>
+
+      <div className="px-4 space-y-4">
+        {/* --- Order Summary Card --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm"
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-warning/15 rounded-full flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-warning" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-bold text-sm">Order #{orderData.id}</p>
+                  <Badge
+                    variant="warning"
+                    className="bg-warning/10 text-warning text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                  >
+                    {orderData.status}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-foreground/50">
+                  {orderData.time} • {orderData.type}
+                </p>
+                <p className="text-xs text-foreground/70 mt-1">
+                  {orderData.items.join(', ')}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-base">KES {orderData.amount.toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="flex items-start justify-between pt-3 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] text-foreground/50 font-medium">Deliver to</p>
+                <p className="text-xs font-bold text-foreground">{orderData.customer}</p>
+                <p className="text-[10px] text-foreground/40">{orderData.distance} away</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                <CheckCircle className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] text-foreground/50 font-medium">Payment</p>
+                <p className="text-xs font-bold text-primary flex items-center gap-1">
+                  {orderData.paymentStatus} <CheckCircle className="w-3 h-3" />
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* --- What Happens Section --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-primary/5 rounded-2xl p-4 border border-primary/10 space-y-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <Bell className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Rider will be notified</p>
+              <p className="text-[11px] text-foreground/60 mt-0.5">
+                Rider will be notified that the order is ready for pickup.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Prep timer will stop</p>
+              <p className="text-[11px] text-foreground/60 mt-0.5">
+                Your preparation time will be recorded.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <ArrowRightCircle className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Order moves to Ready for Pickup</p>
+              <p className="text-[11px] text-foreground/60 mt-0.5">
+                The order will be moved to the next stage.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* --- Assign Rider Section --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-foreground">Assign Rider</h2>
+            <button
+              onClick={() => setAutoAssign(!autoAssign)}
+              className="flex items-center gap-1.5 text-primary text-xs font-semibold"
+            >
+              <Zap className="w-3.5 h-3.5" /> Auto-assign <Zap className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+            {riders.map((rider, index) => (
+              <motion.div
+                key={rider.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
+                className={`p-4 flex items-center gap-3 cursor-pointer transition-colors ${
+                  index !== riders.length - 1 ? 'border-b border-border/50' : ''
+                } ${
+                  selectedRider === rider.id
+                    ? 'bg-primary/5 border-l-4 border-l-primary'
+                    : 'hover:bg-secondary/50 border-l-4 border-l-transparent'
+                }`}
+                onClick={() => setSelectedRider(rider.id)}
+              >
+                <input
+                  type="radio"
+                  name="rider"
+                  value={rider.id}
+                  checked={selectedRider === rider.id}
+                  onChange={() => setSelectedRider(rider.id)}
+                  className="w-4 h-4 text-primary border-border focus:ring-primary"
+                />
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                  <User className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-bold text-sm text-foreground">{rider.name}</p>
+                    {rider.recommended && (
+                      <Badge
+                        variant="success"
+                        className="bg-primary/10 text-primary text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                      >
+                        Recommended
+                      </Badge>
+                    )}
+                    {rider.status === 'busy' && (
+                      <Badge
+                        variant="warning"
+                        className="bg-warning/10 text-warning text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                      >
+                        Busy
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-foreground/60">
+                    <Star className="w-3 h-3 text-warning fill-warning" />
+                    <span className="font-medium">{rider.rating}</span>
+                    <span>({rider.totalOrders} orders)</span>
+                  </div>
+                  <p className="text-[11px] text-foreground/50 mt-0.5">
+                    {rider.distance} away • {rider.eta} to store
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+            <button className="w-full py-3 text-center text-primary text-xs font-semibold flex items-center justify-center gap-1 hover:bg-secondary/50 transition-colors">
+              View more riders <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </motion.div>
+
+        {/* --- Estimated Pickup Time --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-primary/5 rounded-2xl p-4 border border-primary/10"
+        >
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-foreground">Estimated pickup time</p>
+              <p className="text-[11px] text-foreground/60 mt-0.5">
+                Inform rider how soon the order will be ready.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between pl-11">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDecrementTime}
+                className="w-8 h-8 bg-white border border-border rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+              >
+                <Minus className="w-4 h-4 text-foreground" />
+              </button>
+              <div className="text-center" style={{ minWidth: '60px' }}>
+                <p className="text-lg font-bold text-foreground">
+                  00:{pickupTime.toString().padStart(2, '0')}
+                </p>
+              </div>
+              <button
+                onClick={handleIncrementTime}
+                className="w-8 h-8 bg-white border border-border rounded-lg flex items-center justify-center hover:bg-secondary transition-colors"
+              >
+                <Plus className="w-4 h-4 text-foreground" />
+              </button>
+            </div>
+            <p className="text-sm font-semibold text-primary">{pickupTime} min from now</p>
+          </div>
+        </motion.div>
+
+        {/* --- Note to Rider --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <label className="block text-xs font-bold text-foreground/60 mb-2">
+            Note to rider <span className="text-foreground/40 font-normal">(optional)</span>
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="E.g. Please call on arrival, leave at the gate, etc."
+            maxLength={120}
+            className="w-full bg-white border border-border rounded-xl p-3.5 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none h-20"
+          />
+          <p className="text-[10px] text-foreground/40 text-right mt-1">
+            {note.length}/120
+          </p>
+        </motion.div>
+
+        {/* --- Action Buttons --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="space-y-3 pt-2"
+        >
+          <Button
+            onClick={handleMarkAsReady}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 gap-2"
+          >
+            <CheckCircle className="w-5 h-5" /> Mark as Ready & Assign Rider
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate(-1)}
+            className="w-full border-primary/20 text-primary hover:bg-primary/5 font-bold py-3.5"
+          >
+            Go Back
+          </Button>
+          <p className="text-center text-[10px] text-foreground/40 flex items-center justify-center gap-1">
+            <Lock className="w-3 h-3" /> This action cannot be undone.
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
+};

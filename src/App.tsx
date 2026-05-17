@@ -12,8 +12,13 @@ import { WelcomePage } from './pages/shared/WelcomePage';
 
 // Vendor Pages
 import { VendorLandingPage } from './pages/vendor/VendorLandingPage';
+import { VendorDashboard } from './pages/vendor/VendorDashboard';
+import { MarkAsReadyAssignRider } from './pages/vendor/MarkAsReadyAssignRider';
 // Rider Pages
 import { RiderLandingPage } from './pages/rider/RiderLandingPage';
+import { RiderDashboard } from './pages/rider/RiderDashboard';
+import { MarkAsDeliveredPage } from './pages/rider/MarkAsDeliveredPage';
+import { MarkAsPickedUpPage } from './pages/rider/MarkAsPickedUpPage';
 import { RiderTypeSelection } from './pages/rider/RiderTypeSelection';
 import { BasicDetails as RiderBasicDetails } from './pages/rider/BasicDetails';
 import { OrganisationDetails } from './pages/rider/OrganisationDetails';
@@ -98,10 +103,14 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/customer/" element={<CustomerHomePage />} />
+          <Route path="/customer/orders" element={<CustomerHomePage />} />
+          <Route path="/customer/profile" element={<CustomerHomePage />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/vendor-store" element={<VendorStorePage />} />
+          <Route path="/customer/vendor/:name" element={<VendorStorePage />} />
+
 
           <Route path="/vendor-landing" element={<VendorLandingPage />} />
-          <Route path="/vendor-store" element={<VendorStorePage />} />
           <Route path="/vendor/onboarding" element={<Navigate to="/vendor/choose-account" replace />} />
           <Route path="/vendor/choose-account" element={<ChooseAccountType />} />
           <Route path="/vendor/basic-details" element={<BasicDetails />} />
@@ -119,13 +128,21 @@ export default function App() {
           <Route path='/vendor/create-password' element={<CreatePassword />} />
           <Route path='/vendor/review-confirmation' element={<ReviewConfirm />} />
           <Route path='/vendor/setup-completed' element={<SetupComplete />} />
-          <Route path='/vendor/dashboard' element={<Navigate to="/vendor-landing" replace />} />
-          <Route path="/vendor/:name" element={<VendorStorePage />} />
+          <Route path='/vendor/dashboard' element={<VendorDashboard />} />
+          <Route path='/vendor/mark-as-ready-assign-rider' element={<MarkAsReadyAssignRider />} />
+          <Route path='/vendor/orders' element={<VendorDashboard />} />
+          <Route path='/vendor/products' element={<VendorStorePage />} />
+          <Route path='/vendor/profile' element={<VendorDashboard />} />
 
 
           <Route path="/rider-landing" element={<RiderLandingPage />} />
           <Route path="/rider/onboarding" element={<RiderTypeSelection />} />
-          <Route path="/rider/dashboard" element={<Navigate to="/rider-landing" replace />} />
+          <Route path="/rider/dashboard" element={<RiderDashboard />} />
+          <Route path="/rider/mark-as-delivered" element={<MarkAsDeliveredPage />} />
+          <Route path="/rider/mark-as-picked-up" element={<MarkAsPickedUpPage />} />
+          <Route path="/rider/orders" element={<RiderDashboard />} />
+          <Route path="/rider/earnings" element={<RiderDashboard />} />
+          <Route path="/rider/profile" element={<RiderDashboard />} />
           <Route path="/individual/basic-details" element={<RiderBasicDetails />} />
           <Route path="/individual/vehicle-information" element={<VehicleInformation />} />
           <Route path="/individual/payout-details" element={<PayoutDetails />} />

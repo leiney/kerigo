@@ -58,7 +58,7 @@ export const VendorStorePage: React.FC = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32">
+    <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
       
       {/* --- FIXED: Sticky Vendor Header --- */}
       <div className="sticky top-0 z-40 bg-white border-b border-border px-5 pt-4 pb-3">
@@ -177,7 +177,7 @@ export const VendorStorePage: React.FC = () => {
       </div>
 
       {/* --- Category Tabs --- */}
-      <div className="px-5 pb-4">
+      <div className="px-5">
         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {categories.map((cat) => (
             <motion.button
@@ -208,54 +208,69 @@ export const VendorStorePage: React.FC = () => {
       </div>
 
       {/* --- Menu Items List --- */}
-      <section className="px-5 py-2">
+      <section className="flex-1 min-h-0 px-5 py-2 pb-36 flex flex-col">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
+          className="shrink-0"
         >
           <h3 className="text-lg font-bold text-foreground mb-4">Popular</h3>
-          
-          <div className="space-y-5">
-            {filteredMenuItems.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + index * 0.08 }}
-                className="flex gap-4 items-center "
-              >
-                {/* Item Image */}
-                <div className="w-22 h-22 rounded-2xl  overflow-hidden shrink-0 bg-secondary">
-                  <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
-                </div>
-
-                {/* Item Details */}
-                <div className="flex-1 min-w-0 pt-1 border-b-2 border-border/40 pb-2">
-                  <h4 className="font-bold text-base text-foreground leading-tight truncate">{item.name}</h4>
-                  <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed min-h-10">{item.desc}</p>
-                  <div className="flex items-center justify-between relative">
-                    <span className="font-bold text-sm text-foreground">KSh {item.price.toLocaleString()}</span>
-                    <motion.button 
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => addItem({ id: item.id, name: item.name, store: vendor.name, price: item.price, image: item.img })}
-                      className="h-8 w-8 absolute right-2 bottom-2 bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-
-            {normalizedQuery && filteredMenuItems.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-border bg-secondary/40 p-5 text-center">
-                <p className="font-bold text-foreground">No exact matches found</p>
-                <p className="text-sm text-foreground/60 mt-1">Try one of the recommended items above.</p>
-              </div>
-            )}
-          </div>
         </motion.div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="space-y-5">
+              {filteredMenuItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + index * 0.08 }}
+                  className="flex gap-4 items-center"
+                >
+                  {/* Item Image */}
+                  <div className="w-22 h-22 rounded-2xl border border-border overflow-hidden shrink-0 bg-secondary">
+                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+
+                  {/* Item Details */}
+                  <div className="flex-1 min-w-0 pt-1 border-b-2 border-border/40 pb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-base text-foreground leading-tight truncate">{item.name}</h4>
+                        <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed min-h-10">{item.desc}</p>
+                      </div>
+
+                      <motion.button 
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => addItem({ id: item.id, name: item.name, store: vendor.name, price: item.price, image: item.img })}
+                        className="h-8 w-8 shrink-0 self-center bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
+                      >
+                        <Plus className="h-5 w-5" />
+                      </motion.button>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="font-bold text-sm text-foreground">KSh {item.price.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+
+              {normalizedQuery && filteredMenuItems.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-border bg-secondary/40 p-5 text-center">
+                  <p className="font-bold text-foreground">No exact matches found</p>
+                  <p className="text-sm text-foreground/60 mt-1">Try one of the recommended items above.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* --- Floating Cart Summary Bar --- */}

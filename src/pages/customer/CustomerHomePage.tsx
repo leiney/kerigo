@@ -103,7 +103,7 @@ export const CustomerHomePage: React.FC = () => {
               </span>
             </div>
             <button
-              onClick={() => navigate('/orders')}
+              onClick={() => navigate('/customer/orders')}
               className="text-primary text-xs font-semibold flex items-center gap-1 hover:underline"
             >
               View all orders <ChevronRight className="w-3.5 h-3.5" />

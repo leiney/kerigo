@@ -93,7 +93,7 @@ export const WelcomePage: React.FC = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 + index * 0.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate(`/vendor/${vendor.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                onClick={() => navigate(`/customer/vendor/${vendor.name.toLowerCase().replace(/\s+/g, '-')}`)}
                 className="flex flex-col items-center   cursor-pointer group"
               >
                 <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white border border-border rounded-2xl flex items-center justify-center shadow-sm group-hover:border-primary/50 transition-colors overflow-hidden">

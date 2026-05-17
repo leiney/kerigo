@@ -16,6 +16,13 @@ export const SuccessPage: React.FC = () => {
     navigate('/rider/dashboard');
   };
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      navigate('/rider/dashboard', { replace: true });
+    }, 1600);
+    return () => clearTimeout(t);
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
       

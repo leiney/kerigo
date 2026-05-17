@@ -13,42 +13,43 @@ export const RiderLandingPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white text-foreground font-sans antialiased px-5 pb-10">
+    <div className="min-h-screen bg-white text-foreground font-sans antialiased px-4 sm:px-5 pb-10">
       
       {/* ── HEADER / LOGO ── */}
-      <div className="pt-6 pb-4 flex justify-center">
+      <header className="pt-6 pb-4 flex justify-center">
         <img 
           src="kerigo.png" 
           alt="KeriGo Logo" 
           className="h-12 sm:h-16 object-contain" 
         />
-      </div>
+      </header>
 
-      {/* ── HERO SECTION ── */}
-      <section className="relative flex flex-col mb-8">
+      {/* ── HERO SECTION (ALWAYS SIDE-BY-SIDE, VERTICALLY CENTERED) ── */}
+      <section className="flex flex-nowrap items-center gap-4 mb-8">
         
-        {/* Text Content */}
+        {/* Left: Text Content */}
         <motion.div 
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -15 }}
           animate={{ opacity: 1, x: 0 }}
-          className="relative z-10 mb-4 max-w-[70%]"
+          transition={{ duration: 0.4 }}
+          className="flex-1 min-w-0"
         >
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight mb-3">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight mb-2">
             Deliver more.
             <br />
             <span className="text-primary">Earn more.</span>
           </h2>
-          <p className="text-sm sm:text-base text-foreground/60 font-medium leading-relaxed max-w-65">
+          <p className="text-sm sm:text-base text-foreground/60 font-medium leading-relaxed">
             Join thousands of riders earning on their own terms with <span className="text-primary font-bold">KeriGo</span>.
           </p>
         </motion.div>
 
-        {/* Rider Illustration */}
+        {/* Right: Rider Illustration */}
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 15 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="absolute -right-4 top-0 w-50 h-50 sm:w-80 sm:h-80 pointer-events-none"
+          transition={{ delay: 0.15, duration: 0.4 }}
+          className="shrink-0 w-38 h-38 sm:w-40 sm:h-40 md:w-44 md:h-44"
         >
           <img 
             src="/rider.png" 
@@ -59,7 +60,7 @@ export const RiderLandingPage: React.FC = () => {
       </section>
 
       {/* ── FEATURES CARD ── */}
-      <section className="px-0 py-4">
+      <section className="py-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

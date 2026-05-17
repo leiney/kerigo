@@ -57,6 +57,15 @@ export const SetupComplete: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    // Auto-redirect to vendor dashboard after celebration
+    const redirectTimer = setTimeout(() => {
+      navigate('/vendor/dashboard', { replace: true });
+    }, 2200);
+
+    return () => clearTimeout(redirectTimer);
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
       
