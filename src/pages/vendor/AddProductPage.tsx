@@ -126,7 +126,14 @@ export const AddProductPage: React.FC = () => {
   // Variant State
   const [variants, setVariants] = useState<any[]>([]);
   const [showVariantModal, setShowVariantModal] = useState(false);
-  const [currentVariant, setCurrentVariant] = useState({
+  const [currentVariant, setCurrentVariant] = useState<{
+    name: string;
+    sku: string;
+    price: string;
+    stock: string;
+    image: any;
+    attributes: { type: string; values: string[] }[];
+  }>({
     name: '',
     sku: '',
     price: '',
@@ -141,7 +148,7 @@ export const AddProductPage: React.FC = () => {
   const [showReturnPolicyModal, setShowReturnPolicyModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
-  const [selectedAttribute, setSelectedAttribute] = useState({ type: '', values: [] });
+  const [selectedAttribute, setSelectedAttribute] = useState<{ type: string; values: string[] }>({ type: '', values: [] });
 
   // Helpers
   const updateField = (field: string, value: any) => {
@@ -170,7 +177,7 @@ export const AddProductPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
+    <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-32">
       {/* Header */}
       <header className="sticky top-0 bg-background/80 backdrop-blur-md z-40 px-4 py-4 border-b border-border/50 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-100">
@@ -465,7 +472,7 @@ export const AddProductPage: React.FC = () => {
                       onClick={() => setShowStatusModal(true)}
                       className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm text-left flex items-center justify-between"
                     >
-                      <span className={formData.status === 'Active' ? 'text-success' : 'text-foreground'}>{formData.status}</span>
+                      <span className={formData.status === 'Active' ? 'text-primary' : 'text-foreground'}>{formData.status}</span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
                   </div>
@@ -598,8 +605,8 @@ export const AddProductPage: React.FC = () => {
       </div>
 
       {/* Sticky Footer Button */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 bg-background/90 backdrop-blur border-t border-border z-30">
-        <Button className="w-full bg-primary text-white font-bold py-3 rounded-xl shadow-lg shadow-primary/20">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-30">
+        <Button className="w-full bg-primary text-white font-bold py-3 rounded-md shadow-lg shadow-primary/20">
           Add Product
         </Button>
       </div>
@@ -673,7 +680,7 @@ export const AddProductPage: React.FC = () => {
                 {formData.status === status && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
               </div>
               <input type="radio" name="status" className="hidden" checked={formData.status === status} onChange={() => { updateField('status', status); setShowStatusModal(false); }} />
-              <span className={`text-sm font-medium ${status === 'Active' ? 'text-success' : status === 'Inactive' ? 'text-warning' : 'text-error'}`}>{status}</span>
+              <span className={`text-sm font-medium ${status === 'Active' ? 'text-primary' : status === 'Inactive' ? 'text-warning' : 'text-error'}`}>{status}</span>
             </label>
           ))}
         </div>
@@ -797,7 +804,10 @@ export const AddProductPage: React.FC = () => {
         </div>
         <div className="mt-6 pt-4 border-t border-border">
           <Button className="w-full bg-primary text-white font-bold" onClick={() => {
-            setCurrentVariant({...currentVariant, attributes: [...currentVariant.attributes, selectedAttribute]});
+            setCurrentVariant(prev => ({
+              ...prev,
+              attributes: [...(prev.attributes || []), selectedAttribute]
+            }));
             setShowAttributeModal(false);
             setSelectedAttribute({ type: '', values: [] });
           }}>Add Attribute</Button>

@@ -311,7 +311,7 @@ export const VendorDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h2 className="font-bold text-base">Ready for Pickup</h2>
-            <Badge variant="default" className="bg-success/10 text-success text-[11px] font-semibold px-2 py-0.5 rounded-full">
+            <Badge variant="default" className="bg-primary/10 text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full">
               {readyOrders.length}
             </Badge>
           </div>
@@ -330,8 +330,8 @@ export const VendorDashboard: React.FC = () => {
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 bg-success/10 rounded-full flex items-center justify-center shrink-0">
-                  <ShoppingBag className="w-4 h-4 text-success" />
+                <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                  <ShoppingBag className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <p className="font-bold text-sm">Order #{order.id}</p>
@@ -340,7 +340,7 @@ export const VendorDashboard: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="font-bold text-sm">KES {order.amount.toLocaleString()}</p>
-                <p className="text-[11px] text-success font-bold mt-0.5">
+                <p className="text-[11px] text-primary font-bold mt-0.5">
                   Rider: {order.rider}
                 </p>
               </div>
@@ -349,14 +349,14 @@ export const VendorDashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-foreground/70">{order.items.join(', ')}</p>
-                <Badge variant="info" className="bg-success/10 text-success text-[10px] font-semibold px-2 py-0.5 rounded-full mt-2">
+                <Badge variant="info" className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full mt-2">
                   {order.type}
                 </Badge>
               </div>
               <Button
                 size="sm"
-                className="text-white bg-success hover:bg-success/90 text-xs font-semibold h-9 px-6"
-                onClick={() => navigate('/rider/mark-as-delivered')}
+                disabled
+                className="text-white bg-primary hover:bg-primary/90 text-xs font-semibold h-9 px-6"
               >
                 Handed Over
               </Button>
@@ -394,7 +394,7 @@ export const VendorDashboard: React.FC = () => {
                   variant={order.status === 'Completed' ? 'success' : 'danger'}
                   className={`${
                     order.status === 'Completed'
-                      ? 'bg-success/10 text-success'
+                      ? 'bg-primary/10 text-primary'
                       : 'bg-error/10 text-error'
                   } text-[10px] font-semibold px-2 py-0.5 rounded-full`}
                 >
@@ -445,7 +445,7 @@ export const VendorDashboard: React.FC = () => {
             </div>
             <div className="text-right">
               <p className="font-bold text-sm">KES {selectedOrder?.amount.toLocaleString()}</p>
-              <Badge variant="success" className="bg-success/10 text-success text-[10px] px-2 py-0.5 rounded-full mt-1">
+              <Badge variant="success" className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full mt-1">
                 Paid
               </Badge>
             </div>
@@ -532,7 +532,7 @@ export const VendorDashboard: React.FC = () => {
             </div>
             <div className="text-right">
               <p className="font-bold text-sm">KES {selectedOrder?.amount.toLocaleString()}</p>
-              <Badge variant="success" className="bg-success/10 text-success text-[10px] px-2 py-0.5 rounded-full mt-1">Paid</Badge>
+              <Badge variant="success" className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full mt-1">Paid</Badge>
             </div>
           </div>
 
@@ -540,16 +540,16 @@ export const VendorDashboard: React.FC = () => {
           <div className="bg-error/5 border border-error/10 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <ShieldCheck className="w-5 h-5 text-success" />
+                <ShieldCheck className="w-5 h-5 text-primary" />
                 <div>
                   <p className="font-bold text-sm">Refund to customer</p>
                   <p className="text-[11px] text-foreground/50 mt-0.5">The full amount will be refunded to the customer.</p>
                 </div>
               </div>
-              <span className="font-bold text-success text-xs ">KES {selectedOrder?.amount.toLocaleString()}</span>
+              <span className="font-bold text-primary text-xs ">KES {selectedOrder?.amount.toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Info className="w-5 h-5 text-success" />
+              <Info className="w-5 h-5 text-primary" />
               <p className="text-[11px] text-foreground/50">Refund will be processed automatically to the original payment method.</p>
             </div>
           </div>
@@ -566,7 +566,7 @@ export const VendorDashboard: React.FC = () => {
             <Button className="w-full bg-error hover:bg-error/95 text-white font-bold py-3 gap-2">
               <RotateCcw className="w-4 h-4" /> Cancel Order & Refund
             </Button>
-            <Button variant="outline" className="w-full border-success text-success hover:bg-success/5 font-bold py-3" onClick={() => setShowCancelSheet(false)}>
+            <Button variant="outline" className="w-full border-success text-primary hover:bg-primary/5 font-bold py-3" onClick={() => setShowCancelSheet(false)}>
               Keep Order
             </Button>
           </div>

@@ -142,13 +142,7 @@ export const RegisterPage: React.FC = () => {
             className="pt-2"
           >
             <Checkbox
-              label={
-                <span className="text-xs text-foreground/60">
-                  I agree to the <button type="button" className="text-primary font-bold hover:underline">Terms & Conditions</button> and <button type="button" className="text-primary font-bold hover:underline">Privacy Policy</button>
-                </span>
-              }
-              checked={formData.agreeToTerms}
-              onChange={(checked) => setFormData({ ...formData, agreeToTerms: checked })}
+              label="I agree to the Terms & Conditions and Privacy Policy"
               className="text-sm"
             />
           </motion.div>

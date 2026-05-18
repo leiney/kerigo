@@ -27,7 +27,7 @@ const activeOrders = [
   {
     id: 'KR1024',
     status: 'On the way to customer',
-    statusColor: 'bg-success/10 text-success',
+    statusColor: 'bg-primary/10 text-primary',
     time: '10:30 AM',
     pickup: {
       store: 'Naivas Westlands',
@@ -63,7 +63,7 @@ const activeOrders = [
 ];
 
 const progressStats = [
-  { label: 'Completed orders', value: '4', icon: CheckCircle, color: 'text-success', bg: 'bg-success/10' },
+  { label: 'Completed orders', value: '4', icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/10' },
   { label: 'Online time', value: '2h 15m', icon: Clock, color: 'text-info', bg: 'bg-info/10' },
   { label: 'Earnings', value: 'KES 2,340', icon: DollarSign, color: 'text-warning', bg: 'bg-warning/10' },
   { label: 'Rating', value: '4.8', icon: Star, color: 'text-primary', bg: 'bg-primary/10' },
@@ -245,7 +245,7 @@ export const RiderDashboard: React.FC = () => {
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shrink-0 shadow-sm">
-                <Shield className="w-4 h-4 text-success" />
+                <Shield className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="text-xs font-bold text-foreground">

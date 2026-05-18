@@ -538,7 +538,7 @@ Call `setupRippleEffects()` only once per app (for example in `main.tsx`) to avo
     key: 'verified',
     header: 'Verified',
     render: (user) => user.verified ? (
-      <Check className="w-5 h-5 text-success" />
+      <Check className="w-5 h-5 text-primary" />
     ) : (
       <X className="w-5 h-5 text-error" />
     )
@@ -640,7 +640,7 @@ Call `setupRippleEffects()` only once per app (for example in `main.tsx`) to avo
       key: 'verified',
       header: 'Verified',
       render: (user) => user.verified ? 
-        <Check className="w-5 h-5 text-success" /> : 
+        <Check className="w-5 h-5 text-primary" /> : 
         <X className="w-5 h-5 text-error" />
     },
     {

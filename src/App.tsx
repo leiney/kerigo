@@ -44,8 +44,12 @@ import { CompanyDetails } from './pages/vendor/CompanyDetails';
 import { KYCDocuments } from './pages/vendor/KYCDocuments';
 import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments';
 import { AddYourStores } from './pages/vendor/AddYourStores';
+import { AddStorePage } from './pages/vendor/AddStorePage';
 import { ManageMultipleStores } from './pages/vendor/ManageMultipleStores';
 import { StoreDetails } from './pages/vendor/StoreDetails';
+import { ProductsDashboard } from './pages/vendor/ProductsDashboard';
+import { ProductDetailPage } from './pages/vendor/ProductDetailPage';
+import { AddProductPage } from './pages/vendor/AddProductPage';
 import { PayoutMethod } from './pages/vendor/PayoutMethod';
 import { BankDetails } from './pages/vendor/BankDetails';
 import { MPesaDetails } from './pages/vendor/MPesaDetails';
@@ -117,7 +121,7 @@ export default function App() {
           <Route path="/vendor/company-details" element={<CompanyDetails />} />
           <Route path="/vendor/kyc-documents" element={<KYCDocuments />} />
           <Route path="/vendor/company-kyc-documents" element={<CompanyKYCDocuments />} />
-          <Route path="/vendor/add-store" element={<Navigate to="/vendor/add-your-stores" replace />} />
+          <Route path="/vendor/add-store" element={<AddStorePage />} />
           <Route path="/vendor/add-your-stores" element={<AddYourStores />} />
           <Route path='/vendor/manage-multiple-stores' element={<ManageMultipleStores />} />
           <Route path="/vendor/store-details" element={<StoreDetails />} />
@@ -131,7 +135,11 @@ export default function App() {
           <Route path='/vendor/dashboard' element={<VendorDashboard />} />
           <Route path='/vendor/mark-as-ready-assign-rider' element={<MarkAsReadyAssignRider />} />
           <Route path='/vendor/orders' element={<VendorDashboard />} />
-          <Route path='/vendor/products' element={<VendorStorePage />} />
+          <Route path='/vendor/products' element={<ProductsDashboard />} />
+          <Route path='/vendor/product/:id' element={<ProductDetailPage />} />
+          <Route path='/vendor/add-product' element={<AddProductPage />} />
+          <Route path='/vendor' element={<Navigate to="/vendor/dashboard" replace />} />
+          <Route path='/vendor/' element={<Navigate to="/vendor/dashboard" replace />} />
           <Route path='/vendor/profile' element={<VendorDashboard />} />
 
 
