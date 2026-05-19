@@ -92,7 +92,7 @@ export const AddStorePage: React.FC = () => {
               
               <div className="mt-1">
                 {/* Custom Upload Area */}
-                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl cursor-pointer bg-secondary hover:bg-gray-50 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full h-fit pb-2 border-2 border-dashed border-border rounded-xl cursor-pointer bg-secondary hover:bg-gray-50 transition-colors">
                   <div className="flex flex-col items-center justify-center pt-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
                       <UploadCloud className="w-5 h-5 text-primary" />
