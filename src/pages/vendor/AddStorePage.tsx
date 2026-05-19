@@ -90,7 +90,7 @@ export const AddStorePage: React.FC = () => {
               </div>
               <p className="text-xs text-foreground/50">This will be shown on your store profile.</p>
               
-              <div className="mt-1">
+              <div className="mt-1 pb-2">
                 {/* Custom Upload Area */}
                 <label className="flex flex-col items-center justify-center w-full h-fit pb-2 border-2 border-dashed border-border rounded-xl cursor-pointer bg-secondary hover:bg-gray-50 transition-colors">
                   <div className="flex flex-col items-center justify-center pt-3">
