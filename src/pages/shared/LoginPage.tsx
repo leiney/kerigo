@@ -63,36 +63,34 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <section className="relative flex flex-col mb-8">
-        <div className="flex sm:flex-row items-start gap-4">
-          {/* Text Content */}
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex-1"
-          >
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-3">
-              Welcome!
-            </h2>
-            <p className="text-sm sm:text-base text-foreground/60 font-medium leading-relaxed">
-              Login to continue ordering your favorites with ease.
-            </p>
-          </motion.div>
+      <section className="flex flex-nowrap items-center gap-4 mb-6">
+        {/* Text Content */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex-1 min-w-0"
+        >
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight mb-2">
+            Welcome!
+          </h2>
+          <p className="text-xs sm:text-sm text-foreground/60 font-medium leading-relaxed">
+            Login to continue ordering your favorites with ease.
+          </p>
+        </motion.div>
 
-          {/* Shopping Bag Illustration */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="w-48 h-48 sm:w-56 sm:h-56 shrink-0"
-          >
-            <img 
-              src="shopping-bag.png" 
-              alt="Shopping bag" 
-              className="w-full h-full object-contain drop-shadow-lg" 
-            />
-          </motion.div>
-        </div>
+        {/* Shopping Bag Illustration */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="shrink-0 w-32 h-32 sm:w-36 sm:h-36"
+        >
+          <img 
+            src="shopping-bag.png" 
+            alt="Shopping bag" 
+            className="w-full h-full object-contain drop-shadow-lg" 
+          />
+        </motion.div>
       </section>
 
       {/* Login Form */}

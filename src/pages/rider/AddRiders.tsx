@@ -317,6 +317,7 @@ export const AddRiders: React.FC = () => {
         onClose={() => setIsSheetOpen(false)} 
         title="Add New Rider"
         showCloseButton={true}
+        animate={false}
       >
         <div className="p-6 space-y-4 pb-8">
           <Input

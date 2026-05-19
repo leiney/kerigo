@@ -93,7 +93,7 @@ const FilterBottomSheet = ({ isOpen, onClose }: any) => {
   const [maxPrice, setMaxPrice] = useState('');
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Filter Products" className='z-100' showCloseButton={false}>
+    <BottomSheet isOpen={isOpen} onClose={onClose} animate={false} title="Filter Products" className='z-100' showCloseButton={false}>
       <div className="pb-8 space-y-6">
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-2">
@@ -205,7 +205,7 @@ const DuplicateBottomSheet = ({ isOpen, onClose, product }: any) => {
   if (!product) return null;
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Duplicate Product" className='z-100' showCloseButton={false}>
+    <BottomSheet isOpen={isOpen} onClose={onClose} animate={false} title="Duplicate Product" className='z-100' showCloseButton={false}>
       <div className="pb-8 space-y-6">
         {/* Description */}
         <div className="text-center space-y-1">
@@ -274,7 +274,7 @@ const DeleteBottomSheet = ({ isOpen, onClose, product }: any) => {
   if (!product) return null;
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Remove Product?" className='z-100' showCloseButton={false}>
+    <BottomSheet isOpen={isOpen} onClose={onClose} animate={false} title="Remove Product?" className='z-100' showCloseButton={false}>
       <div className="pb-8 space-y-6">
         {/* Warning */}
         <div className="text-center space-y-1">
@@ -351,7 +351,7 @@ export const ProductsDashboard: React.FC = () => {
     switch (status) {
       case 'Active':
         return (
-          <Badge variant="success" className="bg-emerald-50 text-emerald-700 border-0 text-[10px] font-semibold px-2 py-0.5">
+          <Badge variant="success" className="bg-primary/10 text-primary border-primary/10 border-0 text-[10px] font-semibold px-2 py-0.5">
             {status}
           </Badge>
         );
@@ -401,15 +401,15 @@ export const ProductsDashboard: React.FC = () => {
       {/* --- Main Content --- */}
       <div className="px-3 space-y-3">
         {/* Store Selector */}
-        <div className="bg-white rounded-md p-2.5 flex items-center justify-between border border-border/50 shadow-sm">
+        <div className="bg-white rounded-md p-2.5 flex items-center justify-between border border-border/50 ">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-green-100 overflow-hidden shrink-0">
               <img src="/store.png" alt="FreshMart Grocery" className="w-full h-full object-cover" />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-[13px]">FreshMart Grocery</span>
-              <span className="bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+              <span className="bg-green-50 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-primaryrounded-full"></span>
                 Open
                 <ChevronDown className="w-3 h-3" />
               </span>
@@ -422,7 +422,7 @@ export const ProductsDashboard: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="bg-white rounded-md p-2.5 grid grid-cols-4 gap-1.5 border border-border/50 shadow-sm">
+        <div className="bg-white rounded-md p-2.5 grid grid-cols-4 gap-1.5 border border-border/50 ">
           <div className="flex flex-col items-center px-1.5 py-2 rounded-md bg-gray-50/40">
             <div className="w-7 h-7 bg-green-50 rounded-md flex items-center justify-center mb-1">
               <ShoppingBag className="w-3.5 h-3.5 text-green-600" />
@@ -543,11 +543,11 @@ export const ProductsDashboard: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer border border-border/50 shadow-sm"
+              className="bg-white rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer border border-border/50 "
               onClick={() => navigate(`/vendor/product/${product.id}`)}
             >
               {/* Product Image */}
-              <div className="w-11 h-11 rounded-md bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="w-11 h-11 border border-gray-200 p-1  rounded-none bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
                 <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
               </div>
 
@@ -628,7 +628,7 @@ export const ProductsDashboard: React.FC = () => {
 
         <div className="flex items-start gap-2 bg-green-50/50 rounded-md p-2.5 border border-green-100/50">
           <Lightbulb className="w-3.5 h-3.5 text-green-600 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-green-700/80 leading-relaxed">
+          <p className="text-[11px] text-primary/80 leading-relaxed">
             Keep your products updated to attract more customers and increase sales.
           </p>
         </div>

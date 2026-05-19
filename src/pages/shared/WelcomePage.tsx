@@ -31,7 +31,7 @@ export const WelcomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-24">
       {/* Header / Hero Section */}
-      <div className="relative overflow-hidden px-5 pt-6 pb-8">
+      <div className="px-5 pt-6 pb-8">
         {/* Logo & Notification Bell */}
         <header className="flex items-center justify-between mb-8">
           <img src='/kerigo.png' alt="KeriGo Logo" className="h-12 sm:h-14" />
@@ -41,16 +41,16 @@ export const WelcomePage: React.FC = () => {
         </header>
 
         {/* Hero Content */}
-        <div className="flex flex-col">
+        <section className="flex flex-nowrap items-center gap-4 mb-2">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="relative z-10 mb-6 max-w-[65%]"
+            className="flex-1 min-w-0"
           >
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight mb-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight mb-2">
               Everything you need, <span className="text-primary">delivered.</span>
             </h1>
-            <p className="text-sm sm:text-base text-foreground/60 font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-foreground/60 font-medium leading-relaxed">
               Food, groceries, pharmacy and more from trusted local vendors.
             </p>
           </motion.div>
@@ -60,7 +60,7 @@ export const WelcomePage: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="absolute right-0 top-12 w-52 h-52 sm:w-64 sm:h-64 -z-0"
+            className="shrink-0 w-32 h-32 sm:w-36 sm:h-36"
           >
             <img
               src="/shopping-bag.png"
@@ -68,7 +68,7 @@ export const WelcomePage: React.FC = () => {
               className="w-full h-full object-contain drop-shadow-xl"
             />
           </motion.div>
-        </div>
+        </section>
       </div>
 
       {/* Shop by Vendor Section */}

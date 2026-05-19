@@ -417,6 +417,7 @@ export const VendorDashboard: React.FC = () => {
         isOpen={showConfirmSheet}
         onClose={() => setShowConfirmSheet(false)}
         className="max-h-[90vh]"
+        animate={false}
       >
         <div className="pb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -508,7 +509,7 @@ export const VendorDashboard: React.FC = () => {
       </BottomSheet>
 
       {/* 2. Cancel Order Bottom Sheet */}
-      <BottomSheet isOpen={showCancelSheet} onClose={() => setShowCancelSheet(false)} className="max-h-[90vh]">
+      <BottomSheet isOpen={showCancelSheet} animate={false} onClose={() => setShowCancelSheet(false)} className="max-h-[90vh]">
         <div className="pb-8">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-bold text-error">Cancel Order #{selectedOrder?.id}</h3>

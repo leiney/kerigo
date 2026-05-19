@@ -26,20 +26,20 @@ export const VendorLandingPage: React.FC = () => {
       </div>
 
       {/* ── HERO SECTION ── */}
-      <section className="relative flex flex-col mb-8">
+      <section className="flex flex-nowrap items-center gap-4 mb-8">
         
         {/* Text Content */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="relative z-10 mb-4 max-w-[70%]"
+          className="flex-1 min-w-0"
         >
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground leading-tight mb-3">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground leading-tight mb-2">
             Deliver more.
             <br />
             <span className="text-primary">Grow more.</span>
           </h2>
-          <p className="text-sm sm:text-base text-foreground/60 font-medium leading-relaxed max-w-65">
+          <p className="text-xs sm:text-sm text-foreground/60 font-medium leading-relaxed max-w-65">
             Join thousands of vendors and grow your business with <span className="text-primary font-bold">KeriGo</span>.
           </p>
         </motion.div>
@@ -49,7 +49,7 @@ export const VendorLandingPage: React.FC = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
-          className="absolute -right-4 top-0 w-50 h-50 sm:w-80 sm:h-80 pointer-events-none"
+          className="shrink-0 w-32 h-32 sm:w-36 sm:h-36"
         >
           <img 
             src="/store.png" 
