@@ -15,6 +15,7 @@ export const CartPage: React.FC = () => {
   const decreaseItem = useCartStore((state) => state.decreaseItem);
   const removeItem = useCartStore((state) => state.removeItem);
   const clearCart = useCartStore((state) => state.clearCart);
+  const [orderNotes, setOrderNotes] = useState('');
 
   const deliveryFee = 150;
   const serviceFee = 50;
@@ -259,11 +260,33 @@ export const CartPage: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="bg-white border border-border rounded-2xl p-4"
+          >
+            <label htmlFor="order-notes" className="block text-sm font-semibold text-foreground mb-2">
+              Order notes
+            </label>
+            <textarea
+              id="order-notes"
+              value={orderNotes}
+              onChange={(event) => setOrderNotes(event.target.value)}
+              placeholder="Add delivery instructions, substitutions, or any special requests..."
+              rows={4}
+              className="w-full resize-none rounded-2xl border border-border bg-white px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 outline-none transition-colors focus:border-primary"
+            />
+            <p className="mt-2 text-xs text-foreground/50">
+              Optional. Helpful for delivery or item preferences.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="pt-1"
           >
             <Button
-              onClick={() => navigate('/customer/')}
+              onClick={() => navigate('/customer/', { state: { orderNotes } })}
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
             >
               Checkout • KES {total.toLocaleString()}

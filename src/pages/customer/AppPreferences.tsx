@@ -28,7 +28,6 @@ export const AppPreferences: React.FC = () => {
     setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Reusable Toggle Row Component
   const ToggleRow = ({
     icon: Icon,
     label,
@@ -54,7 +53,6 @@ export const AppPreferences: React.FC = () => {
     </div>
   );
 
-  // Reusable Link Row Component
   const LinkRow = ({
     icon: Icon,
     label,

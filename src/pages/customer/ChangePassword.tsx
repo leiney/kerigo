@@ -20,9 +20,7 @@ export const ChangePassword: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Handle password update API call
       console.log('Updating password...', formData);
-      // navigate('/settings/privacy');
     } catch (error) {
       console.error('Failed to update password', error);
     } finally {

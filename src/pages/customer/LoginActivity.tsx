@@ -12,7 +12,6 @@ import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
-// --- Mock Data (Matches Wireframe Exactly) ---
 const sessions = [
   {
     id: '1',

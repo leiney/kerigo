@@ -15,7 +15,7 @@ import {
 import { Button, Badge } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
-// --- Mock Data ---
+
 const walletData = {
   balance: 1250.0,
   name: 'KeriGo Wallet',
