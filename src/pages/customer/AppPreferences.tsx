@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 export const AppPreferences: React.FC = () => {
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ export const AppPreferences: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader title="App Preferences" />
+      <CustomSettingsHeader title="App Preferences" />
 
       <div className="px-4 space-y-6 pt-2">
         {/* --- App Preferences List --- */}

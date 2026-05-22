@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 // --- Mock Data (Matches Wireframe Exactly) ---
 const sessions = [
@@ -65,7 +65,7 @@ export const LoginActivity: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader
+      <CustomSettingsHeader
         title="Login Activity"
         breadcrumbs={[{ label: 'Privacy & Security' }, { label: 'Login Activity', emphasized: true }]}
       />

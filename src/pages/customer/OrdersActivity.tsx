@@ -11,7 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 export const OrdersActivity: React.FC = () => {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ export const OrdersActivity: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader title="Orders & Activity" />
+      <CustomSettingsHeader title="Orders & Activity" />
 
       <div className="px-4 space-y-6 pt-2">
         <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">

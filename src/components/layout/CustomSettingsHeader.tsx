@@ -8,7 +8,7 @@ type BreadcrumbItem = {
   emphasized?: boolean;
 };
 
-type CustomerSettingsHeaderProps = {
+type CustomSettingsHeaderProps = {
   title: string;
   subtitle?: string;
   breadcrumbs?: BreadcrumbItem[];
@@ -16,7 +16,7 @@ type CustomerSettingsHeaderProps = {
   onBack?: () => void;
 };
 
-export const CustomerSettingsHeader: React.FC<CustomerSettingsHeaderProps> = ({
+export const CustomSettingsHeader: React.FC<CustomSettingsHeaderProps> = ({
   title,
   subtitle,
   breadcrumbs = [{ label: 'Settings' }, { label: title, emphasized: true }],
@@ -67,4 +67,4 @@ export const CustomerSettingsHeader: React.FC<CustomerSettingsHeaderProps> = ({
   );
 };
 
-export default CustomerSettingsHeader;
+export default CustomSettingsHeader;

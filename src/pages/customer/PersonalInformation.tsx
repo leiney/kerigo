@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Input, Button, Badge, Select } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 export const PersonalInformation: React.FC = () => {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ export const PersonalInformation: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader
+      <CustomSettingsHeader
         title="Personal Information"
         rightContent={
           <div className="flex items-center gap-2">

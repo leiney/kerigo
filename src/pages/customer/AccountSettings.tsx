@@ -16,7 +16,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 export const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ export const AccountSettings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader
+      <CustomSettingsHeader
         title="Account Settings"
         subtitle="Manage your account, addresses, payments and preferences"
       />

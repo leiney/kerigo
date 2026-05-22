@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ export const Notifications: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader title="Notifications" />
+      <CustomSettingsHeader title="Notifications" />
 
       <div className="px-4 space-y-6 pt-2">
         {/* --- Order Updates --- */}

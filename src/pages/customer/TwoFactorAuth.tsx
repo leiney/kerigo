@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 export const TwoFactorAuth: React.FC = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export const TwoFactorAuth: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader
+      <CustomSettingsHeader
         title="Two-Factor Authentication"
         breadcrumbs={[{ label: 'Privacy & Security' }, { label: 'Two-Factor Authentication', emphasized: true }]}
       />

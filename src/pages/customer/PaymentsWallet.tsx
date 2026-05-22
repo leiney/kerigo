@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import { Button, Badge } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
-
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 // --- Mock Data ---
 const walletData = {
   balance: 1250.0,
@@ -69,9 +68,15 @@ export const PaymentsWallet: React.FC = () => {
     }
   };
 
+  const logoFor = (type: string) => {
+    const allowed = ['visa', 'mastercard', 'mpesa'];
+    if (allowed.includes(type)) return `/payment-logos/${type}.png`;
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader title="Payments & Wallet" />
+      <CustomSettingsHeader title="Payments & Wallet" />
 
       <div className="px-4 space-y-6">
         {/* --- Wallet Section --- */}
@@ -88,7 +93,7 @@ export const PaymentsWallet: React.FC = () => {
                 <div>
                   <p className="text-sm font-semibold text-foreground">{walletData.name}</p>
                   <p className="text-2xl font-bold text-foreground mt-0.5">
-                    KSH {walletData.balance.toLocaleString('.00')}
+                    KSH {walletData.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -116,8 +121,12 @@ export const PaymentsWallet: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-secondary`}>
-                      <method.icon className={`w-5 h-5 ${getCardColor(method.type)}`} />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-secondary overflow-hidden`}> 
+                      {logoFor(method.type) ? (
+                        <img src={logoFor(method.type)!} alt={`${method.label} logo`} className="w-9 h-9 object-contain" />
+                      ) : (
+                        <method.icon className={`w-5 h-5 ${getCardColor(method.type)}`} />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">

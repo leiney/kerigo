@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
-import CustomerSettingsHeader from '../../components/layout/CustomerSettingsHeader';
+import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 
 // --- Mock Data ---
 const savedAddresses = [
@@ -52,7 +52,7 @@ export const Addresses: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
-      <CustomerSettingsHeader
+      <CustomSettingsHeader
         title="Addresses"
         rightContent={
           <button
