@@ -63,6 +63,17 @@ import { RegisterPage } from './pages/customer/RegisterPage';
 import { CustomerHomePage } from './pages/customer/CustomerHomePage';
 import { CartPage } from './pages/customer/CartPage';
 import { VendorStorePage } from './pages/customer/VendorStorePage';
+import { AccountSettings } from './pages/customer/AccountSettings';
+import { PersonalInformation } from './pages/customer/PersonalInformation';
+import { Addresses } from './pages/customer/Addresses';
+import { PaymentsWallet } from './pages/customer/PaymentsWallet';
+import { OrdersActivity } from './pages/customer/OrdersActivity';
+import { Notifications } from './pages/customer/Notifications';
+import { AppPreferences } from './pages/customer/AppPreferences';
+import { PrivacySecurity } from './pages/customer/PrivacySecurity';
+import { ChangePassword } from './pages/customer/ChangePassword';
+import { LoginActivity } from './pages/customer/LoginActivity';
+import { TwoFactorAuth } from './pages/customer/TwoFactorAuth';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
@@ -108,10 +119,38 @@ export default function App() {
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/customer/" element={<CustomerHomePage />} />
           <Route path="/customer/orders" element={<CustomerHomePage />} />
-          <Route path="/customer/profile" element={<CustomerHomePage />} />
+          <Route path="/customer/profile" element={<AccountSettings />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/vendor-store" element={<VendorStorePage />} />
           <Route path="/customer/vendor/:name" element={<VendorStorePage />} />
+
+          <Route path="/settings" element={<Navigate to="/customer/profile" replace />} />
+          <Route path="/settings/personal" element={<PersonalInformation />} />
+          <Route path="/settings/addresses" element={<Addresses />} />
+          <Route path="/settings/addresses/add" element={<Addresses />} />
+          <Route path="/settings/payments" element={<PaymentsWallet />} />
+          <Route path="/settings/payments/topup" element={<PaymentsWallet />} />
+          <Route path="/settings/payments/add" element={<PaymentsWallet />} />
+          <Route path="/settings/payments/default" element={<PaymentsWallet />} />
+          <Route path="/settings/payments/autopay" element={<PaymentsWallet />} />
+          <Route path="/settings/orders" element={<OrdersActivity />} />
+          <Route path="/settings/orders/history" element={<OrdersActivity />} />
+          <Route path="/settings/orders/wishlist" element={<OrdersActivity />} />
+          <Route path="/settings/orders/reviews" element={<OrdersActivity />} />
+          <Route path="/settings/orders/coupons" element={<OrdersActivity />} />
+          <Route path="/settings/orders/returns" element={<OrdersActivity />} />
+          <Route path="/settings/orders/recently-viewed" element={<OrdersActivity />} />
+          <Route path="/settings/notifications" element={<Notifications />} />
+          <Route path="/settings/preferences" element={<AppPreferences />} />
+          <Route path="/settings/privacy" element={<PrivacySecurity />} />
+          <Route path="/settings/privacy/change-password" element={<ChangePassword />} />
+          <Route path="/settings/privacy/two-factor" element={<TwoFactorAuth />} />
+          <Route path="/settings/privacy/login-activity" element={<LoginActivity />} />
+          <Route path="/settings/privacy/profile-visibility" element={<PrivacySecurity />} />
+          <Route path="/settings/privacy/blocked-users" element={<PrivacySecurity />} />
+          <Route path="/settings/privacy/data" element={<PrivacySecurity />} />
+          <Route path="/settings/help" element={<AccountSettings />} />
+          <Route path="/settings/about" element={<AccountSettings />} />
 
 
           <Route path="/vendor-landing" element={<VendorLandingPage />} />

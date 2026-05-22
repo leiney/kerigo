@@ -28,8 +28,8 @@ export const CartPage: React.FC = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32 flex flex-col">
-        <div className="px-5 pt-6 pb-4">
+      <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
+        <div className="shrink-0 px-5 pt-6 pb-4">
           <div className="flex items-start justify-between mb-2">
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -43,7 +43,7 @@ export const CartPage: React.FC = () => {
           <p className="text-sm text-foreground/60 mt-1">Your selected items will appear here.</p>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-5">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 pb-24 flex items-center justify-center">
           <div className="w-full max-w-sm bg-white border border-border rounded-3xl p-6 text-center shadow-sm">
             <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
               <ShoppingBag className="w-8 h-8" />
@@ -60,10 +60,8 @@ export const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-32">
-      
-      {/* --- FIXED: Header Layout --- */}
-      <div className="px-5 pt-6 pb-4">
+    <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
+      <div className="shrink-0 px-5 pt-6 pb-4">
         {/* Row 1: Back Arrow & Clear Button */}
         <div className="flex items-start justify-between mb-2">
           <motion.button
@@ -91,192 +89,188 @@ export const CartPage: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* --- Cart Items --- */}
-      <div className="px-5 space-y-4">
-        <AnimatePresence>
-          {cartItems.map((item, index) => (
+      <main className="flex-1 min-h-0 overflow-y-auto px-5 pb-36">
+        <div className="space-y-4">
+          <div className="space-y-4">
+            <AnimatePresence>
+              {cartItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="relative bg-white border border-border rounded-2xl p-4 flex gap-4 items-start"
+                >
+                  <div className="w-24 h-28 rounded-lg border border-border overflow-hidden shrink-0 bg-secondary flex items-center justify-center">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    <h3 className="font-bold text-base text-foreground leading-tight">{item.name}</h3>
+                    <div className="flex items-center gap-1">
+                      <ShoppingBag className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs text-foreground/60">{item.store}</span>
+                    </div>
+                    <p className="text-sm text-primary font-semibold">KES {item.price} each</p>
+
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-2 bg-primary/5 rounded-xl">
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => decreaseItem(item.id)}
+                          className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </motion.button>
+                        <span className="w-8 text-center font-bold text-foreground text-sm">{item.quantity}</span>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => increaseItem(item.id)}
+                          className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                      <span className="font-bold text-foreground text-sm">KES {(item.price * item.quantity).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => removeItem(item.id)}
+                    className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-error hover:bg-error/5 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </motion.button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {amountToFreeDelivery > 0 && (
             <motion.div
-              key={item.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ delay: index * 0.05 }}
-              className="relative bg-white border border-border rounded-2xl p-4  flex gap-4 items-start"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-primary/5 border border-primary/10 rounded-2xl p-4"
             >
-              {/* Product Image - Fixed vertical spacing */}
-              <div className="w-24 h-28 rounded-xl overflow-hidden shrink-0 bg-secondary flex items-center justify-center">
-                <img 
-                  src={item.image} 
-                  alt={item.name} 
-                  className="w-full h-full object-cover"
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    Add KES {amountToFreeDelivery.toLocaleString()} more
+                  </p>
+                  <p className="text-xs text-foreground/60 mt-0.5">to get free delivery!</p>
+                </div>
+                <span className="text-xs font-semibold text-primary">
+                  KES {amountToFreeDelivery.toLocaleString()} to go
+                </span>
+              </div>
+              <div className="mt-3 h-2 bg-white rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${deliveryProgress}%` }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                  className="h-full bg-primary rounded-full"
                 />
               </div>
+            </motion.div>
+          )}
 
-              {/* Product Details */}
-              <div className="flex-1 min-w-0 flex flex-col gap-2">
-                <h3 className="font-bold text-base text-foreground leading-tight">{item.name}</h3>
-                <div className="flex items-center gap-1">
-                  <ShoppingBag className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs text-foreground/60">{item.store}</span>
-                </div>
-                <p className="text-sm text-primary font-semibold">KES {item.price} each</p>
-
-                {/* Quantity & Item Total Row */}
-                <div className="flex items-center justify-between mt-1">
-                  <div className="flex items-center gap-2 bg-primary/5 rounded-xl">
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => decreaseItem(item.id)}
-                      className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </motion.button>
-                    <span className="w-8 text-center font-bold text-foreground text-sm">{item.quantity}</span>
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => increaseItem(item.id)}
-                      className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </motion.button>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white border border-border rounded-2xl p-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                    <ShoppingBag className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="font-bold text-foreground text-sm">KES {(item.price * item.quantity).toLocaleString()}</span>
+                  <span className="text-sm text-foreground/70">Subtotal</span>
                 </div>
+                <span className="font-semibold text-foreground">KES {subtotal.toLocaleString()}</span>
               </div>
 
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                    <Truck className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm text-foreground/70">Delivery Fee</span>
+                </div>
+                <span className="font-semibold text-foreground">KES {deliveryFee.toLocaleString()}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                    <Percent className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm text-foreground/70">Service Fee</span>
+                </div>
+                <span className="font-semibold text-foreground">KES {serviceFee.toLocaleString()}</span>
+              </div>
+
+              <div className="border-t border-border pt-3 mt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-bold text-foreground">Total</span>
+                  <span className="text-lg font-bold text-primary">KES {total.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white border border-border rounded-2xl p-4"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-primary font-semibold mb-0.5">Deliver to</p>
+                <h4 className="text-sm font-bold text-foreground">Westlands, Nairobi</h4>
+                <p className="text-xs text-foreground/60 mt-1">
+                  Estimated delivery time <span className="text-primary font-medium">~25 mins</span>
+                </p>
+              </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={() => removeItem(item.id)}
-                className="absolute top-4 right-4 p-2 text-foreground/40 hover:text-error hover:bg-error/5 rounded-lg transition-colors"
+                className="p-2 text-foreground/40 hover:text-foreground transition-colors"
               >
-                <Trash2 className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </motion.button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* --- Free Delivery Progress --- */}
-      {amountToFreeDelivery > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mx-5 mt-4 bg-primary/5 border border-primary/10 rounded-2xl p-4"
-        >
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">
-                Add KES {amountToFreeDelivery.toLocaleString()} more
-              </p>
-              <p className="text-xs text-foreground/60 mt-0.5">to get free delivery!</p>
-            </div>
-            <span className="text-xs font-semibold text-primary">
-              KES {amountToFreeDelivery.toLocaleString()} to go
-            </span>
-          </div>
-          <div className="mt-3 h-2 bg-white rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${deliveryProgress}%` }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="h-full bg-primary rounded-full"
-            />
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
 
-      {/* --- Order Summary --- */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mx-5 mt-4 bg-white border border-border rounded-2xl p-4"
-      >
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-sm text-foreground/70">Subtotal</span>
-            </div>
-            <span className="font-semibold text-foreground">KES {subtotal.toLocaleString()}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
-                <Truck className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-sm text-foreground/70">Delivery Fee</span>
-            </div>
-            <span className="font-semibold text-foreground">KES {deliveryFee.toLocaleString()}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
-                <Percent className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-sm text-foreground/70">Service Fee</span>
-            </div>
-            <span className="font-semibold text-foreground">KES {serviceFee.toLocaleString()}</span>
-          </div>
-
-          <div className="border-t border-border pt-3 mt-3">
-            <div className="flex items-center justify-between">
-              <span className="text-base font-bold text-foreground">Total</span>
-              <span className="text-lg font-bold text-primary">KES {total.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* --- Delivery Address --- */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="mx-5 mt-4 mb-15 bg-white border border-border rounded-2xl p-4"
-      >
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
-            <MapPin className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-primary font-semibold mb-0.5">Deliver to</p>
-            <h4 className="text-sm font-bold text-foreground">Westlands, Nairobi</h4>
-            <p className="text-xs text-foreground/60 mt-1">
-              Estimated delivery time <span className="text-primary font-medium">~25 mins</span>
-            </p>
-          </div>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            className="p-2 text-foreground/40 hover:text-foreground transition-colors"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="pt-1"
           >
-            <ChevronRight className="w-5 h-5" />
-          </motion.button>
+            <Button
+              onClick={() => navigate('/customer/')}
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+            >
+              Checkout • KES {total.toLocaleString()}
+            </Button>
+          </motion.div>
         </div>
-      </motion.div>
-
-      {/* --- Checkout Button --- */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="fixed bottom-24 left-0 right-0 px-5"
-      >
-        <Button
-          onClick={() => navigate('/customer/')}
-          className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
-        >
-          Checkout • KES {total.toLocaleString()}
-        </Button>
-      </motion.div>
+      </main>
 
       {/* --- Bottom Navigation --- */}
       <BottomNav cartCount={cartCount} />

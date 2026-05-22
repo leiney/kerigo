@@ -43,7 +43,10 @@ const navItemsByRole: Record<NavRole, NavItem[]> = {
       label: 'Account',
       icon: User,
       path: '/customer/profile',
-      active: (pathname) => pathname.startsWith('/customer/profile') || pathname.startsWith('/account'),
+      active: (pathname) =>
+        pathname.startsWith('/customer/profile') ||
+        pathname.startsWith('/account') ||
+        pathname.startsWith('/settings'),
     },
   ],
   vendor: [
