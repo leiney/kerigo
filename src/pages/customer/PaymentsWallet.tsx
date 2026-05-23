@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -15,45 +15,35 @@ import {
 import { Button, Badge } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
-
-const walletData = {
-  balance: 1250.0,
-  name: 'KeriGo Wallet',
-};
-
-const paymentMethods = [
-  {
-    id: '1',
-    type: 'visa',
-    label: 'Visa',
-    lastFour: '4242',
-    expiry: '12/26',
-    isDefault: true,
-    icon: CreditCard,
-  },
-  {
-    id: '2',
-    type: 'mastercard',
-    label: 'Mastercard',
-    lastFour: '5555',
-    expiry: '08/27',
-    isDefault: false,
-    icon: CreditCard,
-  },
-  {
-    id: '3',
-    type: 'mpesa',
-    label: 'M-Pesa',
-    lastFour: '456',
-    expiry: '',
-    isDefault: false,
-    icon: Smartphone,
-    phoneNumber: '+254 700 123',
-  },
-];
+import { paymentApi } from '../../../lib/api';
+import type { PaymentMethodItem, WalletSummary } from '../../../lib/types';
 
 export const PaymentsWallet: React.FC = () => {
   const navigate = useNavigate();
+  const [walletData, setWalletData] = useState<WalletSummary | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPaymentData = async () => {
+      const [wallet, methods] = await Promise.all([
+        paymentApi.getWallet(),
+        paymentApi.getMethods(),
+      ]);
+
+      if (isMounted) {
+        setWalletData(wallet);
+        setPaymentMethods(methods);
+      }
+    };
+
+    loadPaymentData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const getCardColor = (type: string) => {
     switch (type) {
@@ -91,9 +81,9 @@ export const PaymentsWallet: React.FC = () => {
                   <Wallet className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{walletData.name}</p>
+                  <p className="text-sm font-semibold text-foreground">{walletData?.name ?? 'KeriGo Wallet'}</p>
                   <p className="text-2xl font-bold text-foreground mt-0.5">
-                    KSH {walletData.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    KSH {(walletData?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -125,7 +115,7 @@ export const PaymentsWallet: React.FC = () => {
                       {logoFor(method.type) ? (
                         <img src={logoFor(method.type)!} alt={`${method.label} logo`} className="w-9 h-9 object-contain" />
                       ) : (
-                        <method.icon className={`w-5 h-5 ${getCardColor(method.type)}`} />
+                        <CreditCard className={`w-5 h-5 ${getCardColor(method.type)}`} />
                       )}
                     </div>
                     <div>

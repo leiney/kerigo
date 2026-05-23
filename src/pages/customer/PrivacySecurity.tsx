@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -13,9 +13,30 @@ import {
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { settingsApi } from '../../../lib/api';
+import type { PrivacySecurityValues } from '../../../lib/types';
 
 export const PrivacySecurity: React.FC = () => {
   const navigate = useNavigate();
+  const [security, setSecurity] = useState<PrivacySecurityValues | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSecurity = async () => {
+      const data = await settingsApi.getPrivacySecurity();
+
+      if (isMounted) {
+        setSecurity(data);
+      }
+    };
+
+    loadSecurity();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const MenuItem = ({
     icon: Icon,
@@ -73,7 +94,7 @@ export const PrivacySecurity: React.FC = () => {
               icon={Shield}
               title="Two-Factor Authentication"
               subtitle="Add extra security to your account"
-              rightText="Off"
+              rightText={security?.twoFactorEnabled ? 'On' : 'Off'}
               onClick={() => navigate('/settings/privacy/two-factor')}
             />
             <MenuItem
@@ -95,18 +116,21 @@ export const PrivacySecurity: React.FC = () => {
               icon={Eye}
               title="Profile Visibility"
               subtitle="Manage who can see your profile"
+              rightText={security?.profileVisibility}
               onClick={() => navigate('/settings/privacy/profile-visibility')}
             />
             <MenuItem
               icon={UserX}
               title="Blocked Users"
               subtitle="Manage blocked users"
+              rightText={security ? String(security.blockedUsers) : undefined}
               onClick={() => navigate('/settings/privacy/blocked-users')}
             />
             <MenuItem
               icon={FileText}
               title="Data & Privacy"
               subtitle="Manage your data and privacy"
+              rightText={security?.dataPrivacy}
               onClick={() => navigate('/settings/privacy/data')}
             />
           </div>

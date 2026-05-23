@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { settingsApi } from '../../../lib/api';
+import type { NotificationPreferences } from '../../../lib/types';
 
 export const Notifications: React.FC = () => {
   const navigate = useNavigate();
-
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<NotificationPreferences>({
     orderConfirmations: true,
     orderShipped: true,
     orderDelivered: true,
@@ -20,8 +21,26 @@ export const Notifications: React.FC = () => {
     reminders: false,
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSettings = async () => {
+      const data = await settingsApi.getNotificationPreferences();
+
+      if (isMounted) {
+        setSettings(data);
+      }
+    };
+
+    loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleToggle = (key: keyof typeof settings) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const ToggleRow = ({

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,43 +12,30 @@ import {
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
-
-// --- Mock Data ---
-const savedAddresses = [
-  {
-    id: '1',
-    label: 'Home',
-    isDefault: true,
-    street: '123 Riverside Drive',
-    area: 'Westlands, Nairobi',
-    county: 'Nairobi County, 00100',
-    country: 'Kenya',
-    phone: '+254 700 123 456',
-  },
-  {
-    id: '2',
-    label: 'Work',
-    isDefault: false,
-    street: 'Green Towers, 5th Floor',
-    area: 'Chiromo Road',
-    county: 'Westlands, Nairobi',
-    country: 'Kenya',
-    phone: '+254 700 123 456',
-  },
-  {
-    id: '3',
-    label: 'Parents Home',
-    isDefault: false,
-    street: '456 Karen Road',
-    area: 'Karen',
-    county: 'Nairobi County, 00502',
-    country: 'Kenya',
-    phone: '+254 700 123 456',
-  },
-];
+import { customerApi } from '../../../lib/api';
+import type { AddressItem } from '../../../lib/types';
 
 export const Addresses: React.FC = () => {
   const navigate = useNavigate();
+  const [savedAddresses, setSavedAddresses] = useState<AddressItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAddresses = async () => {
+      const data = await customerApi.getAddresses();
+
+      if (isMounted) {
+        setSavedAddresses(data.results);
+      }
+    };
+
+    loadAddresses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
@@ -107,7 +94,7 @@ export const Addresses: React.FC = () => {
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                     <Phone className="w-3 h-3 text-primary" />
                   </div>
-                  <p className="text-xs font-semibold text-foreground">{addr.phone}</p>
+                  <p className="text-xs font-semibold text-foreground">{addr.phoneNumber}</p>
                 </div>
               </div>
             ))}

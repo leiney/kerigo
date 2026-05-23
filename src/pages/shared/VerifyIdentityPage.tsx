@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Card, CardContent } from '@stackloop/ui';
 import { 
@@ -10,6 +10,7 @@ import {
   Shield
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { sharedApi } from '../../../lib/api';
 
 type VerificationMethod = 'sms' | 'email' | 'authenticator';
 
@@ -17,31 +18,42 @@ export const VerifyIdentityPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedMethod, setSelectedMethod] = useState<VerificationMethod | null>(null);
+  const [verificationMethods, setVerificationMethods] = useState<Array<{
+    id: VerificationMethod;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    highlighted: boolean;
+  }>>([]);
   const source = (location.state as { source?: 'vendor' | 'rider' } | null)?.source;
 
-  const verificationMethods = [
-    {
-      id: 'sms' as VerificationMethod,
-      title: 'SMS',
-      description: 'Receive a code on your phone',
-      icon: <MessageSquare className="w-6 h-6" />,
-      highlighted: true
-    },
-    {
-      id: 'email' as VerificationMethod,
-      title: 'Email',
-      description: 'Receive a code via email',
-      icon: <Mail className="w-6 h-6" />,
-      highlighted: false
-    },
-    {
-      id: 'authenticator' as VerificationMethod,
-      title: 'Authenticator App',
-      description: 'Scan the QR code or enter the key manually',
-      icon: <Smartphone className="w-6 h-6" />,
-      highlighted: false
-    }
-  ];
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMethods = async () => {
+      const data = await sharedApi.getVerificationMethods();
+      const iconById: Record<VerificationMethod, React.ReactNode> = {
+        sms: <MessageSquare className="w-6 h-6" />,
+        email: <Mail className="w-6 h-6" />,
+        authenticator: <Smartphone className="w-6 h-6" />,
+      };
+
+      if (isMounted) {
+        setVerificationMethods(
+          data.methods.map((method) => ({
+            ...method,
+            icon: iconById[method.id],
+          }))
+        );
+      }
+    };
+
+    loadMethods();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleMethodSelect = (method: VerificationMethod) => {
     setSelectedMethod(method);

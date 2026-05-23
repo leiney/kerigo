@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,9 +12,35 @@ import {
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { supportApi } from '../../../lib/api';
+import type { SupportOption, SupportTopic } from '../../../lib/types';
 
 export const HelpSupport: React.FC = () => {
   const navigate = useNavigate();
+  const [topics, setTopics] = useState<SupportTopic[]>([]);
+  const [options, setOptions] = useState<SupportOption[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSupportData = async () => {
+      const [topicsData, optionsData] = await Promise.all([
+        supportApi.getTopics(),
+        supportApi.getOptions(),
+      ]);
+
+      if (isMounted) {
+        setTopics(topicsData);
+        setOptions(optionsData);
+      }
+    };
+
+    loadSupportData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const MenuItem = ({
     icon: Icon,
@@ -54,30 +80,15 @@ export const HelpSupport: React.FC = () => {
 
         {/* --- Support Menu --- */}
         <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
-          <MenuItem
-            icon={HelpCircle}
-            title="Help Center"
-            subtitle="Find answers to common questions"
-            onClick={() => console.log('Navigate to Help Center')}
-          />
-          <MenuItem
-            icon={MessageSquare}
-            title="Contact Support"
-            subtitle="Chat or email us"
-            onClick={() => navigate('/settings/help/chat')}
-          />
-          <MenuItem
-            icon={Bell}
-            title="Report an Issue"
-            subtitle="Let us know what's not working"
-            onClick={() => navigate('/settings/help/report')}
-          />
-          <MenuItem
-            icon={Star}
-            title="Rate Our App"
-            subtitle="Share your feedback"
-            onClick={() => navigate('/settings/help/rate')}
-          />
+          {topics.map((topic, index) => (
+            <MenuItem
+              key={topic.id}
+              icon={[HelpCircle, MessageSquare, Bell, Star][index] ?? HelpCircle}
+              title={topic.title}
+              subtitle={topic.subtitle}
+              onClick={() => navigate(`/settings/help/${topic.id}`)}
+            />
+          ))}
         </div>
 
         {/* --- Immediate Help Card --- */}
@@ -87,7 +98,7 @@ export const HelpSupport: React.FC = () => {
               Need immediate help?
             </h3>
             <p className="text-xs text-foreground/60 mb-4">
-              Chat with our support team
+              {options[0]?.subtitle ?? 'Chat with our support team'}
             </p>
             <Button className="bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 px-6 shadow-sm">
               Start Chat

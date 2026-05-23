@@ -11,12 +11,15 @@ import {
   Leaf
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { authApi } from '../../../lib/api';
 import { useAuthStore } from '../../store/authStore';
+import type { UserProfile, UserRole } from '../../types';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const setUser = useAuthStore((state) => state.setUser);
+  const setLoading = useAuthStore((state) => state.setLoading);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     emailOrPhone: '',
@@ -25,18 +28,26 @@ export const LoginPage: React.FC = () => {
 
   const source = (location.state as { source?: 'vendor' | 'rider' } | null)?.source;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login
-    setUser({
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+254712345678',
-      roles: ['customer', 'vendor', 'rider'],
-      avatar: 'https://picsum.photos/seed/avatar/200/200'
-    });
-    navigate('/verify-identity', { state: { source } });
+
+    try {
+      setLoading(true);
+      const response = await authApi.login(formData.emailOrPhone, formData.password);
+      const user: UserProfile = {
+        id: response.user.id,
+        name: response.user.fullName,
+        email: response.user.email,
+        phone: response.user.phoneNumber,
+        roles: response.user.roles as UserRole[],
+        avatar: response.user.avatarUrl,
+      };
+
+      setUser(user);
+      navigate('/verify-identity', { state: { source } });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

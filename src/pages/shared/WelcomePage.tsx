@@ -1,32 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   ArrowRight,
-  Home,
-  ShoppingBag,
-  ShoppingCart,
-  User,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
-
-// Vendor data matching the wireframe exactly
-const vendors = [
-  { name: 'KFC', time: '25-30 min', logo: '/kfc.png' },
-  { name: 'Chicken Inn', time: '25-30 min', logo: '/chicken-in.jpg' },
-  { name: 'Pizza Inn', time: '30-35 min', logo: '/pizzain.png' },
-  { name: 'Java House', time: '20-25 min', logo: '/JavaHouse.webp' },
-  { name: 'Carrefour', time: '30-40 min', logo: '/carrefour.webp' },
-  { name: 'Naivas', time: '30-40 min', logo: '/naivas.png' },
-  { name: 'Goodlife Pharmacy', time: '20-30 min', logo: '/goodlife.png' },
-  { name: 'HealthPlus Pharmacy', time: '20-30 min', logo: '/healthplus.png' },
-  { name: 'MedPlus Pharmacy', time: '20-30 min', logo: '/medplus.jpeg' },
-  { name: 'The Butchery', time: '25-35 min', logo: '/thebutchery.png' },
-];
+import { sharedApi } from '../../../lib/api';
+import type { VendorSummary } from '../../../lib/types';
 
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [vendors, setVendors] = useState<VendorSummary[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadWelcomeData = async () => {
+      try {
+        const data = await sharedApi.getWelcomeData();
+
+        if (isMounted) {
+          setVendors(data.vendors);
+        }
+      } catch {
+        if (isMounted) {
+          setVendors([]);
+        }
+      }
+    };
+
+    loadWelcomeData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-24">
@@ -88,21 +97,20 @@ export const WelcomePage: React.FC = () => {
           <div className="grid grid-cols-5 gap-3 sm:gap-4">
             {vendors.map((vendor, index) => (
               <motion.div
-                key={vendor.name}
+                key={vendor.id}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 + index * 0.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate(`/customer/vendor/${vendor.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                onClick={() => navigate(`/customer/vendor/${vendor.slug}`)}
                 className="flex flex-col items-center   cursor-pointer group"
               >
                 <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white border border-border rounded-2xl flex items-center justify-center shadow-sm group-hover:border-primary/50 transition-colors overflow-hidden">
                   <img
-                    src={vendor.logo}
+                    src={vendor.logoUrl}
                     alt={vendor.name}
                     className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-sm"
                     onError={(e) => {
-                    
                       (e.target as HTMLImageElement).src = '/default-vendor-logo.png';
                     }}
                   />

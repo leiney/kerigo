@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -15,42 +15,32 @@ import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, useCartStore } from '../../store/cartStore';
-
-// --- Mock Data ---
-const latestOrder = {
-  id: 'KR1024',
-  date: 'Today, 10:30 AM',
-  itemCount: 2,
-  total: 1240,
-  status: 'On the way',
-  payment: 'M-Pesa',
-  address: 'Westlands, Nairobi',
-  addressNote: 'Near Sarit Centre',
-  eta: '~20 mins',
-  steps: [
-    { label: 'Confirmed', time: '10:30 AM', completed: true, active: false },
-    { label: 'Preparing', time: '10:35 AM', completed: true, active: false },
-    { label: 'On the way', time: '10:40 AM', completed: false, active: true },
-    { label: 'Delivered', time: '', completed: false, active: false }
-  ]
-};
-
-const pastOrders = [
-  { id: '#KR1010', items: 'Bananas', date: 'Yesterday', price: 980, status: 'Delivered', img: '/banana.jpeg' },
-  { id: '#KR0985', items: 'Milk 500ml', date: 'Last Week', price: 1450, status: 'Delivered', img: '/milk.jpeg' },
-  { id: '#KR0954', items: 'Tomatoes', date: '2 Weeks Ago', price: 670, status: 'Cancelled', img: '/tomatoes.jpeg' }
-];
-
-const recommendations = [
-  { id: 1, name: 'Avocado', price: 250, unit: '/ kg', img: '/avocado.jpeg' },
-  { id: 2, name: 'Tomatoes', price: 160, unit: '/ kg', img: '/tomatoes.jpeg' },
-  { id: 3, name: 'Milk 500ml', price: 120, unit: '', img: '/milk.jpeg' }
-];
+import { customerApi } from '../../../lib/api';
+import type { CustomerHomeData } from '../../../lib/types';
 
 export const CustomerHomePage: React.FC = () => {
   const navigate = useNavigate();
   const cartItems = useCartStore((state) => state.items);
   const cartCount = selectCartCount(cartItems);
+  const [homeData, setHomeData] = useState<CustomerHomeData | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadHomeData = async () => {
+      const data = await customerApi.getHomeData();
+
+      if (isMounted) {
+        setHomeData(data);
+      }
+    };
+
+    loadHomeData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
@@ -62,7 +52,7 @@ export const CustomerHomePage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-xl font-bold text-foreground"
           >
-            Hello, Leiney <span className="inline-block">👋</span>
+            Hello, {homeData?.greetingName ?? 'Leiney'} <span className="inline-block">👋</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -80,7 +70,7 @@ export const CustomerHomePage: React.FC = () => {
         >
           <Bell className="w-4 h-4 text-foreground" />
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white">
-            2
+            {homeData?.unreadNotifications ?? 2}
           </span>
         </motion.button>
       </header>
@@ -99,7 +89,7 @@ export const CustomerHomePage: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-base text-foreground">Latest Order</h2>
               <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                {latestOrder.status}
+                {homeData?.latestOrder.status}
               </span>
             </div>
             <button
@@ -113,11 +103,11 @@ export const CustomerHomePage: React.FC = () => {
           {/* Order Info & Illustration */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-foreground/70 font-medium">Order #{latestOrder.id}</p>
-              <p className="text-[11px] text-foreground/50 mt-0.5">{latestOrder.date} • {latestOrder.itemCount} items</p>
-              <h3 className="text-xl font-bold text-foreground mt-1.5">KES {latestOrder.total.toLocaleString()}</h3>
+              <p className="text-xs text-foreground/70 font-medium">Order #{homeData?.latestOrder.id}</p>
+              <p className="text-[11px] text-foreground/50 mt-0.5">{homeData?.latestOrder.date} • {homeData?.latestOrder.itemCount} items</p>
+              <h3 className="text-xl font-bold text-foreground mt-1.5">KES {homeData?.latestOrder.total.toLocaleString()}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[11px] text-foreground/50">Paid via {latestOrder.payment}</span>
+                <span className="text-[11px] text-foreground/50">Paid via {homeData?.latestOrder.paymentMethod}</span>
                 <Badge variant="success" className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-0 text-[9px] py-0 px-1.5">
                   M-PESA
                 </Badge>
@@ -145,7 +135,7 @@ export const CustomerHomePage: React.FC = () => {
           {/* Active progress */}
           <div className="absolute top-5 left-[10%] w-[50%] h-0.5 bg-primary rounded-full" />
 
-          {latestOrder.steps.map((step, index) => (
+          {homeData?.latestOrder.steps.map((step, index) => (
             <div
               key={index}
               className="relative z-10 flex flex-1 flex-col items-center"
@@ -193,8 +183,8 @@ export const CustomerHomePage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] text-foreground/50 font-medium">Deliver to</p>
-                <p className="text-xs font-bold text-foreground leading-tight">{latestOrder.address}</p>
-                <p className="text-[9px] text-foreground/40">{latestOrder.addressNote}</p>
+                <p className="text-xs font-bold text-foreground leading-tight">{homeData?.latestOrder.address}</p>
+                <p className="text-[9px] text-foreground/40">{homeData?.latestOrder.addressNote}</p>
               </div>
             </div>
             
@@ -204,7 +194,7 @@ export const CustomerHomePage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] text-foreground/50 font-medium">Est. delivery</p>
-                <p className="text-xs font-bold text-primary">{latestOrder.eta}</p>
+                <p className="text-xs font-bold text-primary">{homeData?.latestOrder.eta}</p>
               </div>
             </div>
 
@@ -214,7 +204,7 @@ export const CustomerHomePage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] text-foreground/50 font-medium">Payment</p>
-                <p className="text-xs font-bold text-foreground">{latestOrder.payment}</p>
+                <p className="text-xs font-bold text-foreground">{homeData?.latestOrder.paymentMethod}</p>
               </div>
             </div>
           </div>
@@ -230,7 +220,7 @@ export const CustomerHomePage: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-lg border border-border/50 overflow-hidden divide-y divide-border/50">
-            {pastOrders.map((order, idx) => (
+            {homeData?.pastOrders.map((order, idx) => (
               <motion.div
                 key={order.id}
                 initial={{ opacity: 0, x: -10 }}
@@ -240,7 +230,7 @@ export const CustomerHomePage: React.FC = () => {
               >
                 {/* Image */}
                 <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                  <img src={order.img} alt={order.items} className="w-full h-full object-cover" />
+                  <img src={order.imageUrl} alt={order.items} className="w-full h-full object-cover" />
                 </div>
 
                 {/* Details */}
@@ -284,7 +274,7 @@ export const CustomerHomePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-3 px-3">
-            {recommendations.map((item, idx) => (
+            {homeData?.recommendations.map((item, idx) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -294,7 +284,7 @@ export const CustomerHomePage: React.FC = () => {
                 className="min-w-36 bg-white rounded-2xl p-2 border border-border/50 shadow-sm flex flex-col items-start text-start"
               >
                 <div className="w-full h-20 rounded-lg overflow-hidden mb-2.5 bg-gray-100">
-                  <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                 </div>
                 <h4 className="font-bold text-xs text-foreground">{item.name}</h4>
                 <p className="text-[11px] text-foreground/50 mt-0.5">

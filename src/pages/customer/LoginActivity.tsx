@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,52 +11,30 @@ import {
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
-
-const sessions = [
-  {
-    id: '1',
-    location: 'Nairobi, Kenya',
-    device: 'iPhone 14 Pro • iOS 17.4',
-    timestamp: 'Current Session',
-    isActive: true,
-    icon: ShieldCheck,
-  },
-  {
-    id: '2',
-    location: 'Nairobi, Kenya',
-    device: 'Chrome on Windows',
-    timestamp: 'May 12, 2024 at 10:30 AM',
-    isActive: false,
-    icon: Monitor,
-  },
-  {
-    id: '3',
-    location: 'Mombasa, Kenya',
-    device: 'Android Phone',
-    timestamp: 'May 10, 2024 at 08:15 PM',
-    isActive: false,
-    icon: Smartphone,
-  },
-  {
-    id: '4',
-    location: 'Nakuru, Kenya',
-    device: 'Safari on Mac',
-    timestamp: 'May 8, 2024 at 06:40 PM',
-    isActive: false,
-    icon: Monitor,
-  },
-  {
-    id: '5',
-    location: 'Nairobi, Kenya',
-    device: 'Android Phone',
-    timestamp: 'May 6, 2024 at 09:20 AM',
-    isActive: false,
-    icon: Smartphone,
-  },
-];
+import { settingsApi } from '../../../lib/api';
+import type { LoginSession } from '../../../lib/types';
 
 export const LoginActivity: React.FC = () => {
   const navigate = useNavigate();
+  const [sessions, setSessions] = useState<LoginSession[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSessions = async () => {
+      const data = await settingsApi.getLoginActivity();
+
+      if (isMounted) {
+        setSessions(data);
+      }
+    };
+
+    loadSessions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogOutOthers = () => {
     console.log('Terminating all other sessions...');
@@ -70,8 +48,8 @@ export const LoginActivity: React.FC = () => {
       />
 
       <div className="px-4 space-y-3 pt-2">
-        {sessions.map((session) => {
-          const Icon = session.icon;
+        {sessions.map((session, index) => {
+          const Icon = session.isActive ? ShieldCheck : index % 2 === 0 ? Monitor : Smartphone;
           return (
             <div
               key={session.id}

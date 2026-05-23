@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Input, Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { authApi } from '../../../lib/api';
 
 export const ChangePassword: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export const ChangePassword: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      console.log('Updating password...', formData);
+      await authApi.setPassword(formData);
     } catch (error) {
       console.error('Failed to update password', error);
     } finally {

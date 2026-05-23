@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -14,17 +14,42 @@ import {
 import { Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { settingsApi } from '../../../lib/api';
+import type { AppPreferenceValues } from '../../../lib/types';
 
 export const AppPreferences: React.FC = () => {
   const navigate = useNavigate();
 
   // State for Toggles
-  const [preferences, setPreferences] = useState({
+  const [preferences, setPreferences] = useState<AppPreferenceValues>({
     saveData: true,
     locationServices: true,
+    language: 'English',
+    currency: 'KES (Kenyan Shilling)',
+    theme: 'System Default',
+    defaultMapApp: 'Google Maps',
+    chatPreferences: 'Manage chat settings',
   });
 
-  const handleToggle = (key: keyof typeof preferences) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPreferences = async () => {
+      const data = await settingsApi.getAppPreferences();
+
+      if (isMounted) {
+        setPreferences(data);
+      }
+    };
+
+    loadPreferences();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleToggle = (key: 'saveData' | 'locationServices') => {
     setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -91,19 +116,19 @@ export const AppPreferences: React.FC = () => {
           <LinkRow
             icon={Globe}
             label="Language"
-            value="English"
+            value={preferences.language}
             onClick={() => console.log('Language settings')}
           />
           <LinkRow
             icon={DollarSign}
             label="Currency"
-            value="KES (Kenyan Shilling)"
+            value={preferences.currency}
             onClick={() => console.log('Currency settings')}
           />
           <LinkRow
             icon={Palette}
             label="Theme"
-            value="System Default"
+            value={preferences.theme}
             onClick={() => console.log('Theme settings')}
           />
 
@@ -127,13 +152,13 @@ export const AppPreferences: React.FC = () => {
           <LinkRow
             icon={Map}
             label="Default Map App"
-            value="Google Maps"
+            value={preferences.defaultMapApp}
             onClick={() => console.log('Map settings')}
           />
           <LinkRow
             icon={MessageSquare}
             label="Chat Preferences"
-            value="Manage chat settings"
+            value={preferences.chatPreferences}
             onClick={() => console.log('Chat settings')}
           />
 

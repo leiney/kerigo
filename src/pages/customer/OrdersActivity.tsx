@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,9 +12,30 @@ import {
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { customerApi } from '../../../lib/api';
+import type { OrderHistoryItem } from '../../../lib/types';
 
 export const OrdersActivity: React.FC = () => {
   const navigate = useNavigate();
+  const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadOrders = async () => {
+      const data = await customerApi.getOrders();
+
+      if (isMounted) {
+        setOrders(data.results);
+      }
+    };
+
+    loadOrders();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const MenuItem = ({
     icon: Icon,
@@ -51,7 +72,7 @@ export const OrdersActivity: React.FC = () => {
           <MenuItem
             icon={History}
             title="Order History"
-            subtitle="View your past orders"
+            subtitle={`${orders.length} past orders available`}
             onClick={() => navigate('/settings/orders/history')}
           />
           <MenuItem

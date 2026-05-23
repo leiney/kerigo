@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@stackloop/ui';
 import {
@@ -8,46 +8,46 @@ import {
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
-
-// --- Mock Data ---
-const vendor = {
-  name: 'KFC',
-  category: 'Fast Food',
-  time: '25-30 min',
-  isOpen: true,
-  rating: 4.6,
-  reviews: '1.2K+',
-  logo: '/kfc.png'
-};
-
-const categories = [
-  { name: 'Buckets', img: '/buckets.jpeg' },
-  { name: 'Burgers', img: '/burgers.jpeg' },
-  { name: 'Box Meals', img: '/box-meals.jpeg' },
-  { name: 'Snacks', img: '/snacks.jpeg' },
-  { name: 'Drinks', img: '/drinks.jpeg' }
-];
-
-const menuItems = [
-  { id: 1, name: 'Streetwise 2', desc: '2 pcs of chicken, regular chips and a dinner roll.', price: 550, img: '/Streetwise 2.jpeg' },
-  { id: 2, name: 'Zinger Burger', desc: 'Spicy Zinger fillet with lettuce and mayo.', price: 450, img: '/Zinger Burger.jpeg' },
-  { id: 3, name: 'Streetwise 3', desc: '3 pcs of chicken, large chips and a roll.', price: 750, img: '/Streetwise 3.jpeg' },
-  { id: 4, name: 'Family Feast', desc: '8 pcs of chicken, 2 large chips, 4 rolls and 1.5L drink.', price: 2150, img: '/familty-feast.jpeg' }
-];
+import { customerApi } from '../../../lib/api';
+import type { VendorStoreData, VendorMenuItem } from '../../../lib/types';
 
 export const VendorStorePage: React.FC = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('Buckets');
   const [searchQuery, setSearchQuery] = useState('');
+  const [storeData, setStoreData] = useState<VendorStoreData | null>(null);
   const cartItems = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
   const cartCount = selectCartCount(cartItems);
   const cartTotal = selectCartTotal(cartItems);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStoreData = async () => {
+      const data = await customerApi.getStoreData();
+
+      if (isMounted) {
+        setStoreData(data);
+        setActiveCategory(data.categories[0]?.name ?? 'Buckets');
+      }
+    };
+
+    loadStoreData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const vendor = storeData?.vendor;
+  const categories = storeData?.categories ?? [];
+  const menuItems = storeData?.menuItems ?? [];
+
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredMenuItems = normalizedQuery
     ? menuItems.filter((item) =>
-        [item.name, item.desc, vendor.category].some((value) =>
+        [item.name, item.description, vendor?.category ?? ''].some((value) =>
           value.toLowerCase().includes(normalizedQuery)
         )
       )
@@ -85,25 +85,25 @@ export const VendorStorePage: React.FC = () => {
         {/* Row 2: Vendor Logo & Name */}
         <div className="flex items-center gap-3 mb-1.5">
           <img 
-            src={vendor.logo} 
-            alt={vendor.name} 
+            src={vendor?.logoUrl ?? '/kfc.png'} 
+            alt={vendor?.name ?? 'Vendor'} 
             className="w-14 h-14 rounded-full object-cover border border-border shadow-sm bg-white" 
           />
           <div>
-            <h2 className="text-xl font-bold text-foreground leading-tight">{vendor.name}</h2>
-            <p className="text-xs text-foreground/50 font-medium mt-0.5">{vendor.category} • {vendor.time}</p>
+            <h2 className="text-xl font-bold text-foreground leading-tight">{vendor?.name ?? 'Vendor'}</h2>
+            <p className="text-xs text-foreground/50 font-medium mt-0.5">{vendor?.category ?? 'Fast Food'} • {vendor?.time ?? '25-30 min'}</p>
           </div>
         </div>
 
         {/* Row 3: Status & Rating */}
         <div className="flex items-center gap-3">
-          <Badge variant={vendor.isOpen ? 'success' : 'danger'} size="sm" className="font-bold px-2 py-0.5 rounded-full">
-            {vendor.isOpen ? 'Open' : 'Closed'}
+          <Badge variant={vendor?.isOpen ? 'success' : 'danger'} size="sm" className="font-bold px-2 py-0.5 rounded-full">
+            {vendor?.isOpen ? 'Open' : 'Closed'}
           </Badge>
           <div className="flex items-center gap-1 text-xs font-semibold text-foreground/70">
-            <span className="text-foreground">{vendor.rating}</span>
+            <span className="text-foreground">{vendor?.rating ?? 4.6}</span>
             <span className="text-primary">★</span>
-            <span className="text-foreground/40">({vendor.reviews})</span>
+            <span className="text-foreground/40">({vendor?.reviews ?? '1.2K+'})</span>
           </div>
         </div>
       </div>
@@ -120,7 +120,7 @@ export const VendorStorePage: React.FC = () => {
           </div>
           <input 
             type="text" 
-            placeholder={`Search for ${vendor.category.toLowerCase()} items...`}
+            placeholder={`Search for ${(vendor?.category ?? 'food').toLowerCase()} items...`}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             className="w-full h-12 pl-12 pr-12 bg-white border border-border rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium placeholder:text-foreground/30"
@@ -153,17 +153,17 @@ export const VendorStorePage: React.FC = () => {
                   key={item.id}
                   type="button"
                   onClick={() => {
-                    addItem({ id: item.id, name: item.name, store: vendor.name, price: item.price, image: item.img });
+                    addItem({ id: item.id, name: item.name, store: vendor?.name ?? 'Vendor', price: item.price, image: item.imageUrl });
                     setSearchQuery(item.name);
                   }}
                   className="w-full flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2 text-left hover:bg-primary/5 transition-colors"
                 >
                   <div className="h-12 w-12 rounded-lg overflow-hidden bg-secondary shrink-0">
-                    <img src={item.img} alt={item.name} className="h-full w-full object-cover" />
+                    <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-sm text-foreground truncate">{item.name}</p>
-                    <p className="text-xs text-foreground/50 truncate">{item.desc}</p>
+                    <p className="text-xs text-foreground/50 truncate">{item.description}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-primary">KSh {item.price.toLocaleString()}</p>
@@ -191,7 +191,7 @@ export const VendorStorePage: React.FC = () => {
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden ${
                 activeCategory === cat.name ? 'bg-primary/10' : 'bg-secondary'
               }`}>
-                <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
+                <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
               </div>
               <span className={`text-[11px] font-bold ${activeCategory === cat.name ? 'text-primary' : ''}`}>
                 {cat.name}
@@ -235,7 +235,7 @@ export const VendorStorePage: React.FC = () => {
                 >
                   {/* Item Image */}
                   <div className="w-22 h-22 rounded-2xl border border-border overflow-hidden shrink-0 bg-secondary">
-                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                   </div>
 
                   {/* Item Details */}
@@ -243,12 +243,12 @@ export const VendorStorePage: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-base text-foreground leading-tight truncate">{item.name}</h4>
-                        <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed min-h-10">{item.desc}</p>
+                        <p className="text-xs text-foreground/50 mt-1 line-clamp-2 leading-relaxed min-h-10">{item.description}</p>
                       </div>
 
                       <motion.button 
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => addItem({ id: item.id, name: item.name, store: vendor.name, price: item.price, image: item.img })}
+                        onClick={() => addItem({ id: item.id, name: item.name, store: vendor?.name ?? 'Vendor', price: item.price, image: item.imageUrl })}
                         className="h-8 w-8 shrink-0 self-center bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
                       >
                         <Plus className="h-5 w-5" />

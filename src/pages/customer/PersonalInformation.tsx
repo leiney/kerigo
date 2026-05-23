@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -13,20 +13,38 @@ import {
 import { Input, Button, Badge, Select } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { profileApi } from '../../../lib/api';
 
 export const PersonalInformation: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    fullName: 'Sarah Wanjiku',
-    phoneNumber: '+254 700 123 456',
-    email: 'sarah.wanjiku@email.com',
-    dateOfBirth: '1990-03-12',
-    gender: 'Female',
+    fullName: '',
+    phoneNumber: '',
+    email: '',
+    dateOfBirth: '',
+    gender: '',
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      const data = await profileApi.getPersonalInformation();
+
+      if (isMounted) {
+        setFormData(data);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleSave = () => {
-    // Handle save logic
-    console.log('Saving data:', formData);
+    profileApi.updatePersonalInformation(formData).catch(() => undefined);
   };
 
   const handleCancel = () => {

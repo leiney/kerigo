@@ -13,9 +13,14 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { authApi } from '../../../lib/api';
+import { useAuthStore } from '../../store/authStore';
+import type { UserProfile, UserRole } from '../../types';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const setUser = useAuthStore((state) => state.setUser);
+  const setLoading = useAuthStore((state) => state.setLoading);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -25,10 +30,26 @@ export const RegisterPage: React.FC = () => {
     agreeToTerms: false
   });
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In real app, handle registration
-    navigate('/otp');
+
+    try {
+      setLoading(true);
+      const response = await authApi.register(formData);
+      const user: UserProfile = {
+        id: response.user.id,
+        name: response.user.fullName,
+        email: response.user.email,
+        phone: response.user.phoneNumber,
+        roles: response.user.roles as UserRole[],
+        avatar: response.user.avatarUrl,
+      };
+
+      setUser(user);
+      navigate('/verify-identity');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

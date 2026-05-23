@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,15 +7,35 @@ import {
 import { Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { settingsApi } from '../../../lib/api';
 
 export const TwoFactorAuth: React.FC = () => {
   const navigate = useNavigate();
+  const [enabled, setEnabled] = useState(false);
 
   const steps = [
     { id: 1, text: 'Enable 2FA on your account' },
     { id: 2, text: 'Scan the QR code with your authenticator app' },
     { id: 3, text: 'Enter the 6-digit code to verify' },
   ];
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSecurity = async () => {
+      const data = await settingsApi.getPrivacySecurity();
+
+      if (isMounted) {
+        setEnabled(data.twoFactorEnabled);
+      }
+    };
+
+    loadSecurity();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
@@ -35,15 +55,17 @@ export const TwoFactorAuth: React.FC = () => {
           Add an extra layer of security to your account
         </h2>
         <p className="text-sm text-foreground/50 max-w-xs leading-relaxed mb-8">
-          When enabled, you'll need to enter a code from your phone in addition to your password.
+          {enabled
+            ? "Two-factor authentication is already enabled on your account."
+            : "When enabled, you'll need to enter a code from your phone in addition to your password."}
         </p>
 
         {/* --- CTA Button --- */}
         <Button
           className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 text-sm shadow-sm mb-10"
-          onClick={() => console.log('Navigate to 2FA setup flow')}
+          onClick={() => navigate('/settings/privacy/two-factor/setup')}
         >
-          Enable 2FA
+          {enabled ? 'Manage 2FA' : 'Enable 2FA'}
         </Button>
 
         {/* --- How it Works --- */}

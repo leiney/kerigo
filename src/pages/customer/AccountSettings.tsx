@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,9 +17,30 @@ import {
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
+import { authApi } from '../../../lib/api';
+import type { AuthUser } from '../../../lib/types';
 
 export const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      const data = await authApi.getCurrentUser();
+
+      if (isMounted) {
+        setProfile(data);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const MenuItem = ({
     icon: Icon,
@@ -70,15 +91,11 @@ export const AccountSettings: React.FC = () => {
         {/* --- Profile Card --- */}
         <button className="w-full bg-white rounded-2xl p-4 border border-border/50 shadow-sm flex items-center gap-4 text-left hover:bg-secondary/30 transition-colors">
           <div className="w-14 h-14 rounded-full bg-secondary overflow-hidden shrink-0 border border-border/50">
-            <img
-              src="/placeholder-avatar.webp"
-              alt="Sarah Wanjiku"
-              className="w-full h-full object-cover"
-            />
+            <img src={profile?.avatarUrl ?? '/placeholder-avatar.webp'} alt={profile?.fullName ?? 'Profile'} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-foreground">Sarah Wanjiku</h2>
-            <p className="text-sm text-foreground/60 mt-0.5">+254 700 123 456</p>
+            <h2 className="text-base font-bold text-foreground">{profile?.fullName ?? 'Sarah Wanjiku'}</h2>
+            <p className="text-sm text-foreground/60 mt-0.5">{profile?.phoneNumber ?? '+254 700 123 456'}</p>
             <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               <CheckCircle className="w-3 h-3 fill-current" /> Verified
             </span>

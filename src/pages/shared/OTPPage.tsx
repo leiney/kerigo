@@ -7,6 +7,7 @@ import {
   MessageSquare 
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { sharedApi } from '../../../lib/api';
 
 export const OTPPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,10 +20,30 @@ export const OTPPage: React.FC = () => {
   const source = (location.state as { source?: 'vendor' | 'rider' } | null)?.source;
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let isMounted = true;
+
+    const loadOtpMetadata = async () => {
+      const data = await sharedApi.getOtpMetadata(method as 'sms' | 'email' | 'authenticator');
+
+      if (!isMounted) {
+        return;
+      }
+
+      setTimer(data.resendInSeconds);
+      interval = setInterval(() => {
+        setTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    };
+
+    loadOtpMetadata();
+
+    return () => {
+      isMounted = false;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, []);
 
   const handleChange = (index: number, value: string) => {

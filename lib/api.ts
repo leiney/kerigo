@@ -1,0 +1,128 @@
+import { request } from './axios';
+import type {
+  AccountSettingsData,
+  AddressItem,
+  AppPreferenceValues,
+  AuthUser,
+  CustomerHomeData,
+  CustomerSettingsData,
+  LoginResponse,
+  NotificationItem,
+  NotificationPreferences,
+  OtpMetadataResponse,
+  OrderHistoryItem,
+  PaginatedResponse,
+  PaymentMethodItem,
+  PrivacySecurityValues,
+  SharedWelcomeData,
+  SupportOption,
+  SupportTopic,
+  UserRoleOption,
+  VendorMenuItem,
+  VendorStoreData,
+  VerificationMethod,
+  WalletSummary,
+} from './types';
+
+type PasswordPayload = {
+  currentPassword?: string;
+  oldPassword?: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+const apiGet = <T>(url: string, params?: Record<string, unknown>) => request<T>({ method: 'GET', url, params });
+const apiPost = <T>(url: string, data?: unknown, params?: Record<string, unknown>) => request<T>({ method: 'POST', url, data, params });
+const apiPatch = <T>(url: string, data?: unknown, params?: Record<string, unknown>) => request<T>({ method: 'PATCH', url, data, params });
+const apiDelete = <T>(url: string, data?: unknown, params?: Record<string, unknown>) => request<T>({ method: 'DELETE', url, data, params });
+
+export const sharedApi = {
+  getWelcomeData: async (): Promise<SharedWelcomeData> => apiGet('/shared/welcome/'),
+  getVerificationMethods: async (): Promise<{ methods: VerificationMethod[] }> => apiGet('/shared/verification-methods/'),
+  getOtpMetadata: async (method: 'sms' | 'email' | 'authenticator'): Promise<OtpMetadataResponse> => apiGet('/shared/otp/', { method }),
+};
+
+export const authApi = {
+  getRegistrationMetadata: async (): Promise<{ roles: UserRoleOption[] }> => apiGet('/auth/register/'),
+  
+  register: async (data: Record<string, unknown>): Promise<{ message: string; verificationRequired: boolean; user: AuthUser }> => apiPost('/auth/register/', data),
+  login: async (identifier: string, password: string): Promise<LoginResponse> => apiPost('/auth/login/', { identifier, password }),
+  verifyLogin: async (identifier: string, code: string): Promise<LoginResponse> => apiPost('/auth/login/verify/', { identifier, code }),
+  resendCode: async (identifier: string): Promise<{ message: string }> => apiPost('/auth/login/resend-code/', { identifier }),
+  refreshToken: async (): Promise<{ accessToken: string }> => apiPost('/auth/token/refresh/', {}),
+  logout: async (): Promise<{ message: string }> => apiPost('/auth/logout/', {}),
+  getCurrentUser: async (): Promise<AuthUser> => apiGet('/users/me/'),
+  updateCurrentUser: async (payload: Partial<AuthUser>): Promise<AuthUser> => apiPatch('/users/me/', payload),
+  setPassword: async (payload: PasswordPayload): Promise<{ message: string }> => apiPost('/auth/security/set-password/', payload),
+  setupTwoFactor: async (): Promise<{ otpauthUri: string; qrCodeDataUri: string; manualKey: string; expiresInSeconds: number }> => apiPost('/auth/2fa/setup/', {}),
+  enableTwoFactor: async (otpCode: string): Promise<{ message: string; backupCodes: string[] }> => apiPost('/auth/2fa/enable/', { otpCode }),
+  disableTwoFactor: async (payload: { otpCode?: string; recoveryCode?: string }): Promise<{ message: string }> => apiPost('/auth/2fa/disable/', payload),
+  regenerateRecoveryCodes: async (otpCode: string): Promise<{ backupCodes: string[] }> => apiPost('/auth/2fa/recovery-codes/regenerate/', { otpCode }),
+};
+
+export const customerApi = {
+  getHomeData: async (): Promise<CustomerHomeData> => apiGet('/customer/home/'),
+  getStoreData: async (): Promise<VendorStoreData> => apiGet('/customer/store/'),
+  getStoreItems: async (): Promise<VendorMenuItem[]> => apiGet('/customer/store/items/'),
+  getVendorList: async (): Promise<SharedWelcomeData['vendors']> => apiGet('/customer/vendors/'),
+  getOrders: async (): Promise<PaginatedResponse<OrderHistoryItem>> => apiGet('/customer/orders/'),
+  getLatestOrder: async (): Promise<CustomerHomeData['latestOrder']> => apiGet('/customer/orders/latest/'),
+  getAddresses: async (): Promise<PaginatedResponse<AddressItem>> => apiGet('/customer/addresses/'),
+  createAddress: async (payload: Partial<AddressItem>): Promise<AddressItem> => apiPost('/customer/addresses/', payload),
+  updateAddress: async (id: string, payload: Partial<AddressItem>): Promise<AddressItem> => apiPatch(`/customer/addresses/${id}/`, payload),
+  deleteAddress: async (id: string): Promise<{ message: string }> => apiDelete(`/customer/addresses/${id}/`),
+  getWallet: async (): Promise<WalletSummary> => apiGet('/customer/payments/wallet/'),
+  getPaymentMethods: async (): Promise<PaymentMethodItem[]> => apiGet('/customer/payments/methods/'),
+  updatePaymentMethod: async (id: string, payload: Partial<PaymentMethodItem>): Promise<PaymentMethodItem> => apiPatch(`/customer/payments/methods/${id}/`, payload),
+  getNotifications: async (): Promise<PaginatedResponse<NotificationItem>> => apiGet('/customer/notifications/'),
+  markNotificationAsRead: async (id: string): Promise<NotificationItem> => apiPatch(`/customer/notifications/${id}/`, { isRead: true }),
+  markAllNotificationsAsRead: async (): Promise<{ message: string }> => apiPost('/customer/notifications/read-all/', {}),
+  getNotificationPreferences: async (): Promise<NotificationPreferences> => apiGet('/customer/notification-preferences/'),
+  updateNotificationPreferences: async (payload: Partial<NotificationPreferences>): Promise<NotificationPreferences> => apiPatch('/customer/notification-preferences/', payload),
+  getAppPreferences: async (): Promise<AppPreferenceValues> => apiGet('/customer/app-preferences/'),
+  updateAppPreferences: async (payload: Partial<AppPreferenceValues>): Promise<AppPreferenceValues> => apiPatch('/customer/app-preferences/', payload),
+  getPrivacySecurity: async (): Promise<PrivacySecurityValues> => apiGet('/customer/privacy-security/'),
+  getLoginActivity: async (): Promise<CustomerSettingsData['loginSessions']> => apiGet('/customer/login-activity/'),
+  getPersonalInformation: async (): Promise<CustomerSettingsData['personalInformation']> => apiGet('/customer/personal-information/'),
+  updatePersonalInformation: async (payload: Partial<CustomerSettingsData['personalInformation']>): Promise<CustomerSettingsData['personalInformation']> => apiPatch('/customer/personal-information/', payload),
+  getAccountSettings: async (): Promise<AccountSettingsData> => apiGet('/customer/account-settings/'),
+  getHelpTopics: async (): Promise<SupportTopic[]> => apiGet('/customer/help/topics/'),
+  getHelpOptions: async (): Promise<SupportOption[]> => apiGet('/customer/help/options/'),
+  createSupportTicket: async (payload: Record<string, unknown>): Promise<{ message: string; ticketId: string }> => apiPost('/customer/help/tickets/', payload),
+  addToCart: async (payload: Record<string, unknown>): Promise<{ message: string }> => apiPost('/customer/cart/add/', payload),
+  updateCart: async (payload: Record<string, unknown>): Promise<{ message: string }> => apiPatch('/customer/cart/', payload),
+  clearCart: async (): Promise<{ message: string }> => apiDelete('/customer/cart/', {}),
+};
+
+export const notificationApi = {
+  getAll: customerApi.getNotifications,
+  markAsRead: customerApi.markNotificationAsRead,
+  markAllAsRead: customerApi.markAllNotificationsAsRead,
+};
+
+export const paymentApi = {
+  getWallet: customerApi.getWallet,
+  getMethods: customerApi.getPaymentMethods,
+  updateMethod: customerApi.updatePaymentMethod,
+};
+
+export const profileApi = {
+  getPersonalInformation: customerApi.getPersonalInformation,
+  updatePersonalInformation: customerApi.updatePersonalInformation,
+};
+
+export const settingsApi = {
+  getAccountSettings: customerApi.getAccountSettings,
+  getAppPreferences: customerApi.getAppPreferences,
+  updateAppPreferences: customerApi.updateAppPreferences,
+  getNotificationPreferences: customerApi.getNotificationPreferences,
+  updateNotificationPreferences: customerApi.updateNotificationPreferences,
+  getPrivacySecurity: customerApi.getPrivacySecurity,
+  getLoginActivity: customerApi.getLoginActivity,
+};
+
+export const supportApi = {
+  getTopics: customerApi.getHelpTopics,
+  getOptions: customerApi.getHelpOptions,
+  createTicket: customerApi.createSupportTicket,
+};
