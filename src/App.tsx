@@ -74,6 +74,8 @@ import { PrivacySecurity } from './pages/customer/PrivacySecurity';
 import { ChangePassword } from './pages/customer/ChangePassword';
 import { LoginActivity } from './pages/customer/LoginActivity';
 import { TwoFactorAuth } from './pages/customer/TwoFactorAuth';
+import { MyLocation } from './pages/customer/MyLocation';
+import { TrackOrder } from './pages/customer/TrackOrder';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
@@ -119,6 +121,9 @@ export default function App() {
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/customer/" element={<CustomerHomePage />} />
           <Route path="/customer/orders" element={<CustomerHomePage />} />
+          <Route path="/customer/track-order" element={<TrackOrder />} />
+          <Route path="/customer/my-location" element={<MyLocation />} />
+          <Route path="/customer/location" element={<MyLocation />} />
           <Route path="/customer/profile" element={<AccountSettings />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/vendor-store" element={<VendorStorePage />} />

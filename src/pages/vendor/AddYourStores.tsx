@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, RadioPills } from '@stackloop/ui';
+import { Badge, Button, RadioPills } from '@stackloop/ui';
 import { 
   Store, 
   Building2, 
@@ -69,7 +69,9 @@ export const AddYourStores: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">4</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">4</Badge>
+            </span>
             Add Your Stores
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

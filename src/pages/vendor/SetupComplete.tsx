@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@stackloop/ui';
+import { Badge, Button } from '@stackloop/ui';
 import { 
   Check, 
   Store, 
@@ -122,7 +122,9 @@ export const SetupComplete: React.FC = () => {
           className="text-center mb-8"
         >
           <h1 className="text-xl font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">9</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">9</Badge>
+            </span>
             Setup Complete!
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

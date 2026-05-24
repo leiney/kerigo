@@ -112,7 +112,10 @@ export const CustomerHomePage: React.FC = () => {
                   M-PESA
                 </Badge>
               </div>
-              <button className="text-primary text-xs font-semibold mt-2.5 flex items-center gap-1">
+              <button
+                onClick={() => navigate('/customer/track-order')}
+                className="text-primary text-xs font-semibold mt-2.5 flex items-center gap-1"
+              >
                 View order details <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>

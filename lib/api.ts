@@ -86,6 +86,9 @@ export const customerApi = {
   getPersonalInformation: async (): Promise<CustomerSettingsData['personalInformation']> => apiGet('/customer/personal-information/'),
   updatePersonalInformation: async (payload: Partial<CustomerSettingsData['personalInformation']>): Promise<CustomerSettingsData['personalInformation']> => apiPatch('/customer/personal-information/', payload),
   getAccountSettings: async (): Promise<AccountSettingsData> => apiGet('/customer/account-settings/'),
+  // Customer selected location APIs
+  getLocation: async (): Promise<Record<string, any>> => apiGet('/customer/location/'),
+  saveLocation: async (payload: Record<string, unknown>): Promise<Record<string, any>> => apiPost('/customer/location/', payload),
   getHelpTopics: async (): Promise<SupportTopic[]> => apiGet('/customer/help/topics/'),
   getHelpOptions: async (): Promise<SupportOption[]> => apiGet('/customer/help/options/'),
   createSupportTicket: async (payload: Record<string, unknown>): Promise<{ message: string; ticketId: string }> => apiPost('/customer/help/tickets/', payload),

@@ -264,6 +264,23 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
     return clone(mockData.customer.vendorStore.menuItems) as T;
   }
 
+  // Get or set the customer's selected location
+  if (method === 'GET' && url === '/customer/location') {
+    return clone(mockData.customer.selectedLocation) as T;
+  }
+
+  if (method === 'POST' && url === '/customer/location') {
+    const payload = config.data as Record<string, unknown> | null;
+    if (payload) {
+      mockData.customer.selectedLocation = {
+        ...mockData.customer.selectedLocation,
+        ...(payload as any),
+      };
+      return clone(mockData.customer.selectedLocation) as T;
+    }
+    return clone(mockData.customer.selectedLocation) as T;
+  }
+
   if (method === 'POST' && url === '/customer/cart/add') {
     return clone({ message: 'Item added to cart' }) as T;
   }

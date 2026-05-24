@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, Select, BottomSheet } from '@stackloop/ui';
+import { Badge, Button, Input, Select, BottomSheet } from '@stackloop/ui';
 import { 
   User, 
   Phone, 
@@ -187,7 +187,9 @@ export const AddRiders: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">3</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">3</Badge>
+            </span>
             Add Riders (Multiple)
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

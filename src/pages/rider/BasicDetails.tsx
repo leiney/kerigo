@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input } from '@stackloop/ui';
+import { Badge, Button, Input } from '@stackloop/ui';
 import { 
   User, 
   Mail, 
@@ -56,7 +56,9 @@ export const BasicDetails: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">2</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">2</Badge>
+            </span>
             Basic Details
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

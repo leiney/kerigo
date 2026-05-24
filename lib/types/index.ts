@@ -1,5 +1,7 @@
 export type RequestMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
+
+
 export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
@@ -84,7 +86,31 @@ export interface OrderSummary {
   address: string;
   addressNote: string;
   eta: string;
+  estimatedDelivery?: string;
+  deliveryTime?: string;
+  statusDescription?: string;
+  items?: string;
   steps: OrderStep[];
+  store?: {
+    name: string;
+    description: string;
+    lat: number;
+    lng: number;
+  };
+  rider?: {
+    name: string;
+    role: string;
+    rating: string;
+    reviews?: string;
+    lat: number;
+    lng: number;
+  };
+  deliveryLocation?: {
+    label: string;
+    description: string;
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface OrderHistoryItem {

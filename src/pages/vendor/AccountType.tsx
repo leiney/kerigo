@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@stackloop/ui';
+import { Badge, Button } from '@stackloop/ui';
 import { 
   User, 
   Building2, 
@@ -56,7 +56,9 @@ export const ChooseAccountType: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">1</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">1</Badge>
+            </span>
             Choose Account Type
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

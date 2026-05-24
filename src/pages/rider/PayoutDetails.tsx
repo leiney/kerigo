@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '@stackloop/ui';
+import { Badge, Button } from '@stackloop/ui';
 import { 
   Landmark, 
   Smartphone, 
@@ -60,7 +60,9 @@ export const PayoutDetails: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">4</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">4</Badge>
+            </span>
             Payout Details
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

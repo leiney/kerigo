@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Input } from '@stackloop/ui';
+import { Badge, Button, Input } from '@stackloop/ui';
 import { 
   Smartphone, 
   Info, 
@@ -55,7 +55,9 @@ export const MPesaDetails: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">5</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">5</Badge>
+            </span>
             M-Pesa Details
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">

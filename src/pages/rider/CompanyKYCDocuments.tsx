@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@stackloop/ui';
+import { Badge, Button } from '@stackloop/ui';
 import { 
   Shield, 
   Upload, 
@@ -225,7 +225,9 @@ export const CompanyKYCDocuments: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1">5</span>
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">5</Badge>
+            </span>
             Company KYC Documents
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
