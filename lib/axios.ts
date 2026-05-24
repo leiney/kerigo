@@ -16,7 +16,7 @@ export const axiosInstance = axios.create({
   },
 });
 
-const useMockApi = nodeEnv !== 'production';
+const useMockApi = true;
 
 export type RequestOptions = Pick<AxiosRequestConfig, 'headers' | 'params' | 'data'> & {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';

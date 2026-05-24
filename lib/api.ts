@@ -44,7 +44,7 @@ export const sharedApi = {
 
 export const authApi = {
   getRegistrationMetadata: async (): Promise<{ roles: UserRoleOption[] }> => apiGet('/auth/register/'),
-  
+    
   register: async (data: Record<string, unknown>): Promise<{ message: string; verificationRequired: boolean; user: AuthUser }> => apiPost('/auth/register/', data),
   login: async (identifier: string, password: string): Promise<LoginResponse> => apiPost('/auth/login/', { identifier, password }),
   verifyLogin: async (identifier: string, code: string): Promise<LoginResponse> => apiPost('/auth/login/verify/', { identifier, code }),
@@ -65,12 +65,14 @@ export const customerApi = {
   getStoreData: async (): Promise<VendorStoreData> => apiGet('/customer/store/'),
   getStoreItems: async (): Promise<VendorMenuItem[]> => apiGet('/customer/store/items/'),
   getVendorList: async (): Promise<SharedWelcomeData['vendors']> => apiGet('/customer/vendors/'),
+
   getOrders: async (): Promise<PaginatedResponse<OrderHistoryItem>> => apiGet('/customer/orders/'),
   getLatestOrder: async (): Promise<CustomerHomeData['latestOrder']> => apiGet('/customer/orders/latest/'),
   getAddresses: async (): Promise<PaginatedResponse<AddressItem>> => apiGet('/customer/addresses/'),
   createAddress: async (payload: Partial<AddressItem>): Promise<AddressItem> => apiPost('/customer/addresses/', payload),
   updateAddress: async (id: string, payload: Partial<AddressItem>): Promise<AddressItem> => apiPatch(`/customer/addresses/${id}/`, payload),
   deleteAddress: async (id: string): Promise<{ message: string }> => apiDelete(`/customer/addresses/${id}/`),
+
   getWallet: async (): Promise<WalletSummary> => apiGet('/customer/payments/wallet/'),
   getPaymentMethods: async (): Promise<PaymentMethodItem[]> => apiGet('/customer/payments/methods/'),
   updatePaymentMethod: async (id: string, payload: Partial<PaymentMethodItem>): Promise<PaymentMethodItem> => apiPatch(`/customer/payments/methods/${id}/`, payload),
@@ -86,8 +88,9 @@ export const customerApi = {
   getPersonalInformation: async (): Promise<CustomerSettingsData['personalInformation']> => apiGet('/customer/personal-information/'),
   updatePersonalInformation: async (payload: Partial<CustomerSettingsData['personalInformation']>): Promise<CustomerSettingsData['personalInformation']> => apiPatch('/customer/personal-information/', payload),
   getAccountSettings: async (): Promise<AccountSettingsData> => apiGet('/customer/account-settings/'),
-  // Customer selected location APIs
   getLocation: async (): Promise<Record<string, any>> => apiGet('/customer/location/'),
+
+
   saveLocation: async (payload: Record<string, unknown>): Promise<Record<string, any>> => apiPost('/customer/location/', payload),
   getHelpTopics: async (): Promise<SupportTopic[]> => apiGet('/customer/help/topics/'),
   getHelpOptions: async (): Promise<SupportOption[]> => apiGet('/customer/help/options/'),

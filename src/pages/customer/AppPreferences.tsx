@@ -20,15 +20,12 @@ import type { AppPreferenceValues } from '../../../lib/types';
 export const AppPreferences: React.FC = () => {
   const navigate = useNavigate();
 
-  // State for Toggles
   const [preferences, setPreferences] = useState<AppPreferenceValues>({
     saveData: true,
     locationServices: true,
     language: 'English',
     currency: 'KES (Kenyan Shilling)',
     theme: 'System Default',
-    defaultMapApp: 'Google Maps',
-    chatPreferences: 'Manage chat settings',
   });
 
   useEffect(() => {
@@ -109,10 +106,8 @@ export const AppPreferences: React.FC = () => {
       <CustomSettingsHeader title="App Preferences" />
 
       <div className="px-4 space-y-6 pt-2">
-        {/* --- App Preferences List --- */}
         <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
           
-          {/* General Settings Group */}
           <LinkRow
             icon={Globe}
             label="Language"
@@ -148,24 +143,11 @@ export const AppPreferences: React.FC = () => {
             onChange={() => handleToggle('locationServices')}
           />
 
-          {/* Integration Group */}
-          <LinkRow
-            icon={Map}
-            label="Default Map App"
-            value={preferences.defaultMapApp}
-            onClick={() => console.log('Map settings')}
-          />
-          <LinkRow
-            icon={MessageSquare}
-            label="Chat Preferences"
-            value={preferences.chatPreferences}
-            onClick={() => console.log('Chat settings')}
-          />
+          
 
         </div>
       </div>
 
-      {/* --- Bottom Navigation --- */}
       <BottomNav />
     </div>
   );

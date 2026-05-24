@@ -191,13 +191,10 @@ export interface AppPreferenceValues {
   language: string;
   currency: string;
   theme: string;
-  defaultMapApp: string;
-  chatPreferences: string;
 }
 
 export interface PrivacySecurityValues {
-  profileVisibility: string;
-  blockedUsers: number;
+  
   dataPrivacy: string;
   twoFactorEnabled: boolean;
 }

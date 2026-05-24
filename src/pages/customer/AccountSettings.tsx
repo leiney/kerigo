@@ -103,7 +103,6 @@ export const AccountSettings: React.FC = () => {
           <ChevronRight className="w-5 h-5 text-foreground/30" />
         </button>
 
-        {/* --- Account Section --- */}
         <div>
           <h3 className="text-xs font-semibold text-foreground/50 uppercase tracking-wider mb-2 ml-1">
             Account
@@ -116,7 +115,6 @@ export const AccountSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* --- Preferences Section --- */}
         <div>
           <h3 className="text-xs font-semibold text-foreground/50 uppercase tracking-wider mb-2 ml-1">
             Preferences
@@ -128,7 +126,6 @@ export const AccountSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* --- Support Section --- */}
         <div>
           <h3 className="text-xs font-semibold text-foreground/50 uppercase tracking-wider mb-2 ml-1">
             Support
@@ -139,7 +136,6 @@ export const AccountSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* --- Log Out --- */}
         <div className="pt-1 pb-2">
           <MenuItem
             icon={LogOut}

@@ -15,6 +15,7 @@ import type {
   VerificationMethod,
 } from './types';
 
+
 export const sharedMockData = {
   welcome: {
     vendors: [
@@ -199,13 +200,10 @@ const appPreferences: AppPreferenceValues = {
   language: 'English',
   currency: 'KES (Kenyan Shilling)',
   theme: 'System Default',
-  defaultMapApp: 'Google Maps',
-  chatPreferences: 'Manage chat settings',
 };
 
 const privacySecurity = {
-  profileVisibility: 'Everyone',
-  blockedUsers: 2,
+  
   dataPrivacy: 'Standard privacy controls are enabled',
   twoFactorEnabled: false,
 };
@@ -249,7 +247,6 @@ export const mockData = {
       pastOrders,
       recommendations,
     } satisfies CustomerHomeData,
-    // Previously selected location by the customer (used by MyLocation flow)
     selectedLocation: {
       lat: -1.2920656,
       lng: 36.8219467,

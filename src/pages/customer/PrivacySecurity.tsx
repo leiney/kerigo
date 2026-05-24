@@ -112,20 +112,7 @@ export const PrivacySecurity: React.FC = () => {
             Privacy
           </h2>
           <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
-            <MenuItem
-              icon={Eye}
-              title="Profile Visibility"
-              subtitle="Manage who can see your profile"
-              rightText={security?.profileVisibility}
-              onClick={() => navigate('/settings/privacy/profile-visibility')}
-            />
-            <MenuItem
-              icon={UserX}
-              title="Blocked Users"
-              subtitle="Manage blocked users"
-              rightText={security ? String(security.blockedUsers) : undefined}
-              onClick={() => navigate('/settings/privacy/blocked-users')}
-            />
+           
             <MenuItem
               icon={FileText}
               title="Data & Privacy"
