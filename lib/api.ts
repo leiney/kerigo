@@ -6,10 +6,12 @@ import type {
   AuthUser,
   CustomerHomeData,
   CustomerSettingsData,
+  CustomerOrdersPageData,
   LoginResponse,
   NotificationItem,
   NotificationPreferences,
   OtpMetadataResponse,
+  OrderDetailData,
   OrderHistoryItem,
   PaginatedResponse,
   PaymentMethodItem,
@@ -62,12 +64,14 @@ export const authApi = {
 
 export const customerApi = {
   getHomeData: async (): Promise<CustomerHomeData> => apiGet('/customer/home/'),
+  getOrdersPageData: async (): Promise<CustomerOrdersPageData> => apiGet('/customer/orders-page/'),
   getStoreData: async (): Promise<VendorStoreData> => apiGet('/customer/store/'),
   getStoreItems: async (): Promise<VendorMenuItem[]> => apiGet('/customer/store/items/'),
   getVendorList: async (): Promise<SharedWelcomeData['vendors']> => apiGet('/customer/vendors/'),
 
   getOrders: async (): Promise<PaginatedResponse<OrderHistoryItem>> => apiGet('/customer/orders/'),
   getLatestOrder: async (): Promise<CustomerHomeData['latestOrder']> => apiGet('/customer/orders/latest/'),
+  getOrderDetails: async (orderId: string): Promise<OrderDetailData> => apiGet(`/customer/orders/${encodeURIComponent(orderId)}/`),
   getAddresses: async (): Promise<PaginatedResponse<AddressItem>> => apiGet('/customer/addresses/'),
   createAddress: async (payload: Partial<AddressItem>): Promise<AddressItem> => apiPost('/customer/addresses/', payload),
   updateAddress: async (id: string, payload: Partial<AddressItem>): Promise<AddressItem> => apiPatch(`/customer/addresses/${id}/`, payload),

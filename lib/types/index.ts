@@ -104,6 +104,7 @@ export interface OrderSummary {
     reviews?: string;
     lat: number;
     lng: number;
+    avatarUrl?: string;
   };
   deliveryLocation?: {
     label: string;
@@ -120,6 +121,74 @@ export interface OrderHistoryItem {
   price: number;
   status: string;
   imageUrl: string;
+  avatarUrl?: string;
+}
+
+export interface OrderDetailItem {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  price: number;
+  imageUrl: string;
+}
+
+export interface OrderDetailData {
+  id: string;
+  reference: string;
+  storeName: string;
+  storeCategory: string;
+  status: string;
+  estimatedDelivery: string;
+  deliveryTime: string;
+  address: string;
+  addressNote: string;
+  rider: {
+    name: string;
+    role: string;
+    rating: string;
+    reviews: string;
+    avatarUrl: string;
+  };
+  items: OrderDetailItem[];
+  summary: {
+    subtotal: number;
+    deliveryFee: number;
+    platformFee: number;
+    total: number;
+  };
+  paymentMethod: string;
+  placedAt: string;
+}
+
+export interface CustomerOrderCard {
+  id: string;
+  reference: string;
+  storeName: string;
+  storeImageUrl: string;
+  itemCount: number;
+  total: number;
+  status: 'On the way' | 'Preparing' | 'Delivered' | 'Cancelled';
+  statusTone: 'success' | 'warning' | 'neutral' | 'error';
+  eta: string;
+  riderName: string;
+  riderRole: string;
+  riderAvatarUrl: string;
+}
+
+export interface CustomerOrdersPageData {
+  tabs: {
+    current: number;
+    completed: number;
+    cancelled: number;
+  };
+  banner: {
+    title: string;
+    subtitle: string;
+  };
+  currentOrders: CustomerOrderCard[];
+  completedOrders: CustomerOrderCard[];
+  cancelledOrders: CustomerOrderCard[];
 }
 
 export interface RecommendationItem {

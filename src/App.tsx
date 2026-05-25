@@ -67,6 +67,7 @@ import { AccountSettings } from './pages/customer/AccountSettings';
 import { PersonalInformation } from './pages/customer/PersonalInformation';
 import { Addresses } from './pages/customer/Addresses';
 import { PaymentsWallet } from './pages/customer/PaymentsWallet';
+import { OrdersPage } from './pages/customer/OrdersPage';
 import { OrdersActivity } from './pages/customer/OrdersActivity';
 import { Notifications } from './pages/customer/Notifications';
 import { AppPreferences } from './pages/customer/AppPreferences';
@@ -75,6 +76,7 @@ import { ChangePassword } from './pages/customer/ChangePassword';
 import { LoginActivity } from './pages/customer/LoginActivity';
 import { TwoFactorAuth } from './pages/customer/TwoFactorAuth';
 import { MyLocation } from './pages/customer/MyLocation';
+import OrderDetailsPage from './pages/customer/OrderDetailsPage';
 import { TrackOrder } from './pages/customer/TrackOrder';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -120,7 +122,9 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/customer/" element={<CustomerHomePage />} />
-          <Route path="/customer/orders" element={<CustomerHomePage />} />
+          <Route path="/customer/orders" element={<OrdersPage />} />
+          <Route path="/customer/orders/:orderId" element={<OrderDetailsPage />} />
+          <Route path="/order/:orderId" element={<OrderDetailsPage />} />
           <Route path="/customer/track-order" element={<TrackOrder />} />
           <Route path="/customer/my-location" element={<MyLocation />} />
           <Route path="/customer/location" element={<MyLocation />} />

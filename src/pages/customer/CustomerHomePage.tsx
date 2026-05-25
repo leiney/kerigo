@@ -14,6 +14,7 @@ import {
 import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
+import { useAuthStore } from '../../store/authStore';
 import { selectCartCount, useCartStore } from '../../store/cartStore';
 import { customerApi } from '../../../lib/api';
 import type { CustomerHomeData } from '../../../lib/types';
@@ -23,6 +24,8 @@ export const CustomerHomePage: React.FC = () => {
   const cartItems = useCartStore((state) => state.items);
   const cartCount = selectCartCount(cartItems);
   const [homeData, setHomeData] = useState<CustomerHomeData | null>(null);
+  const user = useAuthStore((state) => state.user);
+  const avatarUrl = user?.avatar ?? '/placeholder-avatar.webp';
 
   useEffect(() => {
     let isMounted = true;
@@ -46,13 +49,19 @@ export const CustomerHomePage: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
       {/* --- Header --- */}
       <header className="px-4 pt-5 pb-3 flex items-start justify-between sticky top-0 bg-background z-40">
-        <div>
+        <div className="flex items-center gap-3">
+          <img
+            src={avatarUrl}
+            alt={homeData?.greetingName ?? 'Profile'}
+            className="w-10 h-10 rounded-full object-cover border border-border shadow-sm bg-white"
+          />
+          <div>
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-xl font-bold text-foreground"
           >
-            Hello, {homeData?.greetingName ?? 'Leiney'} <span className="inline-block">👋</span>
+            Hello, {homeData?.greetingName ?? 'Leiney'}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -62,6 +71,7 @@ export const CustomerHomePage: React.FC = () => {
           >
             What would you like to get today?
           </motion.p>
+          </div>
         </div>
 
         <motion.button
@@ -113,7 +123,7 @@ export const CustomerHomePage: React.FC = () => {
                 </Badge>
               </div>
               <button
-                onClick={() => navigate('/customer/track-order')}
+                onClick={() => navigate(`/customer/orders/${encodeURIComponent(homeData?.latestOrder.id ?? 'KR1024')}`)}
                 className="text-primary text-xs font-semibold mt-2.5 flex items-center gap-1"
               >
                 View order details <ChevronRight className="w-3.5 h-3.5" />
@@ -229,7 +239,10 @@ export const CustomerHomePage: React.FC = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + idx * 0.1 }}
-                className="p-3.5 flex items-center gap-3"
+                onClick={() => navigate(`/customer/orders/${encodeURIComponent(order.id)}`)}
+                role="button"
+                tabIndex={0}
+                className="p-3.5 flex items-center gap-3 cursor-pointer active:bg-secondary/40 transition-colors"
               >
                 {/* Image */}
                 <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">

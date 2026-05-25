@@ -4,6 +4,8 @@ import type {
   AddressItem,
   AuthUser,
   LoginResponse,
+  CustomerOrdersPageData,
+  OrderDetailData,
   OtpMetadataResponse,
   PaymentMethodItem,
   RequestMethod,
@@ -24,7 +26,7 @@ const normalizeUrl = (url: string) => url.replace(/\/+$/, '');
 
 const getIdFromUrl = (url: string) => {
   const parts = normalizeUrl(url).split('/').filter(Boolean);
-  return parts[parts.length - 1] ?? '';
+  return decodeURIComponent(parts[parts.length - 1] ?? '');
 };
 
 const buildAuthResponse = (message = 'Authentication successful'): LoginResponse => ({
@@ -105,6 +107,10 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
     return clone(mockData.customer.home) as T;
   }
 
+  if (method === 'GET' && url === '/customer/orders-page') {
+    return clone(mockData.customer.ordersPage as CustomerOrdersPageData) as T;
+  }
+
   if (method === 'GET' && url === '/customer/vendors') {
     return clone(mockData.shared.welcome.vendors) as T;
   }
@@ -167,6 +173,12 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
 
   if (method === 'GET' && url === '/customer/orders') {
     return clone({ results: mockData.customer.home.pastOrders, count: mockData.customer.home.pastOrders.length }) as T;
+  }
+
+  if (method === 'GET' && url.startsWith('/customer/orders/')) {
+    const orderId = getIdFromUrl(url);
+    const orderDetails = mockData.customer.orderDetailsById[orderId] ?? mockData.customer.orderDetailsById.KR1024;
+    return clone(orderDetails as OrderDetailData) as T;
   }
 
   if (method === 'GET' && url === '/customer/orders/latest') {
