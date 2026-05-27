@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
@@ -10,27 +10,42 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
+import type { RiderBusinessType } from '../../../lib/types';
 
 export const OrganisationDetails: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setOrganizationInfo = useRiderOnboardingStore((state) => state.setOrganizationInfo);
   
   const [formData, setFormData] = useState({
-    organisationName: '',
-    businessType: '',
-    organisationNumber: '',
-    taxId: ''
+    organisationName: draft.organizationInfo.name,
+    businessType: draft.organizationInfo.businessType,
+    organisationNumber: draft.organizationInfo.registrationNo,
+    taxId: draft.organizationInfo.taxIDNumber
   });
 
+  useEffect(() => {
+    setOrganizationInfo({
+      name: formData.organisationName,
+      businessType: (formData.businessType || 'other') as any,
+      registrationNo: formData.organisationNumber,
+      taxIDNumber: formData.taxId,
+    });
+  }, [formData, setOrganizationInfo]);
+
   const businessTypes = [
-    'Transport & Logistics',
-    'Retail',
-    'Food & Beverage',
-    'Professional Services',
-    'Construction',
-    'Manufacturing',
-    'Agriculture',
-    'Other'
-  ];
+    { value: 'delivery', label: 'Delivery' },
+    { value: 'courier', label: 'Courier' },
+    { value: 'logistics', label: 'Logistics' },
+    { value: 'transport', label: 'Transport' },
+    { value: 'motorbike_taxi', label: 'Motorbike Taxi' },
+    { value: 'ecommerce_delivery', label: 'Ecommerce Delivery' },
+    { value: 'food_delivery', label: 'Food Delivery' },
+    { value: 'parcel_delivery', label: 'Parcel Delivery' },
+    { value: 'fleet_management', label: 'Fleet Management' },
+    { value: 'other', label: 'Other' },
+  ] as const;
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +108,7 @@ export const OrganisationDetails: React.FC = () => {
           <div>
             <Input
               label="Organisation Name"
-              placeholder="Enter organisation name"
+              placeholder="Enter  name"
               value={formData.organisationName}
               onChange={(value) => setFormData({ ...formData, organisationName: String(value) })}
               leftIcon={<Building2 className="w-5 h-5 text-foreground/40" />}
@@ -106,9 +121,9 @@ export const OrganisationDetails: React.FC = () => {
             <Select
               label="Business Type"
               placeholder="Select business type"
-              options={businessTypes.map(type => ({ value: type.toLowerCase().replace(/\s+/g, '-'), label: type }))}
+              options={businessTypes.map((type) => ({ value: type.value, label: type.label }))}
               value={formData.businessType}
-              onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
+              onChange={(value) => setFormData({ ...formData, businessType: String(value) as RiderBusinessType })}
               className="rounded-2xl h-14"
             />
           </div>
@@ -116,7 +131,7 @@ export const OrganisationDetails: React.FC = () => {
           {/* Organisation Number (Optional) */}
           <div>
             <Input
-              label="Organisation Number (Optional)"
+              label="Registration Number (Optional)"
               placeholder="Enter registration number"
               value={formData.organisationNumber}
               onChange={(value) => setFormData({ ...formData, organisationNumber: String(value) })}

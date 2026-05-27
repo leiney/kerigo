@@ -1,36 +1,41 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
   Bike, 
   FileText, 
-  Hash, 
   Palette, 
-  CalendarDays, 
   ArrowRight, 
   ChevronLeft 
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
-
-// Generate years for the dropdown (e.g., current year down to 2010)
-const currentYear = new Date().getFullYear();
-const yearOptions = Array.from({ length: currentYear - 2009 }, (_, i) => {
-  const year = currentYear - i;
-  return { value: String(year), label: String(year) };
-});
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const VehicleInformation: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setVehicleInfo = useRiderOnboardingStore((state) => state.setIndividualVehicleInfo);
   
   const [formData, setFormData] = useState({
-    vehicleType: '',
-    registrationNumber: '',
-    make: '',
-    model: '',
-    year: '',
-    color: ''
+    vehicleType: draft.individualVehicleInfo.vehicleType,
+    registrationNumber: draft.individualVehicleInfo.registrationNo,
+    make: draft.individualVehicleInfo.make,
+    model: draft.individualVehicleInfo.model,
+    year: draft.individualVehicleInfo.regYear ? String(draft.individualVehicleInfo.regYear) : '',
+    color: draft.individualVehicleInfo.color
   });
+
+  useEffect(() => {
+    setVehicleInfo({
+      vehicleType: formData.vehicleType,
+      registrationNo: formData.registrationNumber,
+      make: formData.make,
+      model: formData.model,
+      regYear: formData.year ? Number(formData.year) : new Date().getFullYear(),
+      color: formData.color,
+    });
+  }, [formData, setVehicleInfo]);
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,20 +145,16 @@ export const VehicleInformation: React.FC = () => {
             />
           </div>
 
-          {/* Year */}
-          <div className='pb-4'>
-            <Select
-              label="Year"
-              placeholder="Select year"
-              options={yearOptions}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Registration Year"
+              type="number"
+              placeholder="e.g. 2023"
               value={formData.year}
               onChange={(value) => setFormData({ ...formData, year: String(value) })}
-              className="rounded-2xl h-14"
+              className="h-14 rounded-2xl"
             />
-          </div>
 
-          {/* Color */}
-          <div>
             <Input
               label="Color"
               placeholder="e.g. Black"

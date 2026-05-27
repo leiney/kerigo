@@ -36,8 +36,7 @@ import { VehicleInformation } from './pages/rider/VehicleInformation';
 import { VehicleInformation3A } from './pages/rider/VehicleInformation3A';
 
 
-
-import { useAuthStore } from './store/authStore';
+import { useAuth } from './context/AuthContext';
 import { ChooseAccountType } from './pages/vendor/AccountType';
 import { BasicDetails } from './pages/vendor/BasicDetails';
 import { CompanyDetails } from './pages/vendor/CompanyDetails';
@@ -82,14 +81,18 @@ import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
-  const { isLoggedIn, currentRole } = useAuthStore();
+  const { isAuthenticated, isInitialized, user } = useAuth();
   const location = useLocation();
 
-  if (!isLoggedIn) {
+  if (!isInitialized) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && currentRole && !allowedRoles.includes(currentRole)) {
+  if (allowedRoles && user && !allowedRoles.includes(user.userType)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -98,6 +101,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 
 export default function App() {
     const location = useLocation();
+  const protect = (children: React.ReactNode) => <ProtectedRoute>{children}</ProtectedRoute>;
 
 
    useEffect(() => {
@@ -128,38 +132,38 @@ export default function App() {
           <Route path="/customer/track-order" element={<TrackOrder />} />
           <Route path="/customer/my-location" element={<MyLocation />} />
           <Route path="/customer/location" element={<MyLocation />} />
-          <Route path="/customer/profile" element={<AccountSettings />} />
+          <Route path="/customer/profile" element={protect(<AccountSettings />)} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/vendor-store" element={<VendorStorePage />} />
           <Route path="/customer/vendor/:name" element={<VendorStorePage />} />
 
-          <Route path="/settings" element={<Navigate to="/customer/profile" replace />} />
-          <Route path="/settings/personal" element={<PersonalInformation />} />
-          <Route path="/settings/addresses" element={<Addresses />} />
-          <Route path="/settings/addresses/add" element={<Addresses />} />
-          <Route path="/settings/payments" element={<PaymentsWallet />} />
-          <Route path="/settings/payments/topup" element={<PaymentsWallet />} />
-          <Route path="/settings/payments/add" element={<PaymentsWallet />} />
-          <Route path="/settings/payments/default" element={<PaymentsWallet />} />
-          <Route path="/settings/payments/autopay" element={<PaymentsWallet />} />
-          <Route path="/settings/orders" element={<OrdersActivity />} />
-          <Route path="/settings/orders/history" element={<OrdersActivity />} />
-          <Route path="/settings/orders/wishlist" element={<OrdersActivity />} />
-          <Route path="/settings/orders/reviews" element={<OrdersActivity />} />
-          <Route path="/settings/orders/coupons" element={<OrdersActivity />} />
-          <Route path="/settings/orders/returns" element={<OrdersActivity />} />
-          <Route path="/settings/orders/recently-viewed" element={<OrdersActivity />} />
-          <Route path="/settings/notifications" element={<Notifications />} />
-          <Route path="/settings/preferences" element={<AppPreferences />} />
-          <Route path="/settings/privacy" element={<PrivacySecurity />} />
-          <Route path="/settings/privacy/change-password" element={<ChangePassword />} />
-          <Route path="/settings/privacy/two-factor" element={<TwoFactorAuth />} />
-          <Route path="/settings/privacy/login-activity" element={<LoginActivity />} />
-          <Route path="/settings/privacy/profile-visibility" element={<PrivacySecurity />} />
-          <Route path="/settings/privacy/blocked-users" element={<PrivacySecurity />} />
-          <Route path="/settings/privacy/data" element={<PrivacySecurity />} />
-          <Route path="/settings/help" element={<AccountSettings />} />
-          <Route path="/settings/about" element={<AccountSettings />} />
+          <Route path="/settings" element={protect(<Navigate to="/customer/profile" replace />)} />
+          <Route path="/settings/personal" element={protect(<PersonalInformation />)} />
+          <Route path="/settings/addresses" element={protect(<Addresses />)} />
+          <Route path="/settings/addresses/add" element={protect(<Addresses />)} />
+          <Route path="/settings/payments" element={protect(<PaymentsWallet />)} />
+          <Route path="/settings/payments/topup" element={protect(<PaymentsWallet />)} />
+          <Route path="/settings/payments/add" element={protect(<PaymentsWallet />)} />
+          <Route path="/settings/payments/default" element={protect(<PaymentsWallet />)} />
+          <Route path="/settings/payments/autopay" element={protect(<PaymentsWallet />)} />
+          <Route path="/settings/orders" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/orders/history" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/orders/wishlist" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/orders/reviews" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/orders/coupons" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/orders/returns" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/orders/recently-viewed" element={protect(<OrdersActivity />)} />
+          <Route path="/settings/notifications" element={protect(<Notifications />)} />
+          <Route path="/settings/preferences" element={protect(<AppPreferences />)} />
+          <Route path="/settings/privacy" element={protect(<PrivacySecurity />)} />
+          <Route path="/settings/privacy/change-password" element={protect(<ChangePassword />)} />
+          <Route path="/settings/privacy/two-factor" element={protect(<TwoFactorAuth />)} />
+          <Route path="/settings/privacy/login-activity" element={protect(<LoginActivity />)} />
+          <Route path="/settings/privacy/profile-visibility" element={protect(<PrivacySecurity />)} />
+          <Route path="/settings/privacy/blocked-users" element={protect(<PrivacySecurity />)} />
+          <Route path="/settings/privacy/data" element={protect(<PrivacySecurity />)} />
+          <Route path="/settings/help" element={protect(<AccountSettings />)} />
+          <Route path="/settings/about" element={protect(<AccountSettings />)} />
 
 
           <Route path="/vendor-landing" element={<VendorLandingPage />} />

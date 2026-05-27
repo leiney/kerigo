@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -8,7 +8,6 @@ import {
   Star,
   ChevronRight,
   Home,
-  MapPin,
   Shield,
   Store,
   Navigation,
@@ -72,12 +71,47 @@ function FitMapBounds({ bounds }: { bounds: L.LatLngBounds }) {
   return null;
 }
 
+const formatOrderItems = (items: unknown, fallbackCount?: number): string => {
+  if (typeof items === 'string') {
+    return items;
+  }
+
+  if (Array.isArray(items)) {
+    const names = items
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+        if (item && typeof item === 'object' && 'name' in item) {
+          const name = (item as { name?: unknown }).name;
+          return typeof name === 'string' ? name : '';
+        }
+        return '';
+      })
+      .filter(Boolean);
+
+    return names.length ? names.join(', ') : `${fallbackCount ?? items.length} items`;
+  }
+
+  if (items && typeof items === 'object') {
+    if ('name' in items) {
+      const name = (items as { name?: unknown }).name;
+      if (typeof name === 'string' && name.length > 0) {
+        return name;
+      }
+    }
+    return `${fallbackCount ?? 1} item`;
+  }
+
+  return `${fallbackCount ?? 0} items`;
+};
+
 export const TrackOrder: React.FC = () => {
   const navigate = useNavigate();
   const [mapCenter, setMapCenter] = useState<L.LatLngExpression | null>(null);
   const [orderState, setOrderState] = useState<any | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     (async () => {
       try {
@@ -122,7 +156,7 @@ export const TrackOrder: React.FC = () => {
   const estimatedDelivery = order.estimatedDelivery ?? order.eta ?? '';
   const deliveryTime = order.deliveryTime ?? '';
   const statusDescription = order.statusDescription ?? '';
-  const orderItems = order.items ?? `${order.itemCount ?? 0} items`;
+  const orderItems = formatOrderItems(order.items, order.itemCount);
   const orderTotal = typeof order.total === 'number' ? `KES ${order.total.toLocaleString()}` : order.total;
 
   const mapBounds = routeCoordinates.length ? L.latLngBounds(routeCoordinates as [number, number][]) : null;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input } from '@stackloop/ui';
 import { 
@@ -10,12 +10,19 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const CreatePassword: React.FC = () => {
   const navigate = useNavigate();
+  const draftPassword = useRiderOnboardingStore((state) => state.draft.password);
+  const setPassword = useRiderOnboardingStore((state) => state.setPassword);
   
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPasswordLocal] = useState(draftPassword);
+  const [confirmPassword, setConfirmPassword] = useState(draftPassword);
+
+  useEffect(() => {
+    setPassword(password);
+  }, [password, setPassword]);
 
   // Real-time validation states
   const hasMinLength = password.length >= 8;
@@ -89,7 +96,7 @@ export const CreatePassword: React.FC = () => {
             type="password"
             placeholder="Enter password"
             value={password}
-            onChange={(value) => setPassword(String(value))}
+            onChange={(value) => setPasswordLocal(String(value))}
             className="h-14 rounded-2xl"
           />
 

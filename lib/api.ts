@@ -1,4 +1,5 @@
-import { request } from './axios';
+import { UserProfile } from '@/src/types';
+import { axiosInstance, request } from './axios';
 import type {
   AccountSettingsData,
   AddressItem,
@@ -6,17 +7,17 @@ import type {
   AuthUser,
   CustomerHomeData,
   CustomerSettingsData,
-  CustomerOrdersPageData,
   LoginResponse,
   NotificationItem,
   NotificationPreferences,
   OtpMetadataResponse,
-  OrderDetailData,
   OrderHistoryItem,
   PaginatedResponse,
   PaymentMethodItem,
   PrivacySecurityValues,
   SharedWelcomeData,
+  RegisterRiderPayload,
+  RegisterRiderResponse,
   SupportOption,
   SupportTopic,
   UserRoleOption,
@@ -46,9 +47,20 @@ export const sharedApi = {
 
 export const authApi = {
   getRegistrationMetadata: async (): Promise<{ roles: UserRoleOption[] }> => apiGet('/auth/register/'),
-    
+  
   register: async (data: Record<string, unknown>): Promise<{ message: string; verificationRequired: boolean; user: AuthUser }> => apiPost('/auth/register/', data),
-  login: async (identifier: string, password: string): Promise<LoginResponse> => apiPost('/auth/login/', { identifier, password }),
+  signupRider: async (payload: RegisterRiderPayload): Promise<RegisterRiderResponse> => {
+    const response = await axiosInstance.post<RegisterRiderResponse>('/signup-rider/', payload);
+    return response.data;
+  },
+  
+  login: async (identifier: string, password: string): Promise<UserProfile> => {
+    const isEmail = identifier.includes('@');
+    const payload = isEmail ? { email: identifier, password } : { username: identifier, password };
+    const response = await axiosInstance.post<UserProfile>('/login/', payload);
+    return response.data;
+  },
+  
   verifyLogin: async (identifier: string, code: string): Promise<LoginResponse> => apiPost('/auth/login/verify/', { identifier, code }),
   resendCode: async (identifier: string): Promise<{ message: string }> => apiPost('/auth/login/resend-code/', { identifier }),
   refreshToken: async (): Promise<{ accessToken: string }> => apiPost('/auth/token/refresh/', {}),
@@ -64,19 +76,15 @@ export const authApi = {
 
 export const customerApi = {
   getHomeData: async (): Promise<CustomerHomeData> => apiGet('/customer/home/'),
-  getOrdersPageData: async (): Promise<CustomerOrdersPageData> => apiGet('/customer/orders-page/'),
   getStoreData: async (): Promise<VendorStoreData> => apiGet('/customer/store/'),
   getStoreItems: async (): Promise<VendorMenuItem[]> => apiGet('/customer/store/items/'),
   getVendorList: async (): Promise<SharedWelcomeData['vendors']> => apiGet('/customer/vendors/'),
-
   getOrders: async (): Promise<PaginatedResponse<OrderHistoryItem>> => apiGet('/customer/orders/'),
   getLatestOrder: async (): Promise<CustomerHomeData['latestOrder']> => apiGet('/customer/orders/latest/'),
-  getOrderDetails: async (orderId: string): Promise<OrderDetailData> => apiGet(`/customer/orders/${encodeURIComponent(orderId)}/`),
   getAddresses: async (): Promise<PaginatedResponse<AddressItem>> => apiGet('/customer/addresses/'),
   createAddress: async (payload: Partial<AddressItem>): Promise<AddressItem> => apiPost('/customer/addresses/', payload),
   updateAddress: async (id: string, payload: Partial<AddressItem>): Promise<AddressItem> => apiPatch(`/customer/addresses/${id}/`, payload),
   deleteAddress: async (id: string): Promise<{ message: string }> => apiDelete(`/customer/addresses/${id}/`),
-
   getWallet: async (): Promise<WalletSummary> => apiGet('/customer/payments/wallet/'),
   getPaymentMethods: async (): Promise<PaymentMethodItem[]> => apiGet('/customer/payments/methods/'),
   updatePaymentMethod: async (id: string, payload: Partial<PaymentMethodItem>): Promise<PaymentMethodItem> => apiPatch(`/customer/payments/methods/${id}/`, payload),
@@ -92,9 +100,8 @@ export const customerApi = {
   getPersonalInformation: async (): Promise<CustomerSettingsData['personalInformation']> => apiGet('/customer/personal-information/'),
   updatePersonalInformation: async (payload: Partial<CustomerSettingsData['personalInformation']>): Promise<CustomerSettingsData['personalInformation']> => apiPatch('/customer/personal-information/', payload),
   getAccountSettings: async (): Promise<AccountSettingsData> => apiGet('/customer/account-settings/'),
+  // Customer selected location APIs
   getLocation: async (): Promise<Record<string, any>> => apiGet('/customer/location/'),
-
-
   saveLocation: async (payload: Record<string, unknown>): Promise<Record<string, any>> => apiPost('/customer/location/', payload),
   getHelpTopics: async (): Promise<SupportTopic[]> => apiGet('/customer/help/topics/'),
   getHelpOptions: async (): Promise<SupportOption[]> => apiGet('/customer/help/options/'),

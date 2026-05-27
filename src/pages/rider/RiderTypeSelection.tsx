@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@stackloop/ui';
 import { User, Building2, ArrowRight, ChevronLeft, CheckCircle2, Circle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const RiderTypeSelection: React.FC = () => {
   const navigate = useNavigate();
-  const [accountType, setAccountType] = useState<'individual' | 'company'>('individual');
+  const accountType = useRiderOnboardingStore((state) => state.draft.accountType) ?? 'individual';
+  const setAccountType = useRiderOnboardingStore((state) => state.setAccountType);
 
   const handleContinue = () => {
-    if (accountType === 'company') {
+    if (accountType === 'organisation') {
       navigate('/company/organisation-details');
     } else {
       navigate('/individual/basic-details');
@@ -114,23 +116,23 @@ export const RiderTypeSelection: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setAccountType('company')}
+            onClick={() => setAccountType('organisation')}
             className={`
               relative p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-center gap-4
-              ${accountType === 'company' 
+              ${accountType === 'organisation' 
                 ? 'border-primary bg-primary/5 shadow-sm' 
                 : 'border-border hover:border-border-dark bg-background'}
             `}
           >
             <div className={`
               w-12 h-12 rounded-xl flex items-center justify-center shrink-0
-              ${accountType === 'company' ? 'bg-primary text-white' : 'bg-secondary text-foreground/50'}
+              ${accountType === 'organisation' ? 'bg-primary text-white' : 'bg-secondary text-foreground/50'}
             `}>
               <Building2 className="w-6 h-6" />
             </div>
             
             <div className="flex-1">
-              <h3 className={`font-bold text-base ${accountType === 'company' ? 'text-foreground' : 'text-foreground/70'}`}>
+              <h3 className={`font-bold text-base ${accountType === 'organisation' ? 'text-foreground' : 'text-foreground/70'}`}>
                 Company / Organisation
               </h3>
               <p className="text-xs text-foreground/50 mt-0.5">
@@ -139,7 +141,7 @@ export const RiderTypeSelection: React.FC = () => {
             </div>
 
             <div className="shrink-0">
-              {accountType === 'company' ? (
+              {accountType === 'organisation' ? (
                 <CheckCircle2 className="w-6 h-6 text-primary" />
               ) : (
                 <Circle className="w-6 h-6 text-border-dark" />

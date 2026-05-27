@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Input, Select, BottomSheet } from '@stackloop/ui';
+import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
   User, 
   Phone, 
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 interface RiderDoc {
   id: string;
@@ -28,6 +29,7 @@ interface RiderDoc {
 
 interface Rider {
   id: string;
+  idNumber: string;
   name: string;
   phone: string;
   email?: string;
@@ -50,60 +52,117 @@ const experienceOptions = [
 
 export const AddRiders: React.FC = () => {
   const navigate = useNavigate();
-  
-  const [riders, setRiders] = useState<Rider[]>([
-    { id: '1', name: 'John Doe', phone: '+254 712 345 678', email: 'john.doe@email.com', experience: '1-3', docs: initialDocs },
-    { id: '2', name: 'Michael Kimani', phone: '+254 723 456 789', email: '', experience: '', docs: initialDocs }
-  ]);
+  const setRidersInStore = useRiderOnboardingStore((state) => state.setRiders);
+  const storeRiders = useRiderOnboardingStore((state) => state.draft.riders);
+
+  const mapStoreToLocal = (r: any, idx: number): Rider => ({
+    id: `${Date.now()}-${idx}`,
+    idNumber: r.idNumber || `ID-${String(Date.now()).slice(-6)}`,
+    name: r.fullName || '',
+    phone: r.phoneNo || '',
+    email: r.email || '',
+    experience: r.experience || '',
+    docs: (r.documents || []).map((d: any, i: number) => ({ id: `doc-${i}`, label: d.documentType || 'Document', description: '', file: null, fileName: d.serialNumber || '' })),
+  });
+
+  const emptyRider = (): Rider => ({
+    id: `rider-${Date.now()}`,
+    idNumber: `ID-${String(Date.now()).slice(-6)}`,
+    name: '',
+    phone: '',
+    email: '',
+    experience: '',
+    docs: initialDocs.map((d) => ({ ...d })),
+  });
+
+  const [riders, setRiders] = useState<Rider[]>(() => (storeRiders && storeRiders.length ? storeRiders.map(mapStoreToLocal) : [emptyRider()]));
+
+  useEffect(() => {
+    if (storeRiders && storeRiders.length) {
+      setRiders((prev) => {
+        // simple check: if prev is empty or differs, replace
+        if (prev.length !== storeRiders.length) return storeRiders.map(mapStoreToLocal);
+        return prev;
+      });
+    }
+  }, [storeRiders]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetForm, setSheetForm] = useState({ name: '', phone: '', email: '', experience: '' });
   const [sheetDocs, setSheetDocs] = useState<RiderDoc[]>(initialDocs);
 
-  const handleFileUpload = (docId: string, file: File, isSheet: boolean = false) => {
-    const updateDocs = isSheet ? sheetDocs : riders[0].docs;
-    const newDocs = updateDocs.map(d => 
-      d.id === docId ? { ...d, file, fileName: file.name } : d
+  useEffect(() => {
+    setRidersInStore(
+      riders.map((rider) => ({
+        fullName: rider.name,
+        phoneNo: rider.phone,
+        email: rider.email || '',
+        experience: rider.experience || '',
+        documents: rider.docs
+          .filter((doc) => doc.fileName)
+          .map((doc, index) => ({
+            documentType: doc.label,
+            serialNumber: doc.fileName || `DOC-${index + 1}`,
+          })),
+      }))
     );
-    if (isSheet) setSheetDocs(newDocs);
-    else {
-      const updatedRiders = [...riders];
-      updatedRiders[0].docs = newDocs;
-      setRiders(updatedRiders);
+  }, [riders, setRidersInStore]);
+
+  const handleFileUpload = (docId: string, file: File, isSheet: boolean = false, riderIndex = 0) => {
+    if (isSheet) {
+      const newDocs = sheetDocs.map((d) => (d.id === docId ? { ...d, file, fileName: file.name } : d));
+      setSheetDocs(newDocs);
+      return;
     }
+
+    const updatedRiders = [...riders];
+    const target = updatedRiders[riderIndex] || emptyRider();
+    target.docs = target.docs.map((d) => (d.id === docId ? { ...d, file, fileName: file.name } : d));
+    updatedRiders[riderIndex] = target;
+    setRiders(updatedRiders);
   };
 
-  const handleRemoveFile = (docId: string, isSheet: boolean = false) => {
-    const updateDocs = isSheet ? sheetDocs : riders[0].docs;
-    const newDocs = updateDocs.map(d => 
-      d.id === docId ? { ...d, file: null, fileName: '' } : d
-    );
-    if (isSheet) setSheetDocs(newDocs);
-    else {
-      const updatedRiders = [...riders];
-      updatedRiders[0].docs = newDocs;
-      setRiders(updatedRiders);
+  const handleRemoveFile = (docId: string, isSheet: boolean = false, riderIndex = 0) => {
+    if (isSheet) {
+      setSheetDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, file: null, fileName: '' } : d)));
+      return;
     }
+
+    const updatedRiders = [...riders];
+    const target = updatedRiders[riderIndex] || emptyRider();
+    target.docs = target.docs.map((d) => (d.id === docId ? { ...d, file: null, fileName: '' } : d));
+    updatedRiders[riderIndex] = target;
+    setRiders(updatedRiders);
   };
 
   const handleAddRiderFromSheet = () => {
     const newRider: Rider = {
       id: Date.now().toString(),
+      idNumber: `ID-${Date.now().toString().slice(-6)}`,
       name: sheetForm.name,
       phone: sheetForm.phone,
       email: sheetForm.email || undefined,
       experience: sheetForm.experience || undefined,
       docs: sheetDocs
     };
-    setRiders([...riders, newRider]);
+    setRiders((prev) => [...prev, newRider]);
     setSheetForm({ name: '', phone: '', email: '', experience: '' });
     setSheetDocs(initialDocs);
     setIsSheetOpen(false);
   };
 
   const handleDeleteRider = (id: string) => {
-    setRiders(riders.filter(r => r.id !== id));
+    setRiders((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      return next.length ? next : [emptyRider()];
+    });
   };
+
+  useEffect(() => {
+    if (!riders || riders.length === 0) {
+      setRiders([emptyRider()]);
+    }
+  }, [riders.length]);
 
   const handleContinue = () => {
     navigate('/company/vehicle-information');
@@ -206,14 +265,24 @@ export const AddRiders: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-bold text-foreground">Rider 1</h2>
-            <button className="text-xs text-error font-medium hover:opacity-80">Remove</button>
+            <button
+              onClick={() => { if (riders[0]) handleDeleteRider(riders[0].id); }}
+              className="text-xs text-error font-medium hover:opacity-80"
+            >
+              Remove
+            </button>
           </div>
 
           <Input
             label="Full Name"
             placeholder="Enter full name"
-            value=""
-            onChange={() => {}}
+            value={riders[0]?.name ?? ''}
+            onChange={(value) => setRiders((prev) => {
+              const next = [...prev];
+              if (!next[0]) next[0] = emptyRider();
+              next[0] = { ...next[0], name: String(value) };
+              return next;
+            })}
             className="h-12 rounded-2xl text-sm"
           />
 
@@ -222,9 +291,30 @@ export const AddRiders: React.FC = () => {
               label="Phone Number"
               type="phone"
               placeholder="Enter phone number"
-              value=""
-              onChange={() => {}}
+              value={riders[0]?.phone ?? ''}
+              onChange={(value) => setRiders((prev) => {
+                const next = [...prev];
+                if (!next[0]) next[0] = emptyRider();
+                next[0] = { ...next[0], phone: String(value) };
+                return next;
+              })}
               defaultCountry="KE"
+              className="h-12 rounded-2xl text-sm"
+            />
+          </div>
+
+          <div className="">
+            <Input
+              label="ID Number"
+              type="text"
+              placeholder="Enter ID number"
+              value={riders[0]?.idNumber ?? ''}
+              onChange={(value) => setRiders((prev) => {
+                const next = [...prev];
+                if (!next[0]) next[0] = emptyRider();
+                next[0] = { ...next[0], idNumber: String(value) };
+                return next;
+              })}
               className="h-12 rounded-2xl text-sm"
             />
           </div>
@@ -234,8 +324,13 @@ export const AddRiders: React.FC = () => {
             label="Email Address (Optional)"
             type="email"
             placeholder="Enter email address"
-            value=""
-            onChange={() => {}}
+            value={riders[0]?.email ?? ''}
+            onChange={(value) => setRiders((prev) => {
+              const next = [...prev];
+              if (!next[0]) next[0] = emptyRider();
+              next[0] = { ...next[0], email: String(value) };
+              return next;
+            })}
             className="h-12 rounded-2xl text-sm"
           />
 
@@ -244,8 +339,13 @@ export const AddRiders: React.FC = () => {
               label="Riding Experience"
               placeholder="Select experience"
               options={experienceOptions}
-              value=""
-              onChange={() => {}}
+              value={riders[0]?.experience ?? ''}
+              onChange={(value) => setRiders((prev) => {
+                const next = [...prev];
+                if (!next[0]) next[0] = emptyRider();
+                next[0] = { ...next[0], experience: String(value) };
+                return next;
+              })}
               className="rounded-2xl h-12 text-sm"
             />
           </div>
@@ -255,7 +355,7 @@ export const AddRiders: React.FC = () => {
             <h3 className="text-xs font-semibold text-foreground">
               KYC Documents <span className="text-[10px] text-primary font-normal">(Required)</span>
             </h3>
-            {riders[0].docs.map(doc => (
+            {(riders[0]?.docs ?? []).map(doc => (
               <KYCDocUploader key={doc.id} doc={doc} />
             ))}
           </div>
@@ -313,78 +413,6 @@ export const AddRiders: React.FC = () => {
 
       </div>
 
-      {/* Bottom Sheet for Adding New Rider */}
-      <BottomSheet 
-        isOpen={isSheetOpen} 
-        onClose={() => setIsSheetOpen(false)} 
-        title="Add New Rider"
-        showCloseButton={true}
-        animate={false}
-      >
-        <div className="p-6 space-y-4 pb-8">
-          <Input
-            label="Full Name"
-            placeholder="Enter full name"
-            value={sheetForm.name}
-            onChange={(v) => setSheetForm({ ...sheetForm, name: String(v) })}
-            className="h-12 rounded-2xl text-sm"
-          />
-          <div className="pb-6">
-            <Input
-              label="Phone Number"
-              type="phone"
-              placeholder="Enter phone number"
-              value={sheetForm.phone}
-              onChange={(v) => setSheetForm({ ...sheetForm, phone: String(v) })}
-              defaultCountry="KE"
-              className="h-12 rounded-2xl text-sm"
-            />
-          </div>
-          <Input
-            label="Email Address (Optional)"
-            type="email"
-            placeholder="Enter email address"
-            value={sheetForm.email}
-            onChange={(v) => setSheetForm({ ...sheetForm, email: String(v) })}
-            className="h-12 rounded-2xl text-sm"
-          />
-          <div className="pb-6">
-            <Select
-              label="Riding Experience (Optional)"
-              placeholder="Select experience"
-              options={experienceOptions}
-              value={sheetForm.experience}
-              onChange={(v) => setSheetForm({ ...sheetForm, experience: String(v) })}
-              className="rounded-2xl h-12 text-sm"
-            />
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <h3 className="text-xs font-semibold text-foreground">
-              KYC Documents <span className="text-[10px] text-primary font-normal">(Required)</span>
-            </h3>
-            {sheetDocs.map(doc => (
-              <KYCDocUploader key={doc.id} doc={doc} isSheet={true} />
-            ))}
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button 
-              variant="outline" 
-              className="flex-1 h-12 rounded-2xl text-sm font-medium"
-              onClick={() => setIsSheetOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              className="flex-1 h-12 rounded-2xl text-sm font-bold shadow-lg shadow-primary/20"
-              onClick={handleAddRiderFromSheet}
-            >
-              Add Rider
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
 
       {/* Footer / Action Button */}
       <div className="absolute bottom-0 w-full p-6 pb-8 bg-white border-t border-border/50">

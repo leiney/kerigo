@@ -108,8 +108,11 @@ export const BottomNav: React.FC<{ cartCount?: number }> = ({ cartCount }) => {
   const location = useLocation();
   const { currentRole } = useAuthStore();
 
-  const role = currentRole ?? inferRoleFromPath(location.pathname);
-  const navItems = navItemsByRole[role];
+  const inferredRole = inferRoleFromPath(location.pathname);
+  const role: NavRole = currentRole === 'customer' || currentRole === 'vendor' || currentRole === 'rider'
+    ? currentRole
+    : inferredRole;
+  const navItems = navItemsByRole[role] ?? navItemsByRole.customer;
 
   const itemClasses = (isActive: boolean) =>
     `flex flex-col items-center gap-1 cursor-pointer transition-colors ${

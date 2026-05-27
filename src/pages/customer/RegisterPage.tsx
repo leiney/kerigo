@@ -41,7 +41,7 @@ export const RegisterPage: React.FC = () => {
         name: response.user.fullName,
         email: response.user.email,
         phone: response.user.phoneNumber,
-        roles: response.user.roles as UserRole[],
+        role: (response.user.role ?? response.user.roles?.[0] ?? 'customer') as UserRole,
         avatar: response.user.avatarUrl,
       };
 

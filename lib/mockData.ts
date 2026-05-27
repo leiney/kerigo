@@ -47,6 +47,7 @@ const baseUser: AuthUser = {
   email: 'sarah.wanjiku@email.com',
   phoneNumber: '+254 700 123 456',
   roles: ['customer'],
+  userType: 'customer',
   avatarUrl: '/placeholder-avatar.webp',
   isVerified: true,
 };

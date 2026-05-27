@@ -6,48 +6,81 @@ import {
   EyeOff, 
   ArrowRight, 
   ShieldCheck, 
-  User, 
+  Mail, 
   Lock,
   Leaf
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { authApi } from '../../../lib/api';
-import { useAuthStore } from '../../store/authStore';
+import { useAuth } from '../../context/AuthContext';
 import type { UserProfile, UserRole } from '../../types';
+import { authApi } from '../../../lib/api';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const setUser = useAuthStore((state) => state.setUser);
-  const setLoading = useAuthStore((state) => state.setLoading);
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
-    emailOrPhone: '',
+    email: '',
     password: ''
   });
 
-  const source = (location.state as { source?: 'vendor' | 'rider' } | null)?.source;
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+
+  const resolveRole = (roleValue: unknown): UserRole => {
+    const validRoles: UserRole[] = ['customer', 'vendor', 'rider'];
+
+    if (typeof roleValue === 'string' && validRoles.includes(roleValue as UserRole)) {
+      return roleValue as UserRole;
+    }
+
+    return 'customer';
+  };
+
+  const getLandingPath = (role: UserRole) => {
+
+    switch (role) {
+      case 'vendor':
+        return '/vendor/dashboard';
+      case 'rider':
+        return '/rider/dashboard';
+      default:
+        return '/customer/';
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      setLoading(true);
-      const response = await authApi.login(formData.emailOrPhone, formData.password);
-      const user: UserProfile = {
-        id: response.user.id,
-        name: response.user.fullName,
-        email: response.user.email,
-        phone: response.user.phoneNumber,
-        roles: response.user.roles as UserRole[],
-        avatar: response.user.avatarUrl,
-      };
+    setIsLoading(true);
+    setErrorMessage('');
 
-      setUser(user);
-      navigate('/verify-identity', { state: { source } });
-    } finally {
-      setLoading(false);
-    }
+    authApi.login(formData.email, formData.password)
+      .then((response) => {
+        const userType = resolveRole(response.userType);
+        const user: UserProfile = {
+          id: response.id,
+          fullName: response.fullName || "",
+          email: response.email,
+          phoneNo: response.phoneNo || "",
+          userType: response.userType,
+          username: response.username || "",
+        };
+
+        login({ token: response?.token || '', user });
+
+
+        const destination = from ?? getLandingPath(user.userType);
+        navigate(destination, { replace: true });
+      })
+      .catch((error) => {
+        setErrorMessage(error instanceof Error ? error.message : 'Login failed. Please try again.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
@@ -114,11 +147,12 @@ export const LoginPage: React.FC = () => {
       >
         {/* Email or Phone Input */}
         <Input
-          label="Email or Phone number"
-          placeholder="Enter email or phone number"
-          value={formData.emailOrPhone}
-          onChange={(value) => setFormData({ ...formData, emailOrPhone: String(value) })}
-          leftIcon={<User className="w-5 h-5 text-foreground/40" />}
+          type="email"
+          label="Email address"
+          placeholder="Enter your email"
+          value={formData.email}
+          onChange={(value) => setFormData({ ...formData, email: String(value) })}
+          leftIcon={<Mail className="w-5 h-5 text-foreground/40" />}
           className="rounded-2xl h-14"
         />
         
@@ -130,19 +164,6 @@ export const LoginPage: React.FC = () => {
           value={formData.password}
           onChange={(value) => setFormData({ ...formData, password: String(value) })}
           leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
-          rightIcon={
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)}
-              className="focus:outline-none"
-            >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5 text-foreground/40" />
-              ) : (
-                <Eye className="h-5 w-5 text-foreground/40" />
-              )}
-            </button>
-          }
           className="rounded-2xl h-14"
         />
 
@@ -206,24 +227,7 @@ export const LoginPage: React.FC = () => {
       >
         <ShieldCheck className="h-4 w-4 text-primary" />
         Your data is safe and secure with us.
-      </motion.div>
-
-      {/* Sign Up Link */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mt-8 text-center text-sm"
-      >
-        <span className="text-foreground/50">Don't have an account? </span>
-        <button 
-          onClick={() => navigate('/register')} 
-          className="text-primary font-bold hover:text-primary/80 transition-colors"
-        >
-          Sign up
-        </button>
-      </motion.div>
-
+      </motion.div>      
       {/* Bottom Decorative Leaves */}
       <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none overflow-hidden">
         <div className="absolute bottom-4 left-8 w-6 h-6 bg-primary/20 rounded-full blur-xl" />

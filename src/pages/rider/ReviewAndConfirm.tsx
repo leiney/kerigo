@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Checkbox } from '@stackloop/ui';
 import { 
@@ -8,32 +8,70 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
-
-// Mock data representing collected info
-const summaryData = {
-  orgName: 'Green Leaves Ltd',
-  adminName: 'John Doe',
-  businessType: 'Logistics & Delivery',
-  email: 'john.doe@email.com',
-  phone: '+254 712 345 678',
-  riders: [
-    { name: 'John Doe', phone: '+254 712 345 678' },
-    { name: 'Michael Kimani', phone: '+254 723 456 789' }
-  ],
-  vehicles: [
-    { reg: 'KMEH 123A', make: 'Honda', model: 'CG 125', year: '2023' },
-    { reg: 'KDG 456B', make: 'TVS', model: 'Radeon', year: '2022' }
-  ],
-  payoutMethod: 'M-Pesa (+254 712 345 678)'
-};
+import { authApi } from '../../../lib/api';
+import { buildRiderSignupPayload } from '../../lib/riderOnboarding';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
+import { useAuth } from '../../context/AuthContext';
+import type { UserProfile } from '../../types';
 
 export const ReviewAndConfirm: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [agreed, setAgreed] = useState(false);
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const reset = useRiderOnboardingStore((state) => state.reset);
+  const isIndividual = draft.accountType !== 'organisation';
 
-  const handleContinue = () => {
+  const summaryData = useMemo(() => {
+    const payoutLabel = draft.payoutInfo
+      ? draft.payoutInfo.mode === 'mpesa'
+        ? `M-Pesa (${(draft.payoutInfo.details as { phoneNo?: string }).phoneNo || draft.phoneNo})`
+        : `Bank (${(draft.payoutInfo.details as { bank?: string }).bank || 'Bank account'})`
+      : 'Not provided';
+
+    return {
+      accountType: draft.accountType,
+      applicantName: draft.fullName || '—',
+      email: draft.email || '—',
+      phone: draft.phoneNo || '—',
+      individualVehicle: draft.individualVehicleInfo.registrationNo
+        ? {
+            vehicleType: draft.individualVehicleInfo.vehicleType,
+            registrationNo: draft.individualVehicleInfo.registrationNo,
+            make: draft.individualVehicleInfo.make,
+            model: draft.individualVehicleInfo.model,
+            regYear: String(draft.individualVehicleInfo.regYear),
+            color: draft.individualVehicleInfo.color,
+          }
+        : null,
+      individualDocuments: draft.individualDocuments,
+      organizationInfo: draft.organizationInfo,
+      organizationVehicles: draft.organizationVehicles,
+      riders: draft.riders,
+      payoutMethod: payoutLabel,
+    };
+  }, [draft]);
+
+  const handleContinue = async () => {
     if (!agreed) return;
-    navigate('/rider/success');
+
+    try {
+      const payload = buildRiderSignupPayload(draft);
+      const response = await authApi.signupRider(payload);
+      const user: UserProfile = {
+        id: response.id,
+        name: response.fullName,
+        email: response.email,
+        phone: response.phoneNo,
+        userType: 'rider',
+      };
+
+      login({ token: response.token, user });
+      reset();
+      navigate('/rider/success');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Could not submit rider signup.');
+    }
   };
 
   return (
@@ -85,61 +123,121 @@ export const ReviewAndConfirm: React.FC = () => {
           className="w-full max-w-md space-y-6"
         >
           
-          {/* Organisation Details */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-start">
-              <span className="text-sm text-foreground/60">Organisation Name</span>
-              <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.orgName}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-sm text-foreground/60">Administrator</span>
-              <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.adminName}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-sm text-foreground/60">Phone Number</span>
-              <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.phone}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-sm text-foreground/60">Email Address</span>
-              <span className="text-sm font-medium text-foreground text-right max-w-[60%] break-all">{summaryData.email}</span>
-            </div>
-            <div className="flex justify-between items-start">
-              <span className="text-sm text-foreground/60">Business Type</span>
-              <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.businessType}</span>
-            </div>
-          </div>
+          {isIndividual ? (
+            <>
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Full Name</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.applicantName}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Phone Number</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.phone}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Email Address</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%] break-all">{summaryData.email}</span>
+                </div>
+              </div>
 
-          {/* Riders Section */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">Riders ({summaryData.riders.length})</h3>
-            <div className="space-y-2 pl-2">
-              {summaryData.riders.map((rider, idx) => (
-                <div key={idx} className="flex items-start gap-3">
-                  <span className="text-xs text-foreground/40 w-4">{idx + 1}.</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{rider.name}</p>
-                    <p className="text-xs text-foreground/50">{rider.phone}</p>
+              {summaryData.individualVehicle && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-foreground">Vehicle</h3>
+                  <div className="space-y-2 pl-2">
+                    <div className="flex items-start gap-3">
+                      <span className="text-xs text-foreground/40 w-4">1.</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{summaryData.individualVehicle.registrationNo}</p>
+                        <p className="text-xs text-foreground/50">
+                          {summaryData.individualVehicle.vehicleType}, {summaryData.individualVehicle.make}, {summaryData.individualVehicle.model}, {summaryData.individualVehicle.regYear}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {/* Vehicles Section */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-foreground">Vehicles ({summaryData.vehicles.length})</h3>
-            <div className="space-y-2 pl-2">
-              {summaryData.vehicles.map((v, idx) => (
-                <div key={idx} className="flex items-start gap-3">
-                  <span className="text-xs text-foreground/40 w-4">{idx + 1}.</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{v.reg}</p>
-                    <p className="text-xs text-foreground/50">{v.make}, {v.model}, {v.year}</p>
-                  </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">KYC Documents ({summaryData.individualDocuments.length})</h3>
+                <div className="space-y-2 pl-2">
+                  {summaryData.individualDocuments.map((document, idx) => (
+                    <div key={`${document.documentType}-${idx}`} className="flex items-start gap-3">
+                      <span className="text-xs text-foreground/40 w-4">{idx + 1}.</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{document.documentType}</p>
+                        <p className="text-xs text-foreground/50">{document.serialNumber}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Organisation Name</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.organizationInfo.name || '—'}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Business Type</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.organizationInfo.businessType || 'other'}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Registration No.</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.organizationInfo.registrationNo || '—'}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Tax ID</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.organizationInfo.taxIDNumber || '—'}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Administrator</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.applicantName}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Phone Number</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{summaryData.phone}</span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-foreground/60">Email Address</span>
+                  <span className="text-sm font-medium text-foreground text-right max-w-[60%] break-all">{summaryData.email}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">Riders ({summaryData.riders.length})</h3>
+                <div className="space-y-2 pl-2">
+                  {summaryData.riders.map((rider, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <span className="text-xs text-foreground/40 w-4">{idx + 1}.</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{rider.fullName}</p>
+                        <p className="text-xs text-foreground/50">{rider.phoneNo}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-foreground">Vehicles ({summaryData.organizationVehicles.length})</h3>
+                <div className="space-y-2 pl-2">
+                  {summaryData.organizationVehicles.map((vehicle, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <span className="text-xs text-foreground/40 w-4">{idx + 1}.</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{vehicle.registrationNo}</p>
+                        <p className="text-xs text-foreground/50">
+                          {vehicle.vehicleType}, {vehicle.make}, {vehicle.model}, {vehicle.regYear}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Payout Method */}
           <div className="space-y-1">

@@ -14,7 +14,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   currentRole: null,
   isLoggedIn: false,
   isLoading: false,
-  setUser: (user) => set({ user, isLoggedIn: !!user, currentRole: user?.roles[0] || null }),
+  setUser: (user) => set({ user, isLoggedIn: !!user, currentRole: user?.role || null }),
   setRole: (role) => set({ currentRole: role }),
   logout: () => set({ user: null, isLoggedIn: false, currentRole: null }),
   setLoading: (loading) => set({ isLoading: loading }),

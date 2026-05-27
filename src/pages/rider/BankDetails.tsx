@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
@@ -11,18 +11,31 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const BankDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isCompanyFlow = location.pathname.startsWith('/company');
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setBankDetails = useRiderOnboardingStore((state) => state.setBankDetails);
   
   const [formData, setFormData] = useState({
-    bank: '',
-    accountNumber: '',
-    branchCode: '',
-    accountName: ''
+    bank: (draft.payoutInfo?.details as { bank?: string } | undefined)?.bank ?? '',
+    accountNumber: (draft.payoutInfo?.details as { accountNumber?: string } | undefined)?.accountNumber ?? '',
+    branchCode: (draft.payoutInfo?.details as { branch?: string } | undefined)?.branch ?? '',
+    accountName: (draft.payoutInfo?.details as { accountName?: string } | undefined)?.accountName ?? ''
   });
+
+  useEffect(() => {
+    setBankDetails({
+      bank: formData.bank,
+      branch: formData.branchCode,
+      accountNumber: formData.accountNumber,
+      swiftCode: '',
+      accountName: formData.accountName,
+    });
+  }, [formData, setBankDetails]);
 
   const bankOptions = [
     { value: 'equity', label: 'Equity Bank' },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input } from '@stackloop/ui';
 import { 
@@ -9,19 +9,30 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const BasicDetails: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setIdentityDetails = useRiderOnboardingStore((state) => state.setIdentityDetails);
   
   const [formData, setFormData] = useState({
-    fullName: '',
-    phoneNumber: '',
-    email: ''
+    fullName: draft.fullName,
+    phoneNumber: draft.phoneNo,
+    email: draft.email
   });
+
+  useEffect(() => {
+    setIdentityDetails({
+      fullName: formData.fullName,
+      phoneNo: formData.phoneNumber,
+      email: formData.email,
+    });
+  }, [formData, setIdentityDetails]);
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/individual/vehicle-information');
+    navigate('/individual/kyc-documents');
   };
 
   return (

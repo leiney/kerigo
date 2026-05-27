@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@stackloop/ui';
 import { 
@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
+import { generateDocumentSerial } from '../../lib/riderOnboarding';
 
 interface DocumentFile {
   id: string;
@@ -147,11 +149,23 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
 
 export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
+  const setCompanyDocuments = useRiderOnboardingStore((state) => state.setCompanyDocuments);
   
   // Company documents
   const [businessCert, setBusinessCert] = useState<DocumentFile | null>(null);
   const [kraPin, setKraPin] = useState<DocumentFile | null>(null);
   const [otherDocuments, setOtherDocuments] = useState<DocumentFile[]>([]);
+
+  useEffect(() => {
+    const documents = [businessCert, kraPin, ...otherDocuments]
+      .filter((document): document is DocumentFile => Boolean(document && document.name))
+      .map((document, index) => ({
+        documentType: document.name,
+        serialNumber: document.name || generateDocumentSerial(document.name, index),
+      }));
+
+    setCompanyDocuments(documents);
+  }, [businessCert, kraPin, otherDocuments, setCompanyDocuments]);
 
   const handleContinue = () => {
     // Validate required documents

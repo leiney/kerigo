@@ -20,15 +20,47 @@ export interface AuthUser {
   email: string;
   phoneNumber: string;
   roles: string[];
+  userType: 'customer' | 'vendor' | 'rider';
   avatarUrl?: string;
   isVerified?: boolean;
+}
+
+export interface LoginUser {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  role: string;
+  userType: 'customer' | 'vendor' | 'rider';
+  avatarUrl?: string;
+  token?: string;
+  phoneNo?: string;
+
 }
 
 export interface LoginResponse {
   message: string;
   accessToken: string;
   refreshToken: string;
-  user: AuthUser;
+  user: LoginUser;
+}
+
+export interface RegisterRiderResponse {
+  id: string;
+  username: string;
+  email: string;
+  accountType: 'individual' | 'organisation';
+  fullName: string;
+  phoneNo: string;
+  payoutInfo: {
+    mode: 'bank' | 'mpesa';
+    details: Record<string, unknown>;
+  };
+  otherInfo: Record<string, unknown>;
+  userType: 'rider';
+  passwordVerified: 'Y' | 'N';
+  dateCreated: string;
+  token: string;
 }
 
 export interface VerificationMethod {
@@ -104,7 +136,6 @@ export interface OrderSummary {
     reviews?: string;
     lat: number;
     lng: number;
-    avatarUrl?: string;
   };
   deliveryLocation?: {
     label: string;
@@ -121,74 +152,6 @@ export interface OrderHistoryItem {
   price: number;
   status: string;
   imageUrl: string;
-  avatarUrl?: string;
-}
-
-export interface OrderDetailItem {
-  id: string;
-  name: string;
-  description: string;
-  quantity: number;
-  price: number;
-  imageUrl: string;
-}
-
-export interface OrderDetailData {
-  id: string;
-  reference: string;
-  storeName: string;
-  storeCategory: string;
-  status: string;
-  estimatedDelivery: string;
-  deliveryTime: string;
-  address: string;
-  addressNote: string;
-  rider: {
-    name: string;
-    role: string;
-    rating: string;
-    reviews: string;
-    avatarUrl: string;
-  };
-  items: OrderDetailItem[];
-  summary: {
-    subtotal: number;
-    deliveryFee: number;
-    platformFee: number;
-    total: number;
-  };
-  paymentMethod: string;
-  placedAt: string;
-}
-
-export interface CustomerOrderCard {
-  id: string;
-  reference: string;
-  storeName: string;
-  storeImageUrl: string;
-  itemCount: number;
-  total: number;
-  status: 'On the way' | 'Preparing' | 'Delivered' | 'Cancelled';
-  statusTone: 'success' | 'warning' | 'neutral' | 'error';
-  eta: string;
-  riderName: string;
-  riderRole: string;
-  riderAvatarUrl: string;
-}
-
-export interface CustomerOrdersPageData {
-  tabs: {
-    current: number;
-    completed: number;
-    cancelled: number;
-  };
-  banner: {
-    title: string;
-    subtitle: string;
-  };
-  currentOrders: CustomerOrderCard[];
-  completedOrders: CustomerOrderCard[];
-  cancelledOrders: CustomerOrderCard[];
 }
 
 export interface RecommendationItem {
@@ -260,10 +223,13 @@ export interface AppPreferenceValues {
   language: string;
   currency: string;
   theme: string;
+  defaultMapApp: string;
+  chatPreferences: string;
 }
 
 export interface PrivacySecurityValues {
-  
+  profileVisibility: string;
+  blockedUsers: number;
   dataPrivacy: string;
   twoFactorEnabled: boolean;
 }
@@ -347,4 +313,106 @@ export interface AccountSettingsData {
 
 export interface SharedWelcomeData {
   vendors: VendorSummary[];
+}
+
+export type AccountType = 'individual' | 'organisation';
+export type PayoutMode = 'bank' | 'mpesa';
+
+export type RiderBusinessType =
+  | 'delivery'
+  | 'courier'
+  | 'logistics'
+  | 'transport'
+  | 'motorbike_taxi'
+  | 'ecommerce_delivery'
+  | 'food_delivery'
+  | 'parcel_delivery'
+  | 'fleet_management'
+  | 'other';
+
+export interface MpesaPayoutDetails {
+  phoneNo: string;
+}
+
+export interface BankPayoutDetails {
+  bank: string;
+  branch: string;
+  accountNumber: string;
+  swiftCode?: string;
+  accountName: string;
+}
+
+export interface PayoutInfo {
+  mode: PayoutMode;
+  details: MpesaPayoutDetails | BankPayoutDetails;
+}
+
+export interface KYCDocument {
+  documentType: string;
+  serialNumber: string;
+}
+
+export interface IndividualVehicleInfo {
+  vehicleType: string;
+  registrationNo: string;
+  make: string;
+  model: string;
+  regYear: number;
+  color: string;
+}
+
+export interface IndividualOtherInfo {
+  vehicleInfo: IndividualVehicleInfo;
+  documents: KYCDocument[];
+}
+
+export interface VehicleRider {
+  idNumber: string;
+  fullName: string;
+}
+
+export interface OrganisationVehicleInfo {
+  vehicleType: string;
+  registrationNo: string;
+  make: string;
+  model: string;
+  regYear: number;
+  color: string;
+  rider: VehicleRider;
+}
+
+export interface OrganizationInfo {
+  name: string;
+  businessType: RiderBusinessType;
+  registrationNo: string;
+  taxIDNumber: string;
+}
+
+export interface RiderInfo {
+  fullName: string;
+  phoneNo: string;
+  email: string;
+  experience: string;
+  documents: KYCDocument[];
+}
+
+export interface OrganisationOtherInfo {
+  vehicleInfo: OrganisationVehicleInfo[];
+  organizationInfo: OrganizationInfo;
+  riders: RiderInfo[];
+}
+
+export interface RegisterRiderPayload {
+  accountType: AccountType;
+  fullName: string;
+  email: string;
+  phoneNo: string;
+  password: string;
+  payoutInfo: PayoutInfo;
+  otherInfo: IndividualOtherInfo | OrganisationOtherInfo;
+}
+
+export interface RegisterRiderResponse {
+  message: string;
+  riderId?: string;
 }

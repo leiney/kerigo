@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
   Bike, 
   FileText, 
-  Calendar, 
+  Palette,
   ArrowRight, 
   ChevronLeft, 
   Plus, 
@@ -13,22 +13,19 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 interface Vehicle {
   id: string;
-  riderId: string;
+  riderIndex: number | null;
   riderName: string;
   type: string;
   regNumber: string;
   make: string;
   model: string;
   year: string;
+  color: string;
 }
-
-const riders = [
-  { value: 'rider1', label: 'John Doe' },
-  { value: 'rider2', label: 'Michael Kimani' }
-];
 
 const vehicleTypes = [
   { value: 'motorbike', label: 'Motorbike' },
@@ -43,31 +40,64 @@ const yearOptions = Array.from({ length: 15 }, (_, i) => {
 
 export const VehicleInformation3A: React.FC = () => {
   const navigate = useNavigate();
-  
-  const [selectedRider, setSelectedRider] = useState('rider1');
-  const [vehicles, setVehicles] = useState<Vehicle[]>([
-    { id: 'v1', riderId: 'rider1', riderName: 'John Doe', type: 'Motorbike', regNumber: 'KMEH 123A', make: 'Honda', model: 'CG 125', year: '2023' }
-  ]);
-  
+  const setOrganizationVehicles = useRiderOnboardingStore((state) => state.setOrganizationVehicles);
+  const draft = useRiderOnboardingStore((state) => state.draft);
+
+  const riderOptions = (draft.riders || []).map((r, i) => ({ value: String(i), label: r.fullName || `Rider ${i + 1}` }));
+
+  const [selectedRider, setSelectedRider] = useState<string>(riderOptions.length ? riderOptions[0].value : '');
+
+  const mapStoreVehicleToLocal = (v: any, idx: number): Vehicle => ({
+    id: v.id || `v-${idx}-${Date.now()}`,
+    riderIndex: typeof v.rider === 'object' ? (draft.riders || []).findIndex((rr) => rr.fullName === v.rider.fullName) : null,
+    riderName: v.rider?.fullName || '',
+    type: v.vehicleType || '',
+    regNumber: v.registrationNo || '',
+    make: v.make || '',
+    model: v.model || '',
+    year: v.regYear ? String(v.regYear) : '',
+    color: v.color || '',
+  });
+
+  const [vehicles, setVehicles] = useState<Vehicle[]>(() => (draft.organizationVehicles && draft.organizationVehicles.length ? draft.organizationVehicles.map(mapStoreVehicleToLocal) : []));
   const [formData, setFormData] = useState({
     type: '',
     regNumber: '',
     make: '',
     model: '',
-    year: ''
+    year: '',
+    color: ''
   });
+
+  useEffect(() => {
+    setOrganizationVehicles(
+      vehicles.map((vehicle) => ({
+        vehicleType: vehicle.type,
+        registrationNo: vehicle.regNumber,
+        make: vehicle.make,
+        model: vehicle.model,
+        regYear: Number(vehicle.year) || new Date().getFullYear(),
+        color: vehicle.color,
+        rider: {
+          idNumber: (vehicle.riderIndex !== null && draft.riders[vehicle.riderIndex]) ? (draft.riders[vehicle.riderIndex].phoneNo || '') : '',
+          fullName: (vehicle.riderIndex !== null && draft.riders[vehicle.riderIndex]) ? draft.riders[vehicle.riderIndex].fullName : vehicle.riderName,
+        },
+      }))
+    );
+  }, [vehicles, setOrganizationVehicles, draft.riders]);
 
   const handleAddVehicle = () => {
     if (formData.type && formData.regNumber) {
-      const rider = riders.find(r => r.value === selectedRider);
+      const riderIdx = selectedRider !== '' ? Number(selectedRider) : null;
+      const riderName = (riderIdx !== null && draft.riders[riderIdx]) ? draft.riders[riderIdx].fullName : '';
       const newVehicle: Vehicle = {
         id: Date.now().toString(),
-        riderId: selectedRider,
-        riderName: rider?.label || '',
+        riderIndex: riderIdx,
+        riderName,
         ...formData
       };
-      setVehicles([...vehicles, newVehicle]);
-      setFormData({ type: '', regNumber: '', make: '', model: '', year: '' });
+      setVehicles((prev) => [...prev, newVehicle]);
+      setFormData({ type: '', regNumber: '', make: '', model: '', year: '', color: '' });
     }
   };
 
@@ -133,7 +163,7 @@ export const VehicleInformation3A: React.FC = () => {
             <Select
               label="Rider"
               placeholder="Select rider"
-              options={riders}
+              options={riderOptions}
               value={selectedRider}
               onChange={(value) => setSelectedRider(String(value))}
               className="rounded-2xl h-14"
@@ -192,15 +222,23 @@ export const VehicleInformation3A: React.FC = () => {
             />
           </div>
 
-          {/* Year */}
-          <div className='pb-4'>
-            <Select
-              label="Year"
-              placeholder="Select year"
-              options={yearOptions}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Registration Year"
+              type="number"
+              placeholder="e.g. 2023"
               value={formData.year}
               onChange={(value) => setFormData({ ...formData, year: String(value) })}
-              className="rounded-2xl h-14"
+              className="h-14 rounded-2xl"
+            />
+
+            <Input
+              label="Color"
+              placeholder="e.g. Black"
+              value={formData.color}
+              onChange={(value) => setFormData({ ...formData, color: String(value) })}
+              leftIcon={<Palette className="w-5 h-5 text-foreground/40" />}
+              className="h-14 rounded-2xl"
             />
           </div>
 
@@ -234,6 +272,7 @@ export const VehicleInformation3A: React.FC = () => {
                         <p className="text-sm font-medium text-foreground truncate">
                           {vehicle.regNumber} • {vehicle.make}, {vehicle.model}, {vehicle.year}
                         </p>
+                        <p className="text-xs text-foreground/50">Color: {vehicle.color}</p>
                       </div>
                       <div className="flex items-center gap-1">
                         <button className="p-2 hover:bg-primary/10 rounded-lg transition-colors">

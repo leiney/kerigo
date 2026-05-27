@@ -3,11 +3,15 @@ export type UserRole = 'customer' | 'vendor' | 'rider';
 
 export interface UserProfile {
   id: string;
-  name: string;
   email: string;
-  phone: string;
-  roles: UserRole[];
+  userType: UserRole;
   avatar?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  token?: string;
+  phoneNo?: string;
+  username?: string;
+  [key: string]: unknown;
 }
 
 export interface AppState {

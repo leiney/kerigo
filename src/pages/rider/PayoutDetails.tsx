@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@stackloop/ui';
 import { 
@@ -11,14 +11,21 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const PayoutDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isCompanyFlow = location.pathname.startsWith('/company');
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setPayoutMode = useRiderOnboardingStore((state) => state.setPayoutMode);
   
   // State to manage selection
-  const [payoutMethod, setPayoutMethod] = useState<'bank' | 'mpesa'>('mpesa');
+  const [payoutMethod, setPayoutMethod] = useState<'bank' | 'mpesa'>(draft.payoutInfo?.mode ?? 'mpesa');
+
+  useEffect(() => {
+    setPayoutMode(payoutMethod);
+  }, [payoutMethod, setPayoutMode]);
 
   const handleContinue = () => {
     if (payoutMethod === 'bank') {

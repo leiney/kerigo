@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Input } from '@stackloop/ui';
 import { 
@@ -9,15 +9,22 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const MPesaDetails: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isCompanyFlow = location.pathname.startsWith('/company');
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setMpesaDetails = useRiderOnboardingStore((state) => state.setMpesaDetails);
   
   const [formData, setFormData] = useState({
-    mpesaNumber: ''
+    mpesaNumber: (draft.payoutInfo?.details as { phoneNo?: string } | undefined)?.phoneNo ?? ''
   });
+
+  useEffect(() => {
+    setMpesaDetails(formData.mpesaNumber);
+  }, [formData.mpesaNumber, setMpesaDetails]);
 
   const handleContinue = () => {
     navigate(isCompanyFlow ? '/company/create-password' : '/individual/create-password');

@@ -4,11 +4,10 @@ import type {
   AddressItem,
   AuthUser,
   LoginResponse,
-  CustomerOrdersPageData,
-  OrderDetailData,
   OtpMetadataResponse,
   PaymentMethodItem,
   RequestMethod,
+  RegisterRiderPayload,
   SupportOption,
   VendorMenuItem,
 } from './types';
@@ -26,14 +25,22 @@ const normalizeUrl = (url: string) => url.replace(/\/+$/, '');
 
 const getIdFromUrl = (url: string) => {
   const parts = normalizeUrl(url).split('/').filter(Boolean);
-  return decodeURIComponent(parts[parts.length - 1] ?? '');
+  return parts[parts.length - 1] ?? '';
 };
 
 const buildAuthResponse = (message = 'Authentication successful'): LoginResponse => ({
   message,
   accessToken: 'mock-access-token',
   refreshToken: 'mock-refresh-token',
-  user: clone(mockData.auth.user),
+  user: {
+    id: mockData.auth.user.id,
+    fullName: mockData.auth.user.fullName,
+    email: mockData.auth.user.email,
+    phoneNumber: mockData.auth.user.phoneNumber,
+    role: mockData.auth.user.roles[0] ?? 'customer',
+    userType: mockData.auth.user.userType ?? 'customer',
+    avatarUrl: mockData.auth.user.avatarUrl,
+  },
 });
 
 export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> => {
@@ -54,6 +61,24 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
 
   if (method === 'POST' && url === '/auth/login') {
     return clone(buildAuthResponse('Login successful')) as T;
+  }
+
+  if (method === 'POST' && url === '/signup-rider') {
+    const payload = config.data as RegisterRiderPayload;
+    return clone({
+      id: `rider_${Date.now()}`,
+      username: `${payload.fullName}`.toLowerCase().replace(/\s+/g, ''),
+      email: payload.email,
+      accountType: payload.accountType,
+      fullName: payload.fullName,
+      phoneNo: payload.phoneNo,
+      payoutInfo: payload.payoutInfo,
+      otherInfo: payload.otherInfo,
+      userType: 'rider',
+      passwordVerified: 'N',
+      dateCreated: new Date().toISOString(),
+      token: 'mock-rider-token',
+    }) as T;
   }
 
   if (method === 'POST' && url === '/auth/login/verify') {
@@ -105,10 +130,6 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
 
   if (method === 'GET' && url === '/customer/home') {
     return clone(mockData.customer.home) as T;
-  }
-
-  if (method === 'GET' && url === '/customer/orders-page') {
-    return clone(mockData.customer.ordersPage as CustomerOrdersPageData) as T;
   }
 
   if (method === 'GET' && url === '/customer/vendors') {
@@ -173,12 +194,6 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
 
   if (method === 'GET' && url === '/customer/orders') {
     return clone({ results: mockData.customer.home.pastOrders, count: mockData.customer.home.pastOrders.length }) as T;
-  }
-
-  if (method === 'GET' && url.startsWith('/customer/orders/')) {
-    const orderId = getIdFromUrl(url);
-    const orderDetails = mockData.customer.orderDetailsById[orderId] ?? mockData.customer.orderDetailsById.KR1024;
-    return clone(orderDetails as OrderDetailData) as T;
   }
 
   if (method === 'GET' && url === '/customer/orders/latest') {

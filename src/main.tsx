@@ -4,6 +4,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { App as NativeApp } from '@capacitor/app'
+import { AuthProvider } from './context/AuthContext';
 
 // Handle Android back button
 NativeApp.addListener('backButton', ({ canGoBack }) => {
@@ -17,7 +18,9 @@ NativeApp.addListener('backButton', ({ canGoBack }) => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </Router>
   </StrictMode>,
 );

@@ -50,7 +50,7 @@ export const SetupComplete: React.FC = () => {
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    // Trigger confetti after a short delay
+    
     const timer = setTimeout(() => {
       setShowConfetti(true);
     }, 300);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 
 
@@ -23,12 +24,22 @@ import { StepDots } from '../../components/shared/StepDots';
 
 export const AdministratorDetails: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useRiderOnboardingStore((state) => state.draft);
+  const setIdentityDetails = useRiderOnboardingStore((state) => state.setIdentityDetails);
   
   const [formData, setFormData] = useState({
-    fullName: '',
-    phoneNumber: '',
-    email: '',
+    fullName: draft.fullName,
+    phoneNumber: draft.phoneNo,
+    email: draft.email,
   });
+
+  useEffect(() => {
+    setIdentityDetails({
+      fullName: formData.fullName,
+      phoneNo: formData.phoneNumber,
+      email: formData.email,
+    });
+  }, [formData, setIdentityDetails]);
 
  
 
@@ -70,7 +81,7 @@ export const AdministratorDetails: React.FC = () => {
           </div>
           
           <h1 className="text-lg font-bold text-foreground mb-2">
-            <span className="text-primary mr-1"> <Badge className='bg-primary text-white' >2A</Badge> </span>
+            <span className="text-primary mr-1"> <Badge className='bg-primary text-white' >2</Badge> </span>
             Administrator Details
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
