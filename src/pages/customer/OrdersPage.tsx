@@ -61,7 +61,7 @@ export const OrdersPage: React.FC = () => {
     return (
       <button
         type="button"
-        className="flex h-14 w-14 flex-col items-center justify-center rounded-xl border border-border bg-white text-foreground/70 shadow-sm transition-colors hover:bg-secondary"
+        className="flex h-14 w-14 flex-col items-center justify-center rounded-md border border-border bg-white text-foreground/70 shadow-sm transition-colors hover:bg-secondary"
         onClick={(event) => event.stopPropagation()}
       >
         <Icon className="h-4 w-4 text-primary" />
@@ -146,13 +146,13 @@ export const OrdersPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             type="button"
             onClick={() => navigate(`/customer/orders/${encodeURIComponent(order.id)}`)}
-            className={`w-full text-left bg-white rounded-2xl p-3 border border-border/50 border-l-4 shadow-sm active:scale-[0.99] transition-transform ${statusStyles[order.statusTone].border}`}
+            className={`w-full text-left bg-white rounded-md p-3 border border-border/50 border-l-4 shadow-sm active:scale-[0.99] transition-transform ${statusStyles[order.statusTone].border}`}
           >
             {/* Top Section */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-start gap-2.5">
-                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center">
-                  <img src={order.storeImageUrl} alt={order.storeName} className="w-full h-full object-cover" />
+                <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center border border-border">
+                  <img src={order.storeImageUrl} alt={order.storeName} className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h4 className="font-bold text-sm leading-tight">{order.reference}</h4>
