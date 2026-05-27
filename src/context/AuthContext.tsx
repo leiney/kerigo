@@ -23,15 +23,20 @@ const readStoredAuth = (): StoredAuth => {
   let user: UserProfile | null = null;
   if (storedUser) {
     try {
-      const parsed = JSON.parse(storedUser) as UserProfile & { userType: UserRole };
+      const parsed = JSON.parse(storedUser) as Record<string, any> & { userType?: UserRole };
       user = {
         id: parsed.id,
-        name: parsed.name,
+        fullName: parsed.fullName ?? parsed.name ?? parsed.username ?? parsed.displayName,
+        name: parsed.name ?? parsed.fullName ?? parsed.username,
+        username: parsed.username,
         email: parsed.email,
-        phone: parsed.phone,
-        userType: parsed.userType  ?? 'customer',
-        avatar: parsed.avatar,
-      };
+        phone: parsed.phone ?? parsed.phoneNo,
+        phoneNo: parsed.phoneNo ?? parsed.phone,
+        userType: (parsed.userType as UserRole) ?? (parsed.userType ?? 'customer'),
+        avatar: parsed.avatar ?? parsed.avatarUrl,
+        avatarUrl: parsed.avatarUrl ?? parsed.avatar,
+        token: parsed.token ?? undefined,
+      } as UserProfile;
     } catch {
       user = null;
     }
@@ -44,6 +49,29 @@ const readStoredAuth = (): StoredAuth => {
   };
 };
 
+const readStoredUser = (): UserProfile | null => {
+  if (typeof window === 'undefined') return null;
+  const storedUser = localStorage.getItem(USER_KEY);
+  if (!storedUser) return null;
+
+  try {
+    const parsed = JSON.parse(storedUser) as UserProfile & { userType?: UserRole };
+    return {
+      id: parsed.id,
+      name: (parsed as any).name,
+      fullName: parsed.fullName,
+      email: parsed.email,
+      phone: (parsed as any).phone ?? parsed.phoneNo,
+      phoneNo: (parsed as any).phoneNo ?? (parsed as any).phone,
+      userType: parsed.userType ?? parsed.userType,
+      avatar: parsed.avatar ?? parsed.avatarUrl,
+      avatarUrl: parsed.avatarUrl ?? parsed.avatar,
+    } as UserProfile;
+  } catch {
+    return null;
+  }
+};
+
 type AuthContextValue = {
   user: UserProfile | null;
   token: string;
@@ -51,6 +79,7 @@ type AuthContextValue = {
   isInitialized: boolean;
   login: (payload: { token: string; user: UserProfile }) => void;
   logout: () => void;
+  getStoredUser: () => UserProfile | null;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -86,6 +115,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useAuthStore.getState().logout();
   };
 
+  const getStoredUser = () => readStoredUser();
+
   return (
     <AuthContext.Provider
       value={{
@@ -95,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isInitialized,
         login,
         logout,
+        getStoredUser,
       }}
     >
       {children}

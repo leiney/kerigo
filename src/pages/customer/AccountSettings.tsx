@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,30 +17,39 @@ import {
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
-import { authApi } from '../../../lib/api';
-import type { AuthUser } from '../../../lib/types';
+import { useAuth } from '../../context/AuthContext';
+import type { UserProfile } from '../../types';
+
+const getDisplayName = (user: UserProfile | null) => {
+  if (!user) {
+    return 'Sarah Wanjiku';
+  }
+
+  const namedUser = user as UserProfile & { name?: string; phone?: string };
+  const fullName = user.fullName ?? namedUser.name ?? user.username ?? '';
+
+  return fullName || 'Sarah Wanjiku';
+};
+
+const getPhoneNumber = (user: UserProfile | null) => {
+  if (!user) {
+    return '+254 700 123 456';
+  }
+
+  const namedUser = user as UserProfile & { phone?: string };
+
+  return user.phoneNo || namedUser.phone || '+254 700 123 456';
+};
+
+const getAvatarInitials = (name: string) => name.trim().slice(0, 2).toUpperCase();
 
 export const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<AuthUser | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadProfile = async () => {
-      const data = await authApi.getCurrentUser();
-
-      if (isMounted) {
-        setProfile(data);
-      }
-    };
-
-    loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { user, logout } = useAuth();
+  const displayName = getDisplayName(user);
+  const phoneNumber = getPhoneNumber(user);
+  const avatarUrl = user?.avatarUrl ?? user?.avatar ?? '';
+  const initials = getAvatarInitials(displayName);
 
   const MenuItem = ({
     icon: Icon,
@@ -91,11 +100,17 @@ export const AccountSettings: React.FC = () => {
         {/* --- Profile Card --- */}
         <button className="w-full bg-white rounded-2xl p-4 border border-border/50 shadow-sm flex items-center gap-4 text-left hover:bg-secondary/30 transition-colors">
           <div className="w-14 h-14 rounded-full bg-secondary overflow-hidden shrink-0 border border-border/50">
-            <img src={profile?.avatarUrl ?? '/placeholder-avatar.webp'} alt={profile?.fullName ?? 'Profile'} className="w-full h-full object-cover" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-sm font-bold">
+                  {initials}
+                </div>
+              )}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-foreground">{profile?.fullName ?? 'Sarah Wanjiku'}</h2>
-            <p className="text-sm text-foreground/60 mt-0.5">{profile?.phoneNumber ?? '+254 700 123 456'}</p>
+              <h2 className="text-base font-bold text-foreground">{displayName}</h2>
+              <p className="text-sm text-foreground/60 mt-0.5">{phoneNumber}</p>
             <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               <CheckCircle className="w-3 h-3 fill-current" /> Verified
             </span>
@@ -142,7 +157,14 @@ export const AccountSettings: React.FC = () => {
             title="Log Out"
             subtitle="Sign out of your account"
             isDestructive
-            onClick={() => navigate('/auth/login')}
+            onClick={() => {
+              try {
+                logout();
+              } catch {
+                // ignore errors from logout
+              }
+              navigate('/auth/login');
+            }}
           />
         </div>
       </div>
