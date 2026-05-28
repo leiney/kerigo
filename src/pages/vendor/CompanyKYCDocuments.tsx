@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@stackloop/ui';
 import { 
@@ -13,19 +13,21 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '@/src/components/shared/StepDots';
+import { generateDocumentSerial, type VendorDocumentAttachment } from '../../lib/vendorOnboarding';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 interface DocumentItem {
   id: string;
   label: string;
   description: string;
   icon: React.ReactNode;
-  file: File | null;
+  attachments: VendorDocumentAttachment[];
   acceptedFormats: string;
 }
 
 // Custom File Upload Button
 const AttachButton: React.FC<{
-  onUpload: (file: File) => void;
+  onUpload: (files: File[]) => void;
   accept: string;
 }> = ({ onUpload, accept }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,9 +37,9 @@ const AttachButton: React.FC<{
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onUpload(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) {
+      onUpload(files);
       e.target.value = '';
     }
   };
@@ -48,6 +50,7 @@ const AttachButton: React.FC<{
         ref={fileInputRef}
         type="file"
         accept={accept}
+        multiple
         onChange={handleChange}
         className="hidden"
       />
@@ -64,13 +67,14 @@ const AttachButton: React.FC<{
 
 export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
+  const setOrganizationDocuments = useVendorOnboardingStore((state) => state.setOrganizationDocuments);
   const [documents, setDocuments] = useState<DocumentItem[]>([
     {
       id: 'business-certificate',
       label: 'Business Certificate',
       description: 'Certificate of incorporation or registration',
       icon: <FileText className="w-5 h-5 text-primary" />,
-      file: null,
+      attachments: [],
       acceptedFormats: 'image/*,.pdf'
     },
     {
@@ -78,7 +82,7 @@ export const CompanyKYCDocuments: React.FC = () => {
       label: 'KRA PIN Certificate',
       description: 'Tax registration certificate',
       icon: <FileText className="w-5 h-5 text-primary" />,
-      file: null,
+      attachments: [],
       acceptedFormats: 'image/*,.pdf'
     },
     {
@@ -86,30 +90,59 @@ export const CompanyKYCDocuments: React.FC = () => {
       label: 'Company Director ID',
       description: 'National ID of authorized director',
       icon: <FileText className="w-5 h-5 text-primary" />,
-      file: null,
+      attachments: [],
       acceptedFormats: 'image/*,.pdf'
     },
     
   ]);
 
-  const handleFileUpload = (id: string, file: File) => {
-    if (file.size > 5 * 1024 * 1024) {
+  const handleFileUpload = (id: string, files: File[]) => {
+    const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024);
+    if (validFiles.length !== files.length) {
       alert('File size must be less than 5MB');
       return;
     }
     
-    setDocuments(prev => prev.map(doc => 
-      doc.id === id ? { ...doc, file } : doc
-    ));
+    setDocuments((prev) =>
+      prev.map((doc) => {
+        if (doc.id !== id) {
+          return doc;
+        }
+
+        const nextAttachments = [
+          ...doc.attachments,
+          ...validFiles.map((file, index) => ({
+            id: `${doc.id}-${Date.now()}-${index}`,
+            fileName: file.name,
+            serialNumber: generateDocumentSerial(doc.label, doc.attachments.length + index),
+          })),
+        ];
+
+        return { ...doc, attachments: nextAttachments };
+      })
+    );
   };
 
-  const handleRemoveFile = (id: string) => {
-    setDocuments(prev => prev.map(doc => 
-      doc.id === id ? { ...doc, file: null } : doc
-    ));
+  const handleRemoveFile = (id: string, attachmentId: string) => {
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === id ? { ...doc, attachments: doc.attachments.filter((attachment) => attachment.id !== attachmentId) } : doc
+      )
+    );
   };
 
-  const allDocumentsUploaded = documents.every(doc => doc.file !== null);
+  useEffect(() => {
+    setOrganizationDocuments(
+      documents.flatMap((doc) =>
+        doc.attachments.map((attachment) => ({
+          documentType: doc.label,
+          serialNumber: attachment.serialNumber,
+        }))
+      )
+    );
+  }, [documents, setOrganizationDocuments]);
+
+  const allDocumentsUploaded = documents.every((doc) => doc.attachments.length > 0);
 
   const handleContinue = () => {
     navigate('/vendor/add-your-stores');
@@ -129,7 +162,7 @@ export const CompanyKYCDocuments: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={3} />
+        <StepDots currentStep={4} />
 
         <div className="w-8" />
       </div>
@@ -153,7 +186,7 @@ export const CompanyKYCDocuments: React.FC = () => {
             </span>
             KYC Documents
           </h1>
-          <p className="text-sm text-foreground/60 leading-relaxed max-w-[280px] mx-auto">
+          <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
             Verify your business documents.
           </p>
         </motion.div>
@@ -183,7 +216,7 @@ export const CompanyKYCDocuments: React.FC = () => {
                       <h3 className="font-bold text-sm text-foreground">
                         {doc.label}
                       </h3>
-                      {doc.file ? (
+                      {doc.attachments.length > 0 ? (
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
                       ) : (
                         <Circle className="w-4 h-4 text-gray-300 shrink-0" />
@@ -194,34 +227,36 @@ export const CompanyKYCDocuments: React.FC = () => {
                       {doc.description}
                     </p>
 
-                    {doc.file ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <div className="flex items-center gap-1.5 bg-primary/5 rounded-lg px-2 py-1.5">
-                          <File className="w-3.5 h-3.5 text-primary" />
-                          <span className="text-xs text-foreground font-medium truncate max-w-[150px]">
-                            {doc.file.name}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFile(doc.id)}
-                          className="p-1 hover:bg-secondary rounded transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5 text-foreground/40" />
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-foreground/40">No file attached</p>
-                    )}
+                    <div className="mt-2 space-y-2">
+                      {doc.attachments.length > 0 ? (
+                        doc.attachments.map((attachment) => (
+                          <div key={attachment.id} className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-primary/5 rounded-lg px-2 py-1.5 flex-1 min-w-0">
+                              <File className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-xs text-foreground font-medium truncate max-w-37.5">
+                                {attachment.fileName}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(doc.id, attachment.id)}
+                              className="p-1 hover:bg-secondary rounded transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5 text-foreground/40" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-foreground/40">No file attached</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {!doc.file && (
-                  <AttachButton
-                    onUpload={(file) => handleFileUpload(doc.id, file)}
-                    accept={doc.acceptedFormats}
-                  />
-                )}
+                <AttachButton
+                  onUpload={(files) => handleFileUpload(doc.id, files)}
+                  accept={doc.acceptedFormats}
+                />
               </div>
             ))}
           </div>

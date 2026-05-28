@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input } from '@stackloop/ui';
 import { 
@@ -10,13 +10,20 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const MPesaDetails: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useVendorOnboardingStore((state) => state.draft);
+  const setMpesaDetails = useVendorOnboardingStore((state) => state.setMpesaDetails);
   const [formData, setFormData] = useState({
-    mpesaNumber: '',
-    accountName: ''
+    mpesaNumber: draft.phoneNo,
+    accountName: draft.fullName
   });
+
+  useEffect(() => {
+    setMpesaDetails(formData.mpesaNumber);
+  }, [formData.mpesaNumber, setMpesaDetails]);
 
   const handleContinue = () => {
     navigate('/vendor/create-password');
@@ -34,7 +41,7 @@ export const MPesaDetails: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={7} />
+        <StepDots currentStep={8} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />
@@ -93,17 +100,6 @@ export const MPesaDetails: React.FC = () => {
             />
 
           </div>
-
-          {/* Account Name */}
-         {/*  <Input
-            label="Account Name"
-            placeholder="Enter name as registered on M-Pesa"
-            value={formData.accountName}
-            onChange={(value) => setFormData({ ...formData, accountName: String(value) })}
-            leftIcon={<User className="w-5 h-5 text-foreground/40" />}
-            className="rounded-2xl h-14"
-          />
- */}
         </motion.div>
 
       </div>

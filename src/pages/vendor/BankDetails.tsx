@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
@@ -11,15 +11,29 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const BankDetails: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useVendorOnboardingStore((state) => state.draft);
+  const setBankDetails = useVendorOnboardingStore((state) => state.setBankDetails);
   const [formData, setFormData] = useState({
     bank: '',
     accountNumber: '',
     branchCode: '',
-    accountName: ''
+    accountName: draft.fullName,
+    swiftCode: '',
   });
+
+  useEffect(() => {
+    setBankDetails({
+      bank: formData.bank,
+      branch: formData.branchCode,
+      accountNumber: formData.accountNumber,
+      swiftCode: formData.swiftCode,
+      accountName: formData.accountName,
+    });
+  }, [formData, setBankDetails]);
 
   const bankOptions = [
     { value: 'equity', label: 'Equity Bank' },
@@ -46,16 +60,13 @@ export const BankDetails: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={7} />
+        <StepDots currentStep={8} />
 
-        {/* Spacer to balance the header */}
         <div className="w-8" />
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 px-6 pt-6 flex flex-col items-center">
         
-        {/* Step Icon & Title */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -76,7 +87,6 @@ export const BankDetails: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Form Fields */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -84,7 +94,6 @@ export const BankDetails: React.FC = () => {
           className="w-full max-w-md space-y-4"
         >
           
-          {/* Select Bank */}
           <div className='pb-4'>
 
             <Select
@@ -103,6 +112,15 @@ export const BankDetails: React.FC = () => {
             placeholder="Enter branch code"
             value={formData.branchCode}
             onChange={(value) => setFormData({ ...formData, branchCode: String(value) })}
+            leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
+            className="rounded-2xl h-14"
+          />
+
+          <Input
+            label="SWIFT Code (Optional)"
+            placeholder="Enter SWIFT code"
+            value={formData.swiftCode}
+            onChange={(value) => setFormData({ ...formData, swiftCode: String(value) })}
             leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
           />
@@ -127,7 +145,6 @@ export const BankDetails: React.FC = () => {
             className="rounded-2xl h-14"
           />
 
-          {/* Info Note */}
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-start gap-3 mt-2">
             <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <p className="text-xs text-foreground/70 leading-tight">
@@ -139,7 +156,6 @@ export const BankDetails: React.FC = () => {
 
       </div>
 
-      {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}

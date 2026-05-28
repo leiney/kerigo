@@ -7,6 +7,7 @@ import type {
   OtpMetadataResponse,
   PaymentMethodItem,
   RequestMethod,
+  RegisterVendorPayload,
   RegisterRiderPayload,
   SupportOption,
   VendorMenuItem,
@@ -78,6 +79,16 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
       passwordVerified: 'N',
       dateCreated: new Date().toISOString(),
       token: 'mock-rider-token',
+    }) as T;
+  }
+
+  if (method === 'POST' && url === '/signup-vendor') {
+    const payload = config.data as RegisterVendorPayload;
+    return clone({
+      message: 'Vendor signup successful',
+      vendorId: `vendor_${Date.now()}`,
+      token: 'mock-vendor-token',
+      accountType: payload.accountType,
     }) as T;
   }
 

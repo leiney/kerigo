@@ -12,9 +12,13 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const ManageMultipleStores: React.FC = () => {
   const navigate = useNavigate();
+  const stores = useVendorOnboardingStore((state) => state.draft.stores);
+  const removeStore = useVendorOnboardingStore((state) => state.removeStore);
+  const canContinue = stores.length > 0;
   
 
   return (
@@ -29,7 +33,7 @@ export const ManageMultipleStores: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={4} />
+        <StepDots currentStep={5} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />
@@ -55,7 +59,7 @@ export const ManageMultipleStores: React.FC = () => {
             Manage Multiple Stores
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
-            You can add multiple stores now and manage them all in one place.
+            Add multiple stores and keep them in your onboarding draft.
           </p>
         </motion.div>
 
@@ -68,21 +72,7 @@ export const ManageMultipleStores: React.FC = () => {
         >
           <div className="flex items-start gap-5">
             
-            {/* Phone Mockup */}
-            {/* <div className="w-28 h-44 bg-gray-50 border border-border rounded-3xl p-3 shrink-0 relative overflow-hidden shadow-sm">
-              <div className="space-y-2.5 mt-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-border">
-                    <div className="w-6 h-6 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                      <Store className="w-3 h-3 text-primary" />
-                    </div>
-                    <div className="flex-1 h-1.5 bg-gray-200 rounded-full" />
-                    <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div> */}
-
+           
             {/* Feature Callouts */}
             <div className="flex-1 space-y-4 pt-2">
               <div className="flex items-start gap-2.5">
@@ -114,15 +104,31 @@ export const ManageMultipleStores: React.FC = () => {
             </div>
           </div>
 
-          {/* Add First Store Button */}
           <div className="mt-6">
             <button 
-              onClick={() => navigate('/vendor/store-details')}
+              onClick={() => navigate('/vendor/add-store')}
               className="w-full py-3.5 border-2 border-dashed border-primary/40 rounded-2xl text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/5 hover:border-primary/60 transition-all active:scale-[0.98]"
             >
               <Plus className="w-4 h-4" />
               Add Your First Store
             </button>
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {stores.map((store) => (
+              <div key={store.id} className="flex items-center gap-3 bg-secondary rounded-2xl p-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{store.storeName}</p>
+                  <p className="text-xs text-foreground/50 truncate">{store.cityTown} · {store.businessType}</p>
+                </div>
+                <button
+                  onClick={() => removeStore(store.id)}
+                  className="p-2 hover:bg-error/10 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4 text-error rotate-45" />
+                </button>
+              </div>
+            ))}
           </div>
         </motion.div>
 
@@ -138,11 +144,12 @@ export const ManageMultipleStores: React.FC = () => {
       {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white relative z-10">
         <Button 
-          onClick={() => navigate('/vendor/store-details')}
+          onClick={() => navigate('/vendor/payout-method')}
+          disabled={!canContinue}
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >
-          Continue
+          {canContinue ? 'Continue' : 'Add at least one store'}
         </Button>
       </div>
 

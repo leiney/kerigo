@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Checkbox } from '@stackloop/ui';
 import { 
@@ -8,24 +8,67 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
-
-// In a real app, this data would come from a global store/context
-const mockSummaryData = [
-  { label: 'Account Type', value: 'Individual' },
-  { label: 'Store Name', value: 'Green Leaves Store' },
-  { label: 'Store Location', value: 'Nairobi, Kenya' },
-  { label: 'Payout Method', value: 'Bank Account (Equity Bank **** 1234)' },
-  { label: 'Phone Number', value: '+254 700 123 456' },
-  { label: 'Email Address', value: 'john.doe@email.com' },
-];
+import { authApi } from '../../../lib/api';
+import { buildVendorSignupPayload } from '../../lib/vendorOnboarding';
+import { useAuth } from '../../context/AuthContext';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const ReviewConfirm: React.FC = () => {
   const navigate = useNavigate();
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
+  const draft = useVendorOnboardingStore((state) => state.draft);
+  const resetDraft = useVendorOnboardingStore((state) => state.reset);
 
-  const handleContinue = () => {
-    if (isConfirmed) {
-      navigate('/vendor/setup-completed');
+  const summaryData = useMemo(() => {
+    const payoutSummary = draft.payoutInfo?.mode === 'bank'
+      ? `Bank Account (${(draft.payoutInfo.details as any).bank || 'Bank'} ${(draft.payoutInfo.details as any).accountNumber ? `**** ${(draft.payoutInfo.details as any).accountNumber.slice(-4)}` : ''})`
+      : `M-Pesa (${(draft.payoutInfo?.details as any)?.phoneNo || '—'})`;
+
+    return [
+      { label: 'Account Type', value: draft.accountType || 'individual' },
+      { label: 'Full Name', value: draft.fullName || '—' },
+      { label: 'Email Address', value: draft.email || '—' },
+      { label: 'Phone Number', value: draft.phoneNo || '—' },
+      { label: 'Payout Method', value: payoutSummary },
+      { label: 'Stores', value: String(draft.stores.length) },
+      ...(draft.accountType === 'organisation'
+        ? [
+            { label: 'Organization Name', value: draft.organizationInfo.name || '—' },
+            { label: 'Business Type', value: draft.organizationInfo.businessType || 'other' },
+            { label: 'KRA PIN', value: draft.organizationInfo.taxIDNumber || '—' },
+          ]
+        : []),
+    ];
+  }, [draft]);
+
+  const handleContinue = async () => {
+    if (!isConfirmed || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = buildVendorSignupPayload(draft);
+      const response = await authApi.signupVendor(payload);
+      login({
+        token: response.token ?? `vendor-${response.vendorId ?? Date.now()}`,
+        user: {
+          id: response.vendorId ?? response.token ?? String(Date.now()),
+          email: draft.email,
+          userType: 'vendor',
+          fullName: draft.fullName,
+          phoneNo: draft.phoneNo,
+          token: response.token,
+          username: draft.email,
+        },
+      });
+      resetDraft();
+      navigate('/vendor/setup-completed', { replace: true });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -41,7 +84,7 @@ export const ReviewConfirm: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={9} />
+        <StepDots currentStep={10} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />
@@ -78,7 +121,7 @@ export const ReviewConfirm: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="w-full max-w-md space-y-5"
         >
-          {mockSummaryData.map((item, idx) => (
+          {summaryData.map((item, idx) => (
             <div key={idx} className="flex justify-between items-start gap-4">
               <span className="text-sm text-foreground/50 font-medium">
                 {item.label}
@@ -111,15 +154,15 @@ export const ReviewConfirm: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
-          disabled={!isConfirmed}
+          disabled={!isConfirmed || isSubmitting}
           icon={<ArrowRight className="w-5 h-5" />}
           className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${
-            isConfirmed 
+            isConfirmed && !isSubmitting
               ? 'shadow-primary/20' 
               : 'opacity-50 cursor-not-allowed shadow-none'
           }`}
         >
-          Continue
+          {isSubmitting ? 'Submitting...' : 'Continue'}
         </Button>
       </div>
 

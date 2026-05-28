@@ -16,6 +16,8 @@ import type {
   PaymentMethodItem,
   PrivacySecurityValues,
   SharedWelcomeData,
+  RegisterVendorPayload,
+  RegisterVendorResponse,
   RegisterRiderPayload,
   RegisterRiderResponse,
   SupportOption,
@@ -49,6 +51,11 @@ export const authApi = {
   getRegistrationMetadata: async (): Promise<{ roles: UserRoleOption[] }> => apiGet('/auth/register/'),
   
   register: async (data: Record<string, unknown>): Promise<{ message: string; verificationRequired: boolean; user: AuthUser }> => apiPost('/auth/register/', data),
+  
+  signupVendor: async (payload: RegisterVendorPayload): Promise<RegisterVendorResponse> => {
+    const response = await axiosInstance.post<RegisterVendorResponse>('/signup-vendor/', payload);
+    return response.data;
+  },
   signupRider: async (payload: RegisterRiderPayload): Promise<RegisterRiderResponse> => {
     const response = await axiosInstance.post<RegisterRiderResponse>('/signup-rider/', payload);
     return response.data;

@@ -58,7 +58,6 @@ export const SetupComplete: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Auto-redirect to vendor dashboard after celebration
     const redirectTimer = setTimeout(() => {
       navigate('/vendor/dashboard', { replace: true });
     }, 2200);
@@ -78,7 +77,7 @@ export const SetupComplete: React.FC = () => {
           <Leaf className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={9} />
+        <StepDots currentStep={11} />
 
         <div className="w-8" />
       </div>

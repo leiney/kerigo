@@ -49,7 +49,7 @@ export const AddYourStores: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={4} />
+        <StepDots currentStep={5} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />
@@ -169,7 +169,6 @@ export const AddYourStores: React.FC = () => {
 
       </div>
 
-      {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}

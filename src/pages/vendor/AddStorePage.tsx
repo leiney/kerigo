@@ -1,145 +1,199 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronLeft, 
-  UploadCloud, 
-  Lightbulb, 
-  AlertCircle 
-} from 'lucide-react';
-import { Button, Input, Textarea } from '@stackloop/ui';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Badge, Button, Input, Select } from '@stackloop/ui';
+import { ChevronLeft, MapPin, Navigation, Store, ArrowRight } from 'lucide-react';
+import { motion } from 'motion/react';
+import { businessTypeOptions, type VendorStoreDraft } from '../../lib/vendorOnboarding';
+import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
+import type { LocationDetails } from '../../../lib/types';
+
+type StoreFormState = {
+  storeName: string;
+  businessType: string;
+  country: string;
+  locationDetails: LocationDetails;
+};
+
+type PickerState = {
+  locationDetails?: LocationDetails;
+  formData?: Partial<StoreFormState>;
+};
 
 export const AddStorePage: React.FC = () => {
   const navigate = useNavigate();
-  
-  // Form State
-  const [storeName, setStoreName] = useState('');
-  const [description, setDescription] = useState('');
-  const [logo, setLogo] = useState<File | null>(null);
+  const location = useLocation();
+  const addStore = useVendorOnboardingStore((state) => state.addStore);
+  const [formData, setFormData] = useState<StoreFormState>({
+    storeName: '',
+    businessType: '',
+    country: 'Kenya',
+    locationDetails: {
+      latitude: 0,
+      longitude: 0,
+      address: '',
+      city: '',
+      country: 'Kenya',
+      postalCode: '',
+    },
+  });
 
-  // Character count for description
-  const charCount = description.length;
-  const maxChars = 250;
+  useEffect(() => {
+    const state = location.state as PickerState | null;
+    if (!state) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      ...(state.formData ?? {}),
+      locationDetails: state.locationDetails
+        ? state.locationDetails
+        : prev.locationDetails,
+    }));
+  }, [location.state]);
+
+  const handlePickLocation = () => {
+    navigate('/vendor/location-picker', {
+      state: {
+        returnTo: '/vendor/add-store',
+        formData,
+        locationDetails: formData.locationDetails,
+      },
+    });
+  };
+
+  const handleContinue = () => {
+    const cityTown = formData.locationDetails.city || '';
+    if (!formData.storeName || !formData.businessType || !cityTown) {
+      return;
+    }
+
+    const store: VendorStoreDraft = {
+      id: `store-${Date.now()}`,
+      storeName: formData.storeName,
+      businessType: formData.businessType as VendorStoreDraft['businessType'],
+      cityTown,
+      locationDetails: {
+        longitude: formData.locationDetails.longitude,
+        latitude: formData.locationDetails.latitude,
+        address: formData.locationDetails.address,
+        city: cityTown,
+        country: formData.country,
+        postalCode: formData.locationDetails.postalCode || undefined,
+      },
+    };
+
+    addStore(store);
+    navigate('/vendor/manage-multiple-stores');
+  };
 
   return (
-    <div className="min-h-screen bg-secondary text-foreground font-sans antialiased pb-24">
-      
-      {/* --- Header --- */}
-      <header className="sticky top-0 bg-background/90 backdrop-blur-md z-40 px-4 py-5 flex items-center justify-between border-b border-border">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+    <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
+      <div className="px-5 pt-6 pb-2 flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
         >
-          <ChevronLeft className="w-5 h-5 text-foreground" />
+          <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
-        <div className="text-center">
-          <h1 className="text-lg font-bold text-foreground">Add Store</h1>
-          <p className="text-xs text-foreground/60 mt-0.5">Add basic details to create your store.</p>
-        </div>
-        <div className="w-8" /> {/* Spacer for balance */}
-      </header>
 
-      {/* --- Main Content --- */}
-      <div className="p-4 space-y-4">
-        
-        {/* Card: Basic Details */}
-        <div className="bg-background rounded-xl border border-border shadow-sm overflow-hidden">
-          <div className="p-4 pb-2">
-            <h2 className="font-bold text-sm text-foreground">Basic Details</h2>
-          </div>
-          
-          <div className="p-4 pt-2 space-y-5">
-            
-            {/* Store Name */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-foreground block">
-                Store Name <span className="text-error ml-0.5">*</span>
-              </label>
-              <Input
-                placeholder="Enter store name"
-                value={storeName}
-                onChange={ (value) => setStoreName(String(value)) }
-                className="bg-secondary border-border focus:border-primary focus:ring-primary/20"
-              />
-            </div>
+        <StepDots currentStep={6} />
 
-            {/* Store Description */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-foreground block">
-                Store Description <span className="text-error ml-0.5">*</span>
-              </label>
-              <div className="relative">
-                <Textarea
-                  placeholder="Describe your store, products and services..."
-                  value={description}
-                  onChange={(val) => setDescription(String(val))}
-                  className="bg-secondary border-border focus:border-primary focus:ring-primary/20 min-h-[100px] resize-none pr-12"
-                  maxLength={maxChars}
-                />
-                <div className="absolute bottom-3 right-3 text-[10px] text-foreground/40 pointer-events-none font-medium">
-                  {charCount}/{maxChars}
-                </div>
-              </div>
-            </div>
-
-            {/* Store Logo */}
-            <div className="space-y-1.5">
-              <div className="flex items-baseline justify-between">
-                <label className="text-sm font-semibold text-foreground">
-                  Store Logo <span className="text-error ml-0.5">*</span>
-                </label>
-              </div>
-              <p className="text-xs text-foreground/50">This will be shown on your store profile.</p>
-              
-              <div className="mt-1 pb-2">
-                {/* Custom Upload Area */}
-                <label className="flex flex-col items-center justify-center w-full h-fit pb-2 border-2 border-dashed border-border rounded-xl cursor-pointer bg-secondary hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-col items-center justify-center pt-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                      <UploadCloud className="w-5 h-5 text-primary" />
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">Upload logo</p>
-                    <p className="text-xs text-foreground/40 mt-1">PNG, JPG or SVG (Max. 2MB)</p>
-                  </div>
-                  <input type="file" className="hidden" accept=".png,.jpg,.jpeg,.svg" onChange={(e) => setLogo(e.target.files?.[0] || null)} />
-                </label>
-              </div>
-              
-              {/* Logo Tip */}
-              {logo && (
-                <div className="flex items-center gap-2 text-xs text-foreground/60 bg-green-50 p-2 rounded-lg border border-green-100">
-                  <AlertCircle className="w-3.5 h-3.5 text-success" />
-                  <span>Image selected: {logo.name}</span>
-                </div>
-              )}
-              <div className="flex items-start gap-1.5 text-xs text-foreground/60">
-                <Lightbulb className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                <span>Use a square logo for the best results.</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
+        <div className="w-8" />
       </div>
 
-      {/* --- Footer Action --- */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border z-30 pb-safe">
-        <div className="max-w-md mx-auto space-y-3">
-          <Button 
-            className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md shadow-primary/10 text-base"
-            onClick={() => {
-              // Handle creation logic here
-              navigate('/dashboard');
-            }}
-          >
-            Create Store
-          </Button>
-          <p className="text-[11px] text-center text-foreground/50 leading-relaxed">
-            By creating a store, you agree to our{' '}
-            <a href="#" className="text-primary font-medium hover:underline">
-              Terms & Conditions
-            </a>
+      <div className="flex-1 px-6 pt-6 flex flex-col items-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Store className="w-7 h-7 text-primary" />
+          </div>
+
+          <h1 className="text-lg font-bold text-foreground mb-2">
+            <span className="text-primary mr-1">
+              <Badge className="bg-primary text-white">5</Badge>
+            </span>
+            Add Store
+          </h1>
+          <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
+            Add a store and keep adding more if needed.
           </p>
-        </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="w-full max-w-md space-y-4"
+        >
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-foreground block">
+              Store Name <span className="text-error ml-0.5">*</span>
+            </label>
+            <Input
+              placeholder="Enter store name"
+              value={formData.storeName}
+              onChange={(value) => setFormData({ ...formData, storeName: String(value) })}
+              className="h-14 rounded-2xl"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-foreground block">
+              Business Type <span className="text-error ml-0.5">*</span>
+            </label>
+            <Select
+              placeholder="Select business type"
+              options={businessTypeOptions.map((type) => ({ value: type.value, label: type.label }))}
+              value={formData.businessType}
+              onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
+              className="h-14 rounded-2xl"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Location Details</p>
+                <p className="text-xs text-foreground/50">Use GPS to capture the store location</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePickLocation}
+                className="h-10 rounded-xl text-xs font-semibold gap-2"
+              >
+                <Navigation className="w-4 h-4" />
+                Pick Location
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 text-xs text-foreground/70">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-foreground/40 mt-0.5" />
+                <span>{formData.locationDetails.address || 'Address will appear here after location capture'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Navigation className="w-4 h-4 text-foreground/40 mt-0.5" />
+                <span>{formData.locationDetails.city || 'City/Town will appear here after location capture'}</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+      </div>
+
+      <div className="p-6 pb-8 bg-white">
+        <Button
+          onClick={handleContinue}
+          className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+          icon={<ArrowRight className="w-5 h-5" />}
+        >
+          Save Store
+        </Button>
       </div>
 
     </div>

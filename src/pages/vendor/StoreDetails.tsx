@@ -1,40 +1,98 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
 import { 
   Store, 
-  Tags, 
   MapPin, 
   ArrowRight, 
   ChevronLeft,
-  ShoppingBag
+  ShoppingBag,
+  Navigation,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { businessTypeOptions, type VendorStoreDraft } from '../../lib/vendorOnboarding';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
+import type { LocationDetails } from '../../../lib/types';
+
+type StoreFormState = {
+  storeName: string;
+  businessType: string;
+  country: string;
+  locationDetails: LocationDetails;
+};
+
+type PickerState = {
+  locationDetails?: LocationDetails;
+  formData?: Partial<StoreFormState>;
+};
 
 export const StoreDetails: React.FC = () => {
   const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
+  const location = useLocation();
+  const addStore = useVendorOnboardingStore((state) => state.addStore);
+
+  const [formData, setFormData] = useState<StoreFormState>({
     storeName: '',
     businessType: '',
-    storeLocation: '',
-    physicalAddress: ''
+    country: 'Kenya',
+    locationDetails: {
+      latitude: 0,
+      longitude: 0,
+      address: '',
+      city: '',
+      country: 'Kenya',
+      postalCode: '',
+    },
   });
 
-  const handleContinue = () => {
-    // Navigate to next step (Payout Method - Step 7)
-    navigate('/vendor/payout-method');
+  useEffect(() => {
+    const state = location.state as PickerState | null;
+    if (!state) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      ...(state.formData ?? {}),
+      locationDetails: state.locationDetails
+        ? state.locationDetails
+        : prev.locationDetails,
+    }));
+  }, [location.state]);
+
+  const handlePickLocation = () => {
+    navigate('/vendor/location-picker', {
+      state: {
+        returnTo: '/vendor/store-details',
+        formData,
+        locationDetails: formData.locationDetails,
+      },
+    });
   };
 
-  const businessTypeOptions = [
-    { value: 'retail', label: 'Retail Store' },
-    { value: 'grocery', label: 'Grocery Store' },
-    { value: 'pharmacy', label: 'Pharmacy' },
-    { value: 'restaurant', label: 'Restaurant / Cafe' },
-    { value: 'service', label: 'Service Provider' },
-    { value: 'other', label: 'Other' }
-  ];
+  const handleContinue = () => {
+    const cityTown = formData.locationDetails.city || '';
+    if (!formData.storeName || !formData.businessType || !cityTown) {
+      return;
+    }
+
+    const store: VendorStoreDraft = {
+      id: `store-${Date.now()}`,
+      storeName: formData.storeName,
+      businessType: formData.businessType as any,
+      cityTown,
+      locationDetails: {
+        address: formData.locationDetails.address,
+        city: cityTown,
+        country: formData.country,
+        latitude: formData.locationDetails.latitude,
+        longitude: formData.locationDetails.longitude,
+        postalCode: formData.locationDetails.postalCode || undefined,
+      },
+    };
+
+    addStore(store);
+    navigate('/vendor/payout-method');
+  };
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
@@ -48,7 +106,7 @@ export const StoreDetails: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={5} />
+        <StepDots currentStep={6} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />
@@ -102,7 +160,7 @@ export const StoreDetails: React.FC = () => {
             <Select
               label="Business Type"
               placeholder="Select business type"
-              options={businessTypeOptions}
+              options={businessTypeOptions.map((type) => ({ value: type.value, label: type.label }))}
               value={formData.businessType}
               onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
               className="rounded-2xl h-14"
@@ -110,25 +168,34 @@ export const StoreDetails: React.FC = () => {
           </div>
 
           {/* Store Location */}
-          <Input
-            label="Store Location"
-            placeholder="Enter your store location"
-            value={formData.storeLocation}
-            onChange={(value) => setFormData({ ...formData, storeLocation: String(value) })}
-            leftIcon={<MapPin className="w-5 h-5 text-foreground/40" />}
-            className="rounded-2xl h-14"
-          />
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Location Details</p>
+                <p className="text-xs text-foreground/50">Use GPS to capture the store location</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePickLocation}
+                className="h-10 rounded-xl text-xs font-semibold gap-2"
+              >
+                <Navigation className="w-4 h-4" />
+                Pick Location
+              </Button>
+            </div>
 
-          {/* Physical Address (Optional) */}
-          <div className="relative">
-            <Input
-              label="Physical Address (Optional)"
-              placeholder="Enter physical address"
-              value={formData.physicalAddress}
-              onChange={(value) => setFormData({ ...formData, physicalAddress: String(value) })}
-              leftIcon={<MapPin className="w-5 h-5 text-foreground/40" />}
-              className="rounded-2xl h-14"
-            />
+            <div className="grid grid-cols-1 gap-3 text-xs text-foreground/70">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-foreground/40 mt-0.5" />
+                <span>{formData.locationDetails.address || 'Address will appear here after location capture'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <ShoppingBag className="w-4 h-4 text-foreground/40 mt-0.5" />
+                <span>{formData.locationDetails.city || 'City/Town will appear here after location capture'}</span>
+              </div>
+            </div>
           </div>
 
         </motion.div>

@@ -318,6 +318,26 @@ export interface SharedWelcomeData {
 export type AccountType = 'individual' | 'organisation';
 export type PayoutMode = 'bank' | 'mpesa';
 
+export type BusinessType =
+  | 'restaurant'
+  | 'fast_food'
+  | 'cafe'
+  | 'bakery'
+  | 'cloud_kitchen'
+  | 'supermarket'
+  | 'grocery'
+  | 'butchery'
+  | 'fruit_vegetable'
+  | 'seafood'
+  | 'pharmacy'
+  | 'clinic'
+  | 'hospital'
+  | 'medical_store'
+  | 'beauty_cosmetics'
+  | 'convenience_store'
+  | 'wholesale'
+  | 'other';
+
 export type RiderBusinessType =
   | 'delivery'
   | 'courier'
@@ -350,6 +370,22 @@ export interface PayoutInfo {
 export interface KYCDocument {
   documentType: string;
   serialNumber: string;
+}
+
+export interface LocationDetails {
+  longitude: number;
+  latitude: number;
+  address: string;
+  city: string;
+  country: string;
+  postalCode?: string;
+}
+
+export interface Store {
+  storeName: string;
+  businessType: BusinessType;
+  cityTown: string;
+  locationDetails: LocationDetails;
 }
 
 export interface IndividualVehicleInfo {
@@ -400,6 +436,33 @@ export interface OrganisationOtherInfo {
   vehicleInfo: OrganisationVehicleInfo[];
   organizationInfo: OrganizationInfo;
   riders: RiderInfo[];
+}
+
+export interface IndividualVendorOtherInfo {
+  documents: KYCDocument[];
+  stores: Store[];
+}
+
+export interface OrganisationVendorOtherInfo {
+  organizationInfo: OrganizationInfo;
+  stores: Store[];
+  documents: KYCDocument[];
+}
+
+export interface RegisterVendorPayload {
+  accountType: AccountType;
+  fullName: string;
+  email: string;
+  phoneNo: string;
+  password: string;
+  payoutInfo: PayoutInfo;
+  otherInfo: IndividualVendorOtherInfo | OrganisationVendorOtherInfo;
+}
+
+export interface RegisterVendorResponse {
+  message: string;
+  vendorId?: string;
+  token?: string;
 }
 
 export interface RegisterRiderPayload {

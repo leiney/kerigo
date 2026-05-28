@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Input, PhoneInput } from '@stackloop/ui';
-import { 
-  User, 
-  Mail, 
-  ArrowRight, 
+import { Badge, Button, Input } from '@stackloop/ui';
+import {
+  User,
+  ArrowRight,
   ChevronLeft,
-  Phone
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
-export const BasicDetails: React.FC = () => {
+export const AdministratorDetails: React.FC = () => {
   const navigate = useNavigate();
   const draft = useVendorOnboardingStore((state) => state.draft);
   const setIdentityDetails = useVendorOnboardingStore((state) => state.setIdentityDetails);
@@ -20,7 +18,7 @@ export const BasicDetails: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: draft.fullName,
     phoneNumber: draft.phoneNo,
-    email: draft.email
+    email: draft.email,
   });
 
   useEffect(() => {
@@ -33,116 +31,98 @@ export const BasicDetails: React.FC = () => {
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to next step
-    navigate('/vendor/kyc-documents');
+    navigate('/vendor/company-kyc-documents');
   };
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
-      
-      {/* Top Header / Navigation */}
       <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <button 
-          onClick={() => navigate(-1)} 
+        <button
+          onClick={() => navigate(-1)}
           className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
         >
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={2} />
+        <StepDots currentStep={3} />
 
-        {/* Spacer to balance the header */}
         <div className="w-8" />
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 px-6 pt-6 flex flex-col items-center">
-        
-        <motion.div 
+      <div className="flex-1 px-6 pt-6 flex flex-col items-center overflow-y-auto">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
           <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-7 h-7 text-primary" />
           </div>
-          
+
           <h1 className="text-lg font-bold text-foreground mb-2">
             <span className="text-primary mr-1">
-              <Badge className="bg-primary text-white">2</Badge>
+              <Badge className="bg-primary text-white">3</Badge>
             </span>
-            Basic Details
+            Administrator Details
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
-            Let's start with some basic information about you.
+            Add the details of the administrator for this organisation.
           </p>
         </motion.div>
 
-        {/* Form Fields */}
-        <motion.form 
+        <motion.form
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           onSubmit={handleContinue}
           className="w-full max-w-md space-y-4"
         >
-          
-          {/* Full Name */}
           <div>
             <Input
               label="Full Name"
-              placeholder="Enter your full name"
+              placeholder="Enter full name"
               value={formData.fullName}
               onChange={(value) => setFormData({ ...formData, fullName: String(value) })}
-              leftIcon={<User className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
-              required
             />
           </div>
 
-          {/* Phone Number */}
-          <div className='pb-4'>
+          <div className="pb-4">
             <Input
               label="Phone Number"
-              placeholder="Enter your phone number"
+              type="phone"
+              placeholder="Enter phone number"
               value={formData.phoneNumber}
               onChange={(value) => setFormData({ ...formData, phoneNumber: String(value) })}
               defaultCountry="KE"
-              autoDetect={false}
               className="h-14 rounded-2xl"
-              type='tel'
-              required
             />
           </div>
 
-          {/* Email Address */}
           <div>
             <Input
+              label="Email Address (Optional)"
               type="email"
-              label="Email Address"
-              placeholder="Enter your email"
+              placeholder="Enter email address"
               value={formData.email}
               onChange={(value) => setFormData({ ...formData, email: String(value) })}
-              leftIcon={<Mail className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
-              required
             />
           </div>
-
         </motion.form>
-
       </div>
 
-      <div className="p-6 pb-8 bg-white">
-        <Button 
+      <div className="p-6 pb-8 bg-white border-t border-border/50">
+        <Button
           onClick={handleContinue}
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+          icon={<ArrowRight className="w-5 h-5" />}
         >
           Continue
-          <ArrowRight className="w-5 h-5" />
         </Button>
       </div>
-
     </div>
   );
 };
+
+export default AdministratorDetails;

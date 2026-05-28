@@ -25,7 +25,7 @@ import { OrganisationDetails } from './pages/rider/OrganisationDetails';
 import { KYCDocuments as RiderKYCDocuments } from './pages/rider/KYCDocuments';
 import { CompanyKYCDocuments as RiderCompanyKYCDocuments } from './pages/rider/CompanyKYCDocuments';
 import { AddRiders } from './pages/rider/AddRiders';
-import { AdministratorDetails } from './pages/rider/AdministratorDetails';
+import { AdministratorDetails as RiderAdministratorDetails } from './pages/rider/AdministratorDetails';
 import { BankDetails as RiderBankDetails } from './pages/rider/BankDetails';
 import { MPesaDetails as RiderMPesaDetails } from './pages/rider/MPesaDetails';
 import { PayoutDetails } from './pages/rider/PayoutDetails';
@@ -40,12 +40,14 @@ import { useAuth } from './context/AuthContext';
 import { ChooseAccountType } from './pages/vendor/AccountType';
 import { BasicDetails } from './pages/vendor/BasicDetails';
 import { CompanyDetails } from './pages/vendor/CompanyDetails';
+import { AdministratorDetails as VendorAdministratorDetails } from './pages/vendor/AdministratorDetails';
 import { KYCDocuments } from './pages/vendor/KYCDocuments';
 import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments';
 import { AddYourStores } from './pages/vendor/AddYourStores';
 import { AddStorePage } from './pages/vendor/AddStorePage';
 import { ManageMultipleStores } from './pages/vendor/ManageMultipleStores';
 import { StoreDetails } from './pages/vendor/StoreDetails';
+import { StoreLocationPicker } from './pages/vendor/StoreLocationPicker';
 import { ProductsDashboard } from './pages/vendor/ProductsDashboard';
 import { ProductDetailPage } from './pages/vendor/ProductDetailPage';
 import { AddProductPage } from './pages/vendor/AddProductPage';
@@ -171,9 +173,11 @@ export default function App() {
           <Route path="/vendor/choose-account" element={<ChooseAccountType />} />
           <Route path="/vendor/basic-details" element={<BasicDetails />} />
           <Route path="/vendor/company-details" element={<CompanyDetails />} />
+          <Route path="/vendor/administrator-details" element={<VendorAdministratorDetails />} />
           <Route path="/vendor/kyc-documents" element={<KYCDocuments />} />
           <Route path="/vendor/company-kyc-documents" element={<CompanyKYCDocuments />} />
           <Route path="/vendor/add-store" element={<AddStorePage />} />
+          <Route path="/vendor/location-picker" element={<StoreLocationPicker />} />
           <Route path="/vendor/add-your-stores" element={<AddYourStores />} />
           <Route path='/vendor/manage-multiple-stores' element={<ManageMultipleStores />} />
           <Route path="/vendor/store-details" element={<StoreDetails />} />
@@ -211,7 +215,7 @@ export default function App() {
           <Route path="/individual/kyc-documents" element={<RiderKYCDocuments />} />
           <Route path="/individual/create-password" element={<RiderCreatePassword />} />
           <Route path="/company/organisation-details" element={<OrganisationDetails />} />
-          <Route path="/company/administrator-details" element={<AdministratorDetails />} />
+          <Route path="/company/administrator-details" element={<RiderAdministratorDetails />} />
           <Route path="/company/add-riders" element={<AddRiders />} />
           <Route path="/company/vehicle-information" element={<VehicleInformation3A />} />
           <Route path="/company/payout-details" element={<PayoutDetails />} />

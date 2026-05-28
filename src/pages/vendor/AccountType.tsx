@@ -11,13 +11,15 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const ChooseAccountType: React.FC = () => {
   const navigate = useNavigate();
-  const [accountType, setAccountType] = useState<'individual' | 'company'>('individual');
+  const accountType = useVendorOnboardingStore((state) => state.draft.accountType ?? 'individual');
+  const setAccountType = useVendorOnboardingStore((state) => state.setAccountType);
 
   const handleContinue = () => {
-    if (accountType === 'company') {
+    if (accountType === 'organisation') {
       navigate('/vendor/company-details');
     } else {
       navigate('/vendor/basic-details');
@@ -108,32 +110,32 @@ export const ChooseAccountType: React.FC = () => {
           {/* Company Option */}
           <motion.div
             whileTap={{ scale: 0.98 }}
-            onClick={() => setAccountType('company')}
+            onClick={() => setAccountType('organisation')}
             className={`
               relative p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-center gap-4
-              ${accountType === 'company' 
+              ${accountType === 'organisation' 
                 ? 'border-primary bg-primary/5 shadow-sm' 
                 : 'border-border hover:border-border-dark bg-white'}
             `}
           >
             <div className={`
               w-12 h-12 rounded-xl flex items-center justify-center shrink-0
-              ${accountType === 'company' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}
+              ${accountType === 'organisation' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}
             `}>
               <Building2 className="w-6 h-6" />
             </div>
             
             <div className="flex-1">
-              <h3 className={`font-bold text-base ${accountType === 'company' ? 'text-foreground' : 'text-foreground/70'}`}>
-                Company
+              <h3 className={`font-bold text-base ${accountType === 'organisation' ? 'text-foreground' : 'text-foreground/70'}`}>
+                Organisation
               </h3>
               <p className="text-xs text-foreground/50 mt-0.5">
-                Register as a company
+                Register as an organisation
               </p>
             </div>
 
             <div className="shrink-0">
-              {accountType === 'company' ? (
+              {accountType === 'organisation' ? (
                 <CheckCircle2 className="w-6 h-6 text-primary" />
               ) : (
                 <Circle className="w-6 h-6 text-gray-300" />

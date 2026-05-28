@@ -10,9 +10,11 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const CreatePassword: React.FC = () => {
   const navigate = useNavigate();
+  const setPassword = useVendorOnboardingStore((state) => state.setPassword);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
@@ -29,6 +31,7 @@ export const CreatePassword: React.FC = () => {
   // Update validation whenever passwords change
   useEffect(() => {
     const { password, confirmPassword } = formData;
+    setPassword(password);
     
     setRequirements({
       length: password.length >= 8,
@@ -36,7 +39,7 @@ export const CreatePassword: React.FC = () => {
       number: /\d/.test(password),
       match: password.length > 0 && password === confirmPassword
     });
-  }, [formData]);
+  }, [formData, setPassword]);
 
   const isFormValid = 
     requirements.length && 
@@ -75,7 +78,7 @@ export const CreatePassword: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={8} />
+        <StepDots currentStep={9} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />
@@ -146,7 +149,6 @@ export const CreatePassword: React.FC = () => {
 
       </div>
 
-      {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}

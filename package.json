@@ -17,7 +17,7 @@
     "@capacitor/core": "^6.2.1",
     "@capacitor/status-bar": "^6.0.3",
     "@google/genai": "^1.29.0",
-    "@stackloop/ui": "^4.2.2",
+    "@stackloop/ui": "^4.3.1",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "axios": "^1.16.1",

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@stackloop/ui';
 import { 
@@ -11,10 +11,17 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const PayoutMethod: React.FC = () => {
   const navigate = useNavigate();
-  const [payoutMethod, setPayoutMethod] = useState<'bank' | 'mpesa'>('bank');
+  const draft = useVendorOnboardingStore((state) => state.draft);
+  const setPayoutMode = useVendorOnboardingStore((state) => state.setPayoutMode);
+  const [payoutMethod, setPayoutMethod] = useState<'bank' | 'mpesa'>(draft.payoutInfo?.mode ?? 'bank');
+
+  useEffect(() => {
+    setPayoutMode(payoutMethod);
+  }, [payoutMethod, setPayoutMode]);
 
   const handleContinue = () => {
     if (payoutMethod === 'bank') {
@@ -36,7 +43,7 @@ export const PayoutMethod: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={6} className="overflow-hidden" />
+        <StepDots currentStep={7} className="overflow-hidden" />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />

@@ -1,49 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input, Select } from '@stackloop/ui';
-import { 
-  Building2, 
-  Mail, 
-  ArrowRight, 
-  ChevronLeft,
-  Phone,
-  FileText
-} from 'lucide-react';
+import { Building2, ArrowRight, ChevronLeft, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { businessTypeOptions } from '../../lib/vendorOnboarding';
+import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const CompanyDetails: React.FC = () => {
   const navigate = useNavigate();
+  const draft = useVendorOnboardingStore((state) => state.draft);
+  const setOrganizationInfo = useVendorOnboardingStore((state) => state.setOrganizationInfo);
+
   const [formData, setFormData] = useState({
-    companyName: '',
-    businessRegistrationNumber: '',
-    kraPIN: '',
-    phoneNumber: '',
-    email: '',
-    businessType: ''
+    companyName: draft.organizationInfo.name,
+    businessRegistrationNumber: draft.organizationInfo.registrationNo,
+    kraPIN: draft.organizationInfo.taxIDNumber,
+    businessType: draft.organizationInfo.businessType,
   });
 
-  const businessTypes = [
-    'Retail',
-    'Wholesale',
-    'Manufacturing',
-    'Services',
-    'Logistics',
-    'Food & Beverage',
-    'Technology',
-    'Other'
-  ];
+  useEffect(() => {
+    setOrganizationInfo({
+      name: formData.companyName,
+      registrationNo: formData.businessRegistrationNumber,
+      taxIDNumber: formData.kraPIN,
+      businessType: formData.businessType || 'other',
+    });
+  }, [formData, setOrganizationInfo]);
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
     // Navigate to next step
-    navigate('/vendor/company-kyc-documents');
+    navigate('/vendor/administrator-details');
   };
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
       
-      {/* Top Header / Navigation */}
       <div className="px-5 pt-6 pb-2 flex items-center justify-between">
         <button 
           onClick={() => navigate(-1)} 
@@ -54,7 +47,6 @@ export const CompanyDetails: React.FC = () => {
 
         <StepDots currentStep={2} />
 
-        {/* Spacer to balance the header */}
         <div className="w-8" />
       </div>
 
@@ -118,37 +110,32 @@ export const CompanyDetails: React.FC = () => {
           </div>
 
 
-          {/* Email */}
+          {/* KRA PIN */}
           <div>
             <Input
-              label="Email"
-              placeholder="Enter your business email"
-              type="email"
-              value={formData.email}
-              onChange={(value) => setFormData({ ...formData, email: String(value) })}
-              leftIcon={<Mail className="w-5 h-5 text-foreground/40" />}
+              label="KRA PIN"
+              placeholder="Enter KRA PIN"
+              value={formData.kraPIN}
+              onChange={(value) => setFormData({ ...formData, kraPIN: String(value) })}
+              leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
             />
           </div>
 
-          {/* Phone Number */}
           <div className='pb-4'>
-            <Input
-              label="Phone Number"
-              placeholder="Enter your business phone number"
-              value={formData.phoneNumber}
-              onChange={(value) => setFormData({ ...formData, phoneNumber: String(value) })}
-              defaultCountry="KE"
-              autoDetect={false}
+            <Select
+              label="Business Type"
+              placeholder="Select business type"
+              options={businessTypeOptions.map((type) => ({ value: type.value, label: type.label }))}
+              value={formData.businessType}
+              onChange={(value) => setFormData({ ...formData, businessType: String(value) as any })}
               className="h-14 rounded-2xl"
-              type='tel'
             />
           </div>
 
         </motion.form>
       </div>
 
-      {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
@@ -161,3 +148,5 @@ export const CompanyDetails: React.FC = () => {
     </div>
   );
 };
+
+export default CompanyDetails;
