@@ -12,6 +12,7 @@ import type {
   RiderBusinessType,
   RiderInfo,
 } from '../../lib/types';
+import { buildFlattenedFormData } from './multipart';
 
 export type RiderOnboardingDraft = {
   accountType: AccountType | null;
@@ -26,6 +27,12 @@ export type RiderOnboardingDraft = {
   organizationVehicles: OrganisationVehicleInfo[];
   riders: RiderInfo[];
   companyDocuments: KYCDocument[];
+};
+
+export type RiderMultipartAttachments = {
+  individualDocuments: Record<string, File[]>;
+  companyDocuments: Record<string, File[]>;
+  riderDocuments: Array<Record<string, File[]>>;
 };
 
 export const createEmptyRiderOnboardingDraft = (): RiderOnboardingDraft => ({
@@ -130,6 +137,56 @@ export const buildRiderSignupPayload = (draft: RiderOnboardingDraft): RegisterRi
     payoutInfo: draft.payoutInfo,
     otherInfo,
   };
+};
+const attachFilesToPayload = (
+  payloadWithFiles: any,
+  draft: RiderOnboardingDraft,
+  attachments: RiderMultipartAttachments
+) => {
+  if (payloadWithFiles.accountType === 'individual') {
+    const docs = payloadWithFiles.otherInfo?.documents || [];
+    docs.forEach((doc: any) => {
+      const serial = String(doc.serialNumber || '');
+      doc.files = attachments.individualDocuments[serial] || [];
+    });
+  } else {
+    payloadWithFiles.otherInfo.companyDocuments = (draft.companyDocuments || []).map((d) => ({
+      documentType: d.documentType,
+      serialNumber: d.serialNumber,
+    }));
+
+    (payloadWithFiles.otherInfo.companyDocuments || []).forEach((doc: any) => {
+      const serial = String(doc.serialNumber || '');
+      doc.files = attachments.companyDocuments[serial] || [];
+    });
+
+    (payloadWithFiles.otherInfo.riders || []).forEach((rider: any, riderIndex: number) => {
+      (rider.documents || []).forEach((doc: any) => {
+        const serial = String(doc.serialNumber || '');
+        const riderBucket = attachments.riderDocuments?.[riderIndex] || {};
+        doc.files = riderBucket[serial] || [];
+      });
+    });
+  }
+};
+
+export const buildRiderSignupPayloadWithFiles = (
+  draft: RiderOnboardingDraft,
+  attachments: RiderMultipartAttachments
+): Record<string, unknown> => {
+  const payload = buildRiderSignupPayload(draft);
+  const payloadWithFiles: any = JSON.parse(JSON.stringify(payload));
+  attachFilesToPayload(payloadWithFiles, draft, attachments);
+  return payloadWithFiles;
+};
+
+export const buildRiderSignupFormData = (
+  draft: RiderOnboardingDraft,
+  attachments: RiderMultipartAttachments
+): FormData => {
+  const payloadWithFiles = buildRiderSignupPayloadWithFiles(draft, attachments);
+  
+  return buildFlattenedFormData(payloadWithFiles);
 };
 
 export const createBankPayoutDetails = (draft: {

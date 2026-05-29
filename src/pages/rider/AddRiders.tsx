@@ -54,6 +54,7 @@ const experienceOptions = [
 export const AddRiders: React.FC = () => {
   const navigate = useNavigate();
   const setRidersInStore = useRiderOnboardingStore((state) => state.setRiders);
+  const setRiderDocumentFiles = useRiderOnboardingStore((state) => state.setRiderDocumentFiles);
   const storeRiders = useRiderOnboardingStore((state) => state.draft.riders);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
@@ -119,7 +120,19 @@ export const AddRiders: React.FC = () => {
           })),
       }))
     );
-  }, [riders, setRidersInStore]);
+
+      setRiderDocumentFiles(
+        riders.map((rider) =>
+          rider.docs.reduce<Record<string, File[]>>((accumulator, doc) => {
+            if (doc.file) {
+              accumulator[doc.id] = [doc.file];
+            }
+
+            return accumulator;
+          }, {})
+        )
+      );
+  }, [riders, setRidersInStore, setRiderDocumentFiles]);
 
   const handleFileUpload = (docId: string, file: File, isSheet: boolean = false, riderIndex = 0) => {
     if (isSheet) {

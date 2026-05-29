@@ -22,11 +22,30 @@ axiosInstance.interceptors.request.use((config) => {
   try {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
     const headers = config.headers ?? {};
+    const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
+
+    const removeContentType = (headerBag: Record<string, unknown> | undefined) => {
+      if (!headerBag) return;
+
+      const anyHeaders = headerBag as any;
+      if (typeof anyHeaders.delete === 'function') {
+        anyHeaders.delete('Content-Type');
+        anyHeaders.delete('content-type');
+        return;
+      }
+
+      delete anyHeaders['Content-Type'];
+      delete anyHeaders['content-type'];
+    };
+
     if (token) {
       (headers as any).Authorization = `Bearer ${token}`;
     }
 
-    // ensure tenant header exists
+    if (isFormData) {
+      removeContentType(headers as Record<string, unknown>); 
+    }
+
     (headers as any)['x-tenant-id'] = TENANT_ID;
     config.headers = headers;
   } catch (err) {

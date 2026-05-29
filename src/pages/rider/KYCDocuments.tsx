@@ -65,6 +65,7 @@ const AttachButton: React.FC<{
 export const KYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setIndividualDocuments = useRiderOnboardingStore((state) => state.setIndividualDocuments);
+  const setIndividualDocumentFiles = useRiderOnboardingStore((state) => state.setIndividualDocumentFiles);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
   interface DocumentItem {
@@ -117,7 +118,17 @@ export const KYCDocuments: React.FC = () => {
         }))
       )
     );
-  }, [documents, setIndividualDocuments]);
+
+    setIndividualDocumentFiles(
+      documents.reduce<Record<string, File[]>>((accumulator, doc) => {
+        if (doc.files.length > 0) {
+          accumulator[doc.id] = doc.files.map((item) => item.file);
+        }
+
+        return accumulator;
+      }, {})
+    );
+  }, [documents, setIndividualDocuments, setIndividualDocumentFiles]);
 
   const handleFileUpload = (id: string, incomingFiles: File[]) => {
     const filesToAdd = incomingFiles.filter(file => file.size <= 5 * 1024 * 1024);

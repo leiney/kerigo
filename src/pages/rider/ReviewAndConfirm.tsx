@@ -9,7 +9,7 @@ import {
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { authApi } from '../../../lib/api';
-import { buildRiderSignupPayload } from '../../lib/riderOnboarding';
+import { buildRiderSignupFormData, buildRiderSignupPayloadWithFiles } from '../../lib/riderOnboarding';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 import { useAuth } from '../../context/AuthContext';
 import type { UserProfile } from '../../types';
@@ -19,6 +19,7 @@ export const ReviewAndConfirm: React.FC = () => {
   const { login } = useAuth();
   const [agreed, setAgreed] = useState(false);
   const draft = useRiderOnboardingStore((state) => state.draft);
+  const attachments = useRiderOnboardingStore((state) => state.attachments);
   const reset = useRiderOnboardingStore((state) => state.reset);
   const isIndividual = draft.accountType !== 'organisation';
 
@@ -56,7 +57,7 @@ export const ReviewAndConfirm: React.FC = () => {
     if (!agreed) return;
 
     try {
-      const payload = buildRiderSignupPayload(draft);
+      const payload = buildRiderSignupFormData(draft, attachments);
       const response = await authApi.signupRider(payload);
       const user: UserProfile = {
         id: response.id,

@@ -150,6 +150,7 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
 export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setCompanyDocuments = useRiderOnboardingStore((state) => state.setCompanyDocuments);
+  const setCompanyDocumentFiles = useRiderOnboardingStore((state) => state.setCompanyDocumentFiles);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   // Company documents
@@ -166,7 +167,18 @@ export const CompanyKYCDocuments: React.FC = () => {
       }));
 
     setCompanyDocuments(documents);
-  }, [businessCert, kraPin, otherDocuments, setCompanyDocuments]);
+    setCompanyDocumentFiles({
+      ...(businessCert ? { businessCert: [businessCert.file] } : {}),
+      ...(kraPin ? { kraPin: [kraPin.file] } : {}),
+      ...otherDocuments.reduce<Record<string, File[]>>((accumulator, document, index) => {
+        if (document.file) {
+          accumulator[`otherDocument_${index + 1}`] = [document.file];
+        }
+
+        return accumulator;
+      }, {}),
+    });
+  }, [businessCert, kraPin, otherDocuments, setCompanyDocuments, setCompanyDocumentFiles]);
 
   const handleContinue = () => {
     if (!businessCert || !kraPin) {
