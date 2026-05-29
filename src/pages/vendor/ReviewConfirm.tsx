@@ -9,7 +9,7 @@ import {
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { authApi } from '../../../lib/api';
-import { buildVendorSignupPayload } from '../../lib/vendorOnboarding';
+import { buildVendorSignupFormData } from '../../lib/vendorOnboarding';
 import { useAuth } from '../../context/AuthContext';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
@@ -19,6 +19,7 @@ export const ReviewConfirm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const draft = useVendorOnboardingStore((state) => state.draft);
+  const attachments = useVendorOnboardingStore((state) => state.attachments);
   const resetDraft = useVendorOnboardingStore((state) => state.reset);
 
   const summaryData = useMemo(() => {
@@ -51,8 +52,8 @@ export const ReviewConfirm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const payload = buildVendorSignupPayload(draft);
-      const response = await authApi.signupVendor(payload);
+      const payload = buildVendorSignupFormData(draft, attachments as any);
+      const response = await authApi.signupVendor(payload as any);
       login({
         token: response.token ?? `vendor-${response.vendorId ?? Date.now()}`,
         user: {

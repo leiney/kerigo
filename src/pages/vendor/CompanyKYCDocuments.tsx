@@ -68,6 +68,8 @@ const AttachButton: React.FC<{
 export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setOrganizationDocuments = useVendorOnboardingStore((state) => state.setOrganizationDocuments);
+  const setOrganizationDocumentFiles = useVendorOnboardingStore((state) => state.setOrganizationDocumentFiles);
+  const organizationFiles = useVendorOnboardingStore((state) => state.attachments.organizationDocuments);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [documents, setDocuments] = useState<DocumentItem[]>([
     {
@@ -104,24 +106,28 @@ export const CompanyKYCDocuments: React.FC = () => {
       return;
     }
     
+    const newFilesMap: Record<string, File[]> = {};
+
     setDocuments((prev) =>
       prev.map((doc) => {
-        if (doc.id !== id) {
-          return doc;
-        }
+        if (doc.id !== id) return doc;
 
-        const nextAttachments = [
-          ...doc.attachments,
-          ...validFiles.map((file, index) => ({
+        const added = validFiles.map((file, index) => {
+          const serial = generateDocumentSerial(doc.label, doc.attachments.length + index);
+          newFilesMap[serial] = [file];
+          return {
             id: `${doc.id}-${Date.now()}-${index}`,
             fileName: file.name,
-            serialNumber: generateDocumentSerial(doc.label, doc.attachments.length + index),
-          })),
-        ];
+            serialNumber: serial,
+          };
+        });
 
+        const nextAttachments = [...doc.attachments, ...added];
         return { ...doc, attachments: nextAttachments };
       })
     );
+
+    setOrganizationDocumentFiles({ ...(organizationFiles || {}), ...newFilesMap });
   };
 
   const handleRemoveFile = (id: string, attachmentId: string) => {

@@ -168,3 +168,40 @@ export const businessTypeOptions: Array<{ value: BusinessType; label: string }> 
   { value: 'wholesale', label: 'Wholesale' },
   { value: 'other', label: 'Other' },
 ];
+
+export type VendorMultipartAttachments = {
+  individualDocuments: Record<string, File[]>;
+  organizationDocuments: Record<string, File[]>;
+};
+
+const attachFilesToVendorPayload = (payloadWithFiles: any, draft: VendorOnboardingDraft, attachments: VendorMultipartAttachments) => {
+  if (payloadWithFiles.accountType === 'individual') {
+    const docs = payloadWithFiles.otherInfo?.documents || [];
+    docs.forEach((doc: any) => {
+      const serial = String(doc.serialNumber || '');
+      doc.files = attachments.individualDocuments[serial] || [];
+    });
+  } else {
+    (payloadWithFiles.otherInfo?.documents || []).forEach((doc: any) => {
+      const serial = String(doc.serialNumber || '');
+      doc.files = attachments.organizationDocuments[serial] || [];
+    });
+  }
+};
+
+export const buildVendorSignupPayloadWithFiles = (draft: VendorOnboardingDraft, attachments: VendorMultipartAttachments) => {
+  const payload = buildVendorSignupPayload(draft);
+  const payloadWithFiles: any = JSON.parse(JSON.stringify(payload));
+  attachFilesToVendorPayload(payloadWithFiles, draft, attachments);
+  return payloadWithFiles;
+};
+
+export const buildVendorSignupFormData = (draft: VendorOnboardingDraft, attachments: VendorMultipartAttachments): FormData => {
+  const payloadWithFiles = buildVendorSignupPayloadWithFiles(draft, attachments);
+  // imported at call site — keep shape consistent with rider
+  // buildFlattenedFormData is in src/lib/multipart
+  // lazy import to avoid cycles
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { buildFlattenedFormData } = require('./multipart');
+  return buildFlattenedFormData(payloadWithFiles);
+};

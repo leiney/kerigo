@@ -12,6 +12,7 @@ import {
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
+import { BANK_OPTIONS } from '../../lib/banks';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const BankDetails: React.FC = () => {
@@ -37,14 +38,7 @@ export const BankDetails: React.FC = () => {
     });
   }, [formData, setBankDetails]);
 
-  const bankOptions = [
-    { value: 'equity', label: 'Equity Bank' },
-    { value: 'kcb', label: 'KCB Bank' },
-    { value: 'ncba', label: 'NCBA Bank' },
-    { value: 'coop', label: 'Co-operative Bank' },
-    { value: 'absa', label: 'Absa Bank' },
-    { value: 'other', label: 'Other' }
-  ];
+  const bankOptions = BANK_OPTIONS;
 
   const bankValidationError = selectionError(formData.bank, 'bank');
   const accountNumberValidationError = requiredTextError(formData.accountNumber, 'Account number');
@@ -116,6 +110,7 @@ export const BankDetails: React.FC = () => {
               label="Select your bank"
               placeholder="Choose your bank"
               options={bankOptions}
+              searchable={true}
               value={formData.bank}
               onChange={(value) => setFormData({ ...formData, bank: String(value) })}
               error={bankError}

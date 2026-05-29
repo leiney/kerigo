@@ -302,15 +302,7 @@ export const AddRiders: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="w-full max-w-md space-y-4"
         >
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-bold text-foreground">Rider 1</h2>
-            <button
-              onClick={() => { if (riders[0]) handleDeleteRider(riders[0].id); }}
-              className="text-xs text-error font-medium hover:opacity-80"
-            >
-              Remove
-            </button>
-          </div>
+         
 
           <Input
             label="Full Name"
@@ -349,7 +341,7 @@ export const AddRiders: React.FC = () => {
           <div className="">
             <Input
               label="ID Number"
-              type="text"
+              type="number"
               placeholder="Enter ID number"
               value={riders[0]?.idNumber ?? ''}
               onChange={(value) => setRiders((prev) => {

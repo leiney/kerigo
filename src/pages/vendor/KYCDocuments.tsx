@@ -69,6 +69,8 @@ const AttachButton: React.FC<{
 export const KYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setIndividualDocuments = useVendorOnboardingStore((state) => state.setIndividualDocuments);
+  const setIndividualDocumentFiles = useVendorOnboardingStore((state) => state.setIndividualDocumentFiles);
+  const individualFiles = useVendorOnboardingStore((state) => state.attachments.individualDocuments);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [documents, setDocuments] = useState<DocumentItem[]>([
     {
@@ -104,24 +106,30 @@ export const KYCDocuments: React.FC = () => {
       return;
     }
     
+    // map new serial numbers to File objects for persistence in store attachments
+    const newFilesMap: Record<string, File[]> = {};
+
     setDocuments((prev) =>
       prev.map((doc) => {
-        if (doc.id !== id) {
-          return doc;
-        }
+        if (doc.id !== id) return doc;
 
-        const nextAttachments = [
-          ...doc.attachments,
-          ...validFiles.map((file, index) => ({
+        const added = validFiles.map((file, index) => {
+          const serial = generateDocumentSerial(doc.label, doc.attachments.length + index);
+          newFilesMap[serial] = [file];
+          return {
             id: `${doc.id}-${Date.now()}-${index}`,
             fileName: file.name,
-            serialNumber: generateDocumentSerial(doc.label, doc.attachments.length + index),
-          })),
-        ];
+            serialNumber: serial,
+          };
+        });
 
+        const nextAttachments = [...doc.attachments, ...added];
         return { ...doc, attachments: nextAttachments };
       })
     );
+
+    // merge into existing attachments map
+    setIndividualDocumentFiles({ ...(individualFiles || {}), ...newFilesMap });
   };
 
   const handleRemoveFile = (id: string, attachmentId: string) => {

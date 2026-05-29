@@ -201,12 +201,7 @@ export const VehicleInformation3A: React.FC = () => {
             />
           </div>
 
-          {/* Vehicle Form Header */}
-          <div className="flex items-center justify-between pt-2">
-            <h2 className="text-sm font-bold text-foreground">Vehicle 1</h2>
-            <button className="text-xs text-error font-medium hover:opacity-80">Remove</button>
-          </div>
-
+        
           {/* Vehicle Type */}
           <div className='pb-4'>
             <Select

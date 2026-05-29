@@ -52,8 +52,8 @@ export const authApi = {
   
   register: async (data: Record<string, unknown>): Promise<{ message: string; verificationRequired: boolean; user: AuthUser }> => apiPost('/auth/register/', data),
   
-  signupVendor: async (payload: RegisterVendorPayload): Promise<RegisterVendorResponse> => {
-    const response = await axiosInstance.post<RegisterVendorResponse>('/signup-vendor/', payload);
+  signupVendor: async (payload: RegisterVendorPayload | FormData): Promise<RegisterVendorResponse> => {
+    const response = await axiosInstance.post<RegisterVendorResponse>('/signup-vendor/', payload as any);
     return response.data;
   },
   signupRider: async (payload: FormData): Promise<RegisterRiderResponse> => {

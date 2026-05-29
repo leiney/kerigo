@@ -5,15 +5,21 @@ import type { AccountType, KYCDocument, PayoutMode, OrganizationInfo } from '../
 
 interface VendorOnboardingStore {
   draft: VendorOnboardingDraft;
+  attachments: {
+    individualDocuments: Record<string, File[]>;
+    organizationDocuments: Record<string, File[]>;
+  };
   setAccountType: (accountType: AccountType) => void;
   setIdentityDetails: (details: Pick<VendorOnboardingDraft, 'fullName' | 'email' | 'phoneNo'>) => void;
   setPassword: (password: string) => void;
   setPayoutMode: (mode: PayoutMode) => void;
   setMpesaDetails: (phoneNo: string) => void;
   setBankDetails: (details: { bank: string; branch: string; accountNumber: string; swiftCode: string; accountName: string }) => void;
+  setIndividualDocumentFiles: (documents: Record<string, File[]>) => void;
   setOrganizationInfo: (details: Partial<OrganizationInfo>) => void;
   setIndividualDocuments: (documents: KYCDocument[]) => void;
   setOrganizationDocuments: (documents: KYCDocument[]) => void;
+  setOrganizationDocumentFiles: (documents: Record<string, File[]>) => void;
   setStores: (stores: VendorStoreDraft[]) => void;
   addStore: (store: VendorStoreDraft) => void;
   updateStore: (id: string, store: VendorStoreDraft) => void;
@@ -31,6 +37,7 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
   persist(
     (set) => ({
       draft: createEmptyVendorOnboardingDraft(),
+      attachments: { individualDocuments: {}, organizationDocuments: {} },
       setAccountType: (accountType) => set({ draft: resetForAccountType(accountType) }),
       setIdentityDetails: (details) => set((state) => ({ draft: { ...state.draft, ...details } })),
       setPassword: (password) => set((state) => ({ draft: { ...state.draft, password } })),
@@ -67,10 +74,12 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
             },
           },
         })),
+      setIndividualDocumentFiles: (documents) => set((state) => ({ attachments: { ...state.attachments, individualDocuments: documents } })),
       setOrganizationInfo: (details) =>
         set((state) => ({ draft: { ...state.draft, organizationInfo: { ...state.draft.organizationInfo, ...details } } })),
       setIndividualDocuments: (documents) => set((state) => ({ draft: { ...state.draft, individualDocuments: documents } })),
       setOrganizationDocuments: (documents) => set((state) => ({ draft: { ...state.draft, organizationDocuments: documents } })),
+      setOrganizationDocumentFiles: (documents) => set((state) => ({ attachments: { ...state.attachments, organizationDocuments: documents } })),
       setStores: (stores) => set((state) => ({ draft: { ...state.draft, stores } })),
       addStore: (store) => set((state) => ({ draft: { ...state.draft, stores: [...state.draft.stores, store] } })),
       updateStore: (id, store) =>
@@ -82,6 +91,7 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
         })),
       removeStore: (id) => set((state) => ({ draft: { ...state.draft, stores: state.draft.stores.filter((store) => store.id !== id) } })),
       reset: () => set({ draft: createEmptyVendorOnboardingDraft() }),
+      reset: () => set({ draft: createEmptyVendorOnboardingDraft(), attachments: { individualDocuments: {}, organizationDocuments: {} } }),
     }),
     {
       name: 'vendor-onboarding-draft',
