@@ -65,6 +65,7 @@ const AttachButton: React.FC<{
 export const KYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setIndividualDocuments = useRiderOnboardingStore((state) => state.setIndividualDocuments);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
   interface DocumentItem {
     id: string;
@@ -165,14 +166,19 @@ export const KYCDocuments: React.FC = () => {
   };
 
   const allRequiredUploaded = documents.every(doc => {
-    if (doc.id === 'passport-photo') {
-      return doc.files.length === 1;
-    }
+    //if (doc.id === 'passport-photo') {
+    //  return doc.files.length === 1;
+    //}
 
-    return doc.files.length >= 2;
+    return doc.files.length >= 1;
   });
 
   const handleContinue = () => {
+    if (!allRequiredUploaded) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/individual/vehicle-information');
   };
 
@@ -262,6 +268,10 @@ export const KYCDocuments: React.FC = () => {
                     ) : (
                       <p className="text-xs text-foreground/40">No file attached</p>
                     )}
+
+                    {hasAttemptedContinue && !doc.files.length ? (
+                      <p className="mt-2 text-xs text-error">Upload this document to continue.</p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -282,7 +292,7 @@ export const KYCDocuments: React.FC = () => {
       </div>
 
       <div className="p-6 pb-8 bg-white">
-        <Button onClick={handleContinue} className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${allRequiredUploaded ? 'shadow-primary/20' : ''}`}>
+        <Button onClick={handleContinue} type="button" className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${allRequiredUploaded ? 'shadow-primary/20' : ''}`}>
           Continue
           <ArrowRight className="w-5 h-5" />
         </Button>

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const BankDetails: React.FC = () => {
@@ -19,6 +20,7 @@ export const BankDetails: React.FC = () => {
   const isCompanyFlow = location.pathname.startsWith('/company');
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setBankDetails = useRiderOnboardingStore((state) => state.setBankDetails);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   const [formData, setFormData] = useState({
     bank: (draft.payoutInfo?.details as { bank?: string } | undefined)?.bank ?? '',
@@ -46,7 +48,21 @@ export const BankDetails: React.FC = () => {
     { value: 'other', label: 'Other' }
   ];
 
+  const bankValidationError = selectionError(formData.bank, 'bank');
+  const accountNumberValidationError = requiredTextError(formData.accountNumber, 'Account number');
+  const accountNameValidationError = requiredTextError(formData.accountName, 'Account name');
+
+  const bankError = hasAttemptedContinue ? bankValidationError : '';
+  const accountNumberError = hasAttemptedContinue ? accountNumberValidationError : '';
+  const accountNameError = hasAttemptedContinue ? accountNameValidationError : '';
+  const isFormValid = !bankValidationError && !accountNumberValidationError && !accountNameValidationError;
+
   const handleContinue = () => {
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate(isCompanyFlow ? '/company/create-password' : '/individual/create-password');
   };
 
@@ -109,7 +125,9 @@ export const BankDetails: React.FC = () => {
               options={bankOptions}
               value={formData.bank}
               onChange={(value) => setFormData({ ...formData, bank: String(value) })}
+              error={bankError}
               className="rounded-2xl h-14"
+              required
             />
           </div>
 
@@ -119,8 +137,10 @@ export const BankDetails: React.FC = () => {
             placeholder="Enter account number"
             value={formData.accountNumber}
             onChange={(value) => setFormData({ ...formData, accountNumber: String(value) })}
+            error={accountNumberError}
             leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
+            required
           />
 
           <Input
@@ -138,8 +158,10 @@ export const BankDetails: React.FC = () => {
             placeholder="Enter account name"
             value={formData.accountName}
             onChange={(value) => setFormData({ ...formData, accountName: String(value) })}
+            error={accountNameError}
             leftIcon={<User className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
+            required
           />
 
           {/* Info Note */}
@@ -158,6 +180,7 @@ export const BankDetails: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
         >
           Continue
@@ -166,5 +189,6 @@ export const BankDetails: React.FC = () => {
       </div>
 
     </div>
+
   );
 };

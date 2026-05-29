@@ -68,6 +68,7 @@ const AttachButton: React.FC<{
 export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setOrganizationDocuments = useVendorOnboardingStore((state) => state.setOrganizationDocuments);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [documents, setDocuments] = useState<DocumentItem[]>([
     {
       id: 'business-certificate',
@@ -145,9 +146,12 @@ export const CompanyKYCDocuments: React.FC = () => {
   const allDocumentsUploaded = documents.every((doc) => doc.attachments.length > 0);
 
   const handleContinue = () => {
-    navigate('/vendor/add-your-stores');
-    if (allDocumentsUploaded) {
+    if (!allDocumentsUploaded) {
+      setHasAttemptedContinue(true);
+      return;
     }
+
+    navigate('/vendor/add-your-stores');
   };
 
   return (
@@ -250,6 +254,10 @@ export const CompanyKYCDocuments: React.FC = () => {
                         <p className="text-xs text-foreground/40">No file attached</p>
                       )}
                     </div>
+
+                    {hasAttemptedContinue && doc.attachments.length === 0 ? (
+                      <p className="mt-2 text-xs text-error">Upload this document to continue.</p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -283,7 +291,7 @@ export const CompanyKYCDocuments: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
-          /* disabled={!allDocumentsUploaded} */
+          type="button"
           className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${
             allDocumentsUploaded 
               ? 'shadow-primary/20' 
@@ -296,5 +304,6 @@ export const CompanyKYCDocuments: React.FC = () => {
       </div>
 
     </div>
+
   );
 };

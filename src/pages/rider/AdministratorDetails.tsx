@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { emailError, phoneError, requiredTextError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 
@@ -26,6 +27,7 @@ export const AdministratorDetails: React.FC = () => {
   const navigate = useNavigate();
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setIdentityDetails = useRiderOnboardingStore((state) => state.setIdentityDetails);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: draft.fullName,
@@ -41,11 +43,24 @@ export const AdministratorDetails: React.FC = () => {
     });
   }, [formData, setIdentityDetails]);
 
+  const fullNameValidationError = requiredTextError(formData.fullName, 'Full name');
+  const phoneNumberValidationError = phoneError(formData.phoneNumber, 'Phone number');
+  const emailAddressValidationError = emailError(formData.email);
+  const fullNameError = hasAttemptedContinue ? fullNameValidationError : '';
+  const phoneNumberError = hasAttemptedContinue ? phoneNumberValidationError : '';
+  const emailAddressError = hasAttemptedContinue ? emailAddressValidationError : '';
+  const isFormValid = !fullNameValidationError && !phoneNumberValidationError && !emailAddressValidationError;
+
  
 
   
 
   const handleContinue = () => {
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/company/add-riders');
   };
 
@@ -104,12 +119,13 @@ export const AdministratorDetails: React.FC = () => {
               placeholder="Enter full name"
               value={formData.fullName}
               onChange={(value) => setFormData({ ...formData, fullName: String(value) })}
+              error={fullNameError}
               className="h-14 rounded-2xl"
             />
           </div>
 
           {/* Phone Number */}
-          <div className='pb-4'>
+          <div className='pb-5'>
             <Input
               label="Phone Number"
               type="phone"
@@ -117,19 +133,22 @@ export const AdministratorDetails: React.FC = () => {
               value={formData.phoneNumber}
               onChange={(value) => setFormData({ ...formData, phoneNumber: String(value) })}
               defaultCountry="KE"
+              error={phoneNumberError}
               className="h-14 rounded-2xl"
             />
           </div>
 
-          {/* Email Address (Optional) */}
+          {/* Email Address */}
           <div>
             <Input
-              label="Email Address (Optional)"
+              label="Email Address"
               type="email"
               placeholder="Enter email address"
               value={formData.email}
               onChange={(value) => setFormData({ ...formData, email: String(value) })}
+              error={emailAddressError}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -144,6 +163,7 @@ export const AdministratorDetails: React.FC = () => {
       <div className="p-6 pb-8 bg-white border-t border-border/50">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

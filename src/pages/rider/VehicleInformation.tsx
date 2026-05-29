@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { requiredTextError, selectionError, yearError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const VehicleInformation: React.FC = () => {
   const navigate = useNavigate();
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setVehicleInfo = useRiderOnboardingStore((state) => state.setIndividualVehicleInfo);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   const [formData, setFormData] = useState({
     vehicleType: draft.individualVehicleInfo.vehicleType,
@@ -37,9 +39,29 @@ export const VehicleInformation: React.FC = () => {
     });
   }, [formData, setVehicleInfo]);
 
+  const vehicleTypeValidationError = selectionError(formData.vehicleType, 'vehicle type');
+  const registrationNumberValidationError = requiredTextError(formData.registrationNumber, 'Registration number');
+  const makeValidationError = requiredTextError(formData.make, 'Make');
+  const modelValidationError = requiredTextError(formData.model, 'Model');
+  const yearValidationError = yearError(formData.year, 'Registration year');
+  const colorValidationError = requiredTextError(formData.color, 'Color');
+
+  const vehicleTypeError = hasAttemptedContinue ? vehicleTypeValidationError : '';
+  const registrationNumberError = hasAttemptedContinue ? registrationNumberValidationError : '';
+  const makeError = hasAttemptedContinue ? makeValidationError : '';
+  const modelError = hasAttemptedContinue ? modelValidationError : '';
+  const yearFieldError = hasAttemptedContinue ? yearValidationError : '';
+  const colorError = hasAttemptedContinue ? colorValidationError : '';
+
+  const isFormValid = !vehicleTypeValidationError && !registrationNumberValidationError && !makeValidationError && !modelValidationError && !yearValidationError && !colorValidationError;
+
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to Payout Details (Step 4)
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/individual/payout-details');
   };
 
@@ -95,7 +117,7 @@ export const VehicleInformation: React.FC = () => {
         >
           
           {/* Vehicle Type */}
-          <div className='pb-4'>
+          <div className='pb-6'>
             <Select
               label="Vehicle Type"
               placeholder="Select vehicle type"
@@ -107,7 +129,9 @@ export const VehicleInformation: React.FC = () => {
               ]}
               value={formData.vehicleType}
               onChange={(value) => setFormData({ ...formData, vehicleType: String(value) })}
+              error={vehicleTypeError}
               className="rounded-2xl h-14"
+              required
             />
           </div>
 
@@ -118,8 +142,10 @@ export const VehicleInformation: React.FC = () => {
               placeholder="Enter registration number"
               value={formData.registrationNumber}
               onChange={(value) => setFormData({ ...formData, registrationNumber: String(value) })}
+              error={registrationNumberError}
               leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -130,7 +156,9 @@ export const VehicleInformation: React.FC = () => {
               placeholder="e.g. Honda, TVS"
               value={formData.make}
               onChange={(value) => setFormData({ ...formData, make: String(value) })}
+              error={makeError}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -141,7 +169,9 @@ export const VehicleInformation: React.FC = () => {
               placeholder="e.g. CG 125"
               value={formData.model}
               onChange={(value) => setFormData({ ...formData, model: String(value) })}
+              error={modelError}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -152,7 +182,9 @@ export const VehicleInformation: React.FC = () => {
               placeholder="e.g. 2023"
               value={formData.year}
               onChange={(value) => setFormData({ ...formData, year: String(value) })}
+              error={yearFieldError}
               className="h-14 rounded-2xl"
+              required
             />
 
             <Input
@@ -160,8 +192,10 @@ export const VehicleInformation: React.FC = () => {
               placeholder="e.g. Black"
               value={formData.color}
               onChange={(value) => setFormData({ ...formData, color: String(value) })}
+              error={colorError}
               leftIcon={<Palette className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -173,6 +207,7 @@ export const VehicleInformation: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >
@@ -182,3 +217,5 @@ export const VehicleInformation: React.FC = () => {
     </div>
   );
 };
+
+export default VehicleInformation;

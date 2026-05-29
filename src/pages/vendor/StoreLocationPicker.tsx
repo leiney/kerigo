@@ -73,6 +73,7 @@ export const StoreLocationPicker: React.FC = () => {
   const [editableLocation, setEditableLocation] = useState<LocationDetails>(state.locationDetails ?? defaultLocationData);
   const [isCaptured, setIsCaptured] = useState(Boolean(state.locationDetails));
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
   const handleEditableLocationChange =
     (field: 'address' | 'city' | 'postalCode') =>
@@ -122,6 +123,11 @@ export const StoreLocationPicker: React.FC = () => {
   };
 
   const handleUseLocation = () => {
+    if (!editableLocation.address.trim() || !editableLocation.city.trim()) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate(returnTo, {
       state: {
         formData: {
@@ -305,6 +311,8 @@ export const StoreLocationPicker: React.FC = () => {
               placeholder="Enter address"
               value={editableLocation.address}
               onChange={handleEditableLocationChange('address')}
+              error={hasAttemptedContinue && !editableLocation.address.trim() ? 'Address is required.' : ''}
+              required
             />
 
             <Input
@@ -312,6 +320,8 @@ export const StoreLocationPicker: React.FC = () => {
               placeholder="Enter city or town"
               value={editableLocation.city}
               onChange={handleEditableLocationChange('city')}
+              error={hasAttemptedContinue && !editableLocation.city.trim() ? 'City / Town is required.' : ''}
+              required
             />
 
             <Input

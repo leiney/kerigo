@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { emailError, phoneError, requiredTextError } from '../../lib/onboardingValidation';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const BasicDetails: React.FC = () => {
   const navigate = useNavigate();
   const draft = useVendorOnboardingStore((state) => state.draft);
   const setIdentityDetails = useVendorOnboardingStore((state) => state.setIdentityDetails);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: draft.fullName,
@@ -31,9 +33,21 @@ export const BasicDetails: React.FC = () => {
     });
   }, [formData, setIdentityDetails]);
 
+  const fullNameValidationError = requiredTextError(formData.fullName, 'Full name');
+  const phoneNumberValidationError = phoneError(formData.phoneNumber, 'Phone number');
+  const emailAddressValidationError = emailError(formData.email);
+  const fullNameError = hasAttemptedContinue ? fullNameValidationError : '';
+  const phoneNumberError = hasAttemptedContinue ? phoneNumberValidationError : '';
+  const emailAddressError = hasAttemptedContinue ? emailAddressValidationError : '';
+  const isFormValid = !fullNameValidationError && !phoneNumberValidationError && !emailAddressValidationError;
+
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to next step
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/vendor/kyc-documents');
   };
 
@@ -94,6 +108,7 @@ export const BasicDetails: React.FC = () => {
               placeholder="Enter your full name"
               value={formData.fullName}
               onChange={(value) => setFormData({ ...formData, fullName: String(value) })}
+              error={fullNameError}
               leftIcon={<User className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
               required
@@ -109,6 +124,7 @@ export const BasicDetails: React.FC = () => {
               onChange={(value) => setFormData({ ...formData, phoneNumber: String(value) })}
               defaultCountry="KE"
               autoDetect={false}
+              error={phoneNumberError}
               className="h-14 rounded-2xl"
               type='tel'
               required
@@ -123,6 +139,7 @@ export const BasicDetails: React.FC = () => {
               placeholder="Enter your email"
               value={formData.email}
               onChange={(value) => setFormData({ ...formData, email: String(value) })}
+              error={emailAddressError}
               leftIcon={<Mail className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
               required
@@ -136,6 +153,7 @@ export const BasicDetails: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
         >
           Continue

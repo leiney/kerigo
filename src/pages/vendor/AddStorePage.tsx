@@ -5,6 +5,7 @@ import { ChevronLeft, MapPin, Navigation, Store, ArrowRight } from 'lucide-react
 import { motion } from 'motion/react';
 import { businessTypeOptions, type VendorStoreDraft } from '../../lib/vendorOnboarding';
 import { StepDots } from '../../components/shared/StepDots';
+import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 import type { LocationDetails } from '../../../lib/types';
 
@@ -24,6 +25,7 @@ export const AddStorePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const addStore = useVendorOnboardingStore((state) => state.addStore);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [formData, setFormData] = useState<StoreFormState>({
     storeName: '',
     businessType: '',
@@ -63,7 +65,14 @@ export const AddStorePage: React.FC = () => {
 
   const handleContinue = () => {
     const cityTown = formData.locationDetails.city || '';
-    if (!formData.storeName || !formData.businessType || !cityTown) {
+    const storeNameError = hasAttemptedContinue ? requiredTextError(formData.storeName, 'Store name') : '';
+    const businessTypeError = hasAttemptedContinue ? selectionError(formData.businessType, 'business type') : '';
+    const locationError = hasAttemptedContinue && (!formData.locationDetails.address || !cityTown)
+      ? 'Store location is required.'
+      : '';
+
+    if (storeNameError || businessTypeError || locationError) {
+      setHasAttemptedContinue(true);
       return;
     }
 
@@ -136,7 +145,9 @@ export const AddStorePage: React.FC = () => {
               placeholder="Enter store name"
               value={formData.storeName}
               onChange={(value) => setFormData({ ...formData, storeName: String(value) })}
+              error={hasAttemptedContinue ? requiredTextError(formData.storeName, 'Store name') : ''}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -149,11 +160,20 @@ export const AddStorePage: React.FC = () => {
               options={businessTypeOptions.map((type) => ({ value: type.value, label: type.label }))}
               value={formData.businessType}
               onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
+              error={hasAttemptedContinue ? selectionError(formData.businessType, 'business type') : ''}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
           <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-3">
+            {(() => {
+              const cityTown = formData.locationDetails.city || '';
+
+              return hasAttemptedContinue && (!formData.locationDetails.address || !cityTown) ? (
+                <p className="text-xs text-error">Store location is required.</p>
+              ) : null;
+            })()}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">Location Details</p>
@@ -189,6 +209,7 @@ export const AddStorePage: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

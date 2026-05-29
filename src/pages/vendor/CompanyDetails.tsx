@@ -5,12 +5,14 @@ import { Building2, ArrowRight, ChevronLeft, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { businessTypeOptions } from '../../lib/vendorOnboarding';
+import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const CompanyDetails: React.FC = () => {
   const navigate = useNavigate();
   const draft = useVendorOnboardingStore((state) => state.draft);
   const setOrganizationInfo = useVendorOnboardingStore((state) => state.setOrganizationInfo);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
   const [formData, setFormData] = useState({
     companyName: draft.organizationInfo.name,
@@ -28,9 +30,23 @@ export const CompanyDetails: React.FC = () => {
     });
   }, [formData, setOrganizationInfo]);
 
+  const companyNameValidationError = requiredTextError(formData.companyName, 'Company name');
+  const registrationNumberValidationError = requiredTextError(formData.businessRegistrationNumber, 'Business registration number');
+  const kraPinValidationError = requiredTextError(formData.kraPIN, 'KRA PIN');
+  const businessTypeValidationError = selectionError(formData.businessType, 'business type');
+  const companyNameError = hasAttemptedContinue ? companyNameValidationError : '';
+  const registrationNumberError = hasAttemptedContinue ? registrationNumberValidationError : '';
+  const kraPinError = hasAttemptedContinue ? kraPinValidationError : '';
+  const businessTypeError = hasAttemptedContinue ? businessTypeValidationError : '';
+  const isFormValid = !companyNameValidationError && !registrationNumberValidationError && !kraPinValidationError && !businessTypeValidationError;
+
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to next step
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/vendor/administrator-details');
   };
 
@@ -92,8 +108,10 @@ export const CompanyDetails: React.FC = () => {
               placeholder="Enter your company name"
               value={formData.companyName}
               onChange={(value) => setFormData({ ...formData, companyName: String(value) })}
+              error={companyNameError}
               leftIcon={<Building2 className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -104,8 +122,10 @@ export const CompanyDetails: React.FC = () => {
               placeholder="Enter registration number"
               value={formData.businessRegistrationNumber}
               onChange={(value) => setFormData({ ...formData, businessRegistrationNumber: String(value) })}
+              error={registrationNumberError}
               leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -117,19 +137,23 @@ export const CompanyDetails: React.FC = () => {
               placeholder="Enter KRA PIN"
               value={formData.kraPIN}
               onChange={(value) => setFormData({ ...formData, kraPIN: String(value) })}
+              error={kraPinError}
               leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
-          <div className='pb-4'>
+          <div className='pb-5'>
             <Select
               label="Business Type"
               placeholder="Select business type"
               options={businessTypeOptions.map((type) => ({ value: type.value, label: type.label }))}
               value={formData.businessType}
               onChange={(value) => setFormData({ ...formData, businessType: String(value) as any })}
+              error={businessTypeError}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -139,6 +163,7 @@ export const CompanyDetails: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

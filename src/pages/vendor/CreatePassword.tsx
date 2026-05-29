@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Input } from '@stackloop/ui';
 import { 
@@ -10,47 +10,37 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { getPasswordValidation } from '../../lib/passwordValidation';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const CreatePassword: React.FC = () => {
   const navigate = useNavigate();
   const setPassword = useVendorOnboardingStore((state) => state.setPassword);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
   });
 
-  // Validation state
-  const [requirements, setRequirements] = useState({
-    length: false,
-    uppercase: false,
-    number: false,
-    match: false
-  });
+  const passwordValidation = getPasswordValidation(formData.password, formData.confirmPassword);
+  const showPasswordError = hasAttemptedContinue || formData.password.length > 0;
+  const showConfirmError = hasAttemptedContinue || formData.confirmPassword.length > 0;
+  const passwordError = showPasswordError ? passwordValidation.passwordError : '';
+  const confirmPasswordError = showConfirmError ? passwordValidation.confirmPasswordError : '';
 
-  // Update validation whenever passwords change
   useEffect(() => {
-    const { password, confirmPassword } = formData;
-    setPassword(password);
-    
-    setRequirements({
-      length: password.length >= 8,
-      uppercase: /[A-Z]/.test(password),
-      number: /\d/.test(password),
-      match: password.length > 0 && password === confirmPassword
-    });
-  }, [formData, setPassword]);
+    setPassword(formData.password);
+  }, [formData.password, setPassword]);
 
-  const isFormValid = 
-    requirements.length && 
-    requirements.uppercase && 
-    requirements.number && 
-    requirements.match;
+  const isFormValid = passwordValidation.isValid;
 
   const handleContinue = () => {
-    navigate('/vendor/review-confirmation');
-    if (isFormValid) {
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
     }
+
+    navigate('/vendor/review-confirmation');
   };
 
   const RequirementItem = ({ met, label }: { met: boolean; label: string }) => (
@@ -123,8 +113,10 @@ export const CreatePassword: React.FC = () => {
             placeholder="Enter password"
             value={formData.password}
             onChange={(value) => setFormData({ ...formData, password: String(value) })}
+            error={passwordError}
             leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
+            required
           />
 
           {/* Confirm Password */}
@@ -134,15 +126,17 @@ export const CreatePassword: React.FC = () => {
             placeholder="Confirm password"
             value={formData.confirmPassword}
             onChange={(value) => setFormData({ ...formData, confirmPassword: String(value) })}
+            error={confirmPasswordError}
             leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
-            className={`rounded-2xl h-14 ${formData.confirmPassword.length > 0 && !requirements.match ? 'border-error focus:ring-error/20' : ''}`}
+            className="rounded-2xl h-14"
+            required
           />
 
           {/* Password Requirements */}
           <div className="bg-gray-50/50 rounded-xl p-4 space-y-3 mt-2">
-            <RequirementItem met={requirements.length} label="At least 8 characters" />
-            <RequirementItem met={requirements.number} label="Include a number" />
-            <RequirementItem met={requirements.uppercase} label="Include an uppercase letter" />
+            <RequirementItem met={passwordValidation.validation.length} label="At least 8 characters" />
+            <RequirementItem met={passwordValidation.validation.number} label="Include a number" />
+            <RequirementItem met={passwordValidation.validation.uppercase} label="Include an uppercase letter" />
           </div>
 
         </motion.div>
@@ -152,7 +146,7 @@ export const CreatePassword: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
-         /*  disabled={!isFormValid} */
+          type="button"
           className={`w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg ${
             isFormValid ? 'shadow-primary/20' : ''
           }`}

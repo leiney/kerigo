@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { emailError, phoneError, requiredTextError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 interface RiderDoc {
@@ -54,6 +55,7 @@ export const AddRiders: React.FC = () => {
   const navigate = useNavigate();
   const setRidersInStore = useRiderOnboardingStore((state) => state.setRiders);
   const storeRiders = useRiderOnboardingStore((state) => state.draft.riders);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
   const mapStoreToLocal = (r: any, idx: number): Rider => ({
     id: `${Date.now()}-${idx}`,
@@ -90,6 +92,17 @@ export const AddRiders: React.FC = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [sheetForm, setSheetForm] = useState({ name: '', phone: '', email: '', experience: '' });
   const [sheetDocs, setSheetDocs] = useState<RiderDoc[]>(initialDocs);
+
+  const riderHasAllDocs = (docs: RiderDoc[]) => docs.every((doc) => Boolean(doc.fileName));
+  const isRiderComplete = (rider: Rider) => {
+    const emailValidation = emailError(rider.email || '');
+    return Boolean(rider.name.trim() && rider.phone.trim() && rider.idNumber.trim() && rider.experience && rider.experience.trim() && riderHasAllDocs(rider.docs) && !emailValidation);
+  };
+  const allRidersValid = riders.length > 0 && riders.every(isRiderComplete);
+
+  const sheetNameError = hasAttemptedContinue ? requiredTextError(sheetForm.name, 'Rider name') : '';
+  const sheetPhoneError = hasAttemptedContinue ? phoneError(sheetForm.phone, 'Phone number') : '';
+  const sheetEmailError = hasAttemptedContinue ? emailError(sheetForm.email) : '';
 
   useEffect(() => {
     setRidersInStore(
@@ -136,6 +149,11 @@ export const AddRiders: React.FC = () => {
   };
 
   const handleAddRiderFromSheet = () => {
+    if (!sheetForm.name.trim() || !sheetForm.phone.trim() || !sheetForm.email.trim() || emailError(sheetForm.email) || !riderHasAllDocs(sheetDocs)) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     const newRider: Rider = {
       id: Date.now().toString(),
       idNumber: `ID-${Date.now().toString().slice(-6)}`,
@@ -165,6 +183,11 @@ export const AddRiders: React.FC = () => {
   }, [riders.length]);
 
   const handleContinue = () => {
+    if (!allRidersValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/company/vehicle-information');
   };
 
@@ -212,6 +235,9 @@ export const AddRiders: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {hasAttemptedContinue && !doc.fileName ? (
+        <p className="mt-2 text-xs text-error">Upload this document to continue.</p>
+      ) : null}
     </div>
   );
 
@@ -283,13 +309,15 @@ export const AddRiders: React.FC = () => {
               next[0] = { ...next[0], name: String(value) };
               return next;
             })}
+            error={hasAttemptedContinue && !riders[0]?.name.trim() ? 'Full name is required.' : ''}
             className="h-12 rounded-2xl text-sm"
+            required
           />
 
-          <div className="pb-4">
+          <div className="pb-6">
             <Input
               label="Phone Number"
-              type="phone"
+              type="tel"
               placeholder="Enter phone number"
               value={riders[0]?.phone ?? ''}
               onChange={(value) => setRiders((prev) => {
@@ -299,7 +327,9 @@ export const AddRiders: React.FC = () => {
                 return next;
               })}
               defaultCountry="KE"
+              error={hasAttemptedContinue && !riders[0]?.phone.trim() ? 'Phone number is required.' : ''}
               className="h-12 rounded-2xl text-sm"
+              required
             />
           </div>
 
@@ -315,13 +345,15 @@ export const AddRiders: React.FC = () => {
                 next[0] = { ...next[0], idNumber: String(value) };
                 return next;
               })}
+              error={hasAttemptedContinue && !riders[0]?.idNumber.trim() ? 'ID number is required.' : ''}
               className="h-12 rounded-2xl text-sm"
+              required
             />
           </div>
 
 
           <Input
-            label="Email Address (Optional)"
+            label="Email Address"
             type="email"
             placeholder="Enter email address"
             value={riders[0]?.email ?? ''}
@@ -331,10 +363,12 @@ export const AddRiders: React.FC = () => {
               next[0] = { ...next[0], email: String(value) };
               return next;
             })}
+            error={hasAttemptedContinue ? emailError(riders[0]?.email || '') : ''}
             className="h-12 rounded-2xl text-sm"
+            required
           />
 
-          <div className="pb-4">
+          <div className="pb-6">
             <Select
               label="Riding Experience"
               placeholder="Select experience"
@@ -347,6 +381,8 @@ export const AddRiders: React.FC = () => {
                 return next;
               })}
               className="rounded-2xl h-12 text-sm"
+              error={hasAttemptedContinue && !riders[0]?.experience ? 'Please select riding experience.' : ''}
+              required
             />
           </div>
 
@@ -418,6 +454,7 @@ export const AddRiders: React.FC = () => {
       <div className="absolute bottom-0 w-full p-6 pb-8 bg-white border-t border-border/50">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

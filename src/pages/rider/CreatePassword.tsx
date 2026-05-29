@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { getPasswordValidation } from '../../lib/passwordValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const CreatePassword: React.FC = () => {
   const navigate = useNavigate();
   const draftPassword = useRiderOnboardingStore((state) => state.draft.password);
   const setPassword = useRiderOnboardingStore((state) => state.setPassword);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   
   const [password, setPasswordLocal] = useState(draftPassword);
   const [confirmPassword, setConfirmPassword] = useState(draftPassword);
@@ -24,16 +26,21 @@ export const CreatePassword: React.FC = () => {
     setPassword(password);
   }, [password, setPassword]);
 
-  // Real-time validation states
-  const hasMinLength = password.length >= 8;
-  const hasNumber = /\d/.test(password);
-  const hasUppercase = /[A-Z]/.test(password);
-  const passwordsMatch = password === confirmPassword && password.length > 0;
+  const passwordValidation = getPasswordValidation(password, confirmPassword);
+  const hasMinLength = passwordValidation.validation.length;
+  const hasNumber = passwordValidation.validation.number;
+  const hasUppercase = passwordValidation.validation.uppercase;
+  const passwordsMatch = passwordValidation.validation.match;
+  const showPasswordError = hasAttemptedSubmit || password.length > 0;
+  const showConfirmError = hasAttemptedSubmit || confirmPassword.length > 0;
 
   const handleContinue = () => {
-    navigate('/rider/review-confirmation');
-    if (hasMinLength && hasNumber && hasUppercase && passwordsMatch) {
+    if (!passwordValidation.isValid) {
+      setHasAttemptedSubmit(true);
+      return;
     }
+
+    navigate('/rider/review-confirmation');
   };
 
   return (
@@ -86,6 +93,7 @@ export const CreatePassword: React.FC = () => {
           className="w-full max-w-md space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            setHasAttemptedSubmit(true);
             handleContinue();
           }}
         >
@@ -97,6 +105,7 @@ export const CreatePassword: React.FC = () => {
             placeholder="Enter password"
             value={password}
             onChange={(value) => setPasswordLocal(String(value))}
+            error={showPasswordError ? passwordValidation.passwordError : ''}
             className="h-14 rounded-2xl"
           />
 
@@ -107,6 +116,7 @@ export const CreatePassword: React.FC = () => {
             placeholder="Confirm password"
             value={confirmPassword}
             onChange={(value) => setConfirmPassword(String(value))}
+            error={showConfirmError ? passwordValidation.confirmPasswordError : ''}
             className="h-14 rounded-2xl"
           />
 
@@ -154,6 +164,7 @@ export const CreatePassword: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

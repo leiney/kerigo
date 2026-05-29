@@ -150,6 +150,7 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
 export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setCompanyDocuments = useRiderOnboardingStore((state) => state.setCompanyDocuments);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   // Company documents
   const [businessCert, setBusinessCert] = useState<DocumentFile | null>(null);
@@ -168,9 +169,8 @@ export const CompanyKYCDocuments: React.FC = () => {
   }, [businessCert, kraPin, otherDocuments, setCompanyDocuments]);
 
   const handleContinue = () => {
-    // Validate required documents
     if (!businessCert || !kraPin) {
-      // Show error - required documents missing
+      setHasAttemptedContinue(true);
       return;
     }
     navigate('/company/create-password');
@@ -273,6 +273,7 @@ export const CompanyKYCDocuments: React.FC = () => {
             uploadedFile={businessCert}
             onRemove={() => setBusinessCert(null)}
           />
+          {hasAttemptedContinue && !businessCert ? <p className="text-xs text-error">Upload this document to continue.</p> : null}
 
           {/* KRA PIN */}
           <FileUploadArea
@@ -290,6 +291,7 @@ export const CompanyKYCDocuments: React.FC = () => {
             uploadedFile={kraPin}
             onRemove={() => setKraPin(null)}
           />
+          {hasAttemptedContinue && !kraPin ? <p className="text-xs text-error">Upload this document to continue.</p> : null}
 
           {/* Other Documents */}
           <div className="space-y-3">
@@ -304,6 +306,8 @@ export const CompanyKYCDocuments: React.FC = () => {
               </div>
               <button
                 onClick={handleAddAnotherDocument}
+                type="button"
+                disabled={!businessCert || !kraPin}
                 className="text-xs text-primary font-medium flex items-center gap-1 hover:opacity-80 transition-opacity"
               >
                 <Plus className="w-3.5 h-3.5" />

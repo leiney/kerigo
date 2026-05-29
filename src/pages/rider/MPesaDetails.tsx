@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { phoneError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const MPesaDetails: React.FC = () => {
@@ -17,6 +18,7 @@ export const MPesaDetails: React.FC = () => {
   const isCompanyFlow = location.pathname.startsWith('/company');
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setMpesaDetails = useRiderOnboardingStore((state) => state.setMpesaDetails);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   const [formData, setFormData] = useState({
     mpesaNumber: (draft.payoutInfo?.details as { phoneNo?: string } | undefined)?.phoneNo ?? ''
@@ -26,7 +28,16 @@ export const MPesaDetails: React.FC = () => {
     setMpesaDetails(formData.mpesaNumber);
   }, [formData.mpesaNumber, setMpesaDetails]);
 
+  const mpesaNumberValidationError = phoneError(formData.mpesaNumber, 'M-Pesa number');
+  const mpesaNumberError = hasAttemptedContinue ? mpesaNumberValidationError : '';
+  const isFormValid = !mpesaNumberValidationError;
+
   const handleContinue = () => {
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate(isCompanyFlow ? '/company/create-password' : '/individual/create-password');
   };
 
@@ -97,7 +108,9 @@ export const MPesaDetails: React.FC = () => {
               value={formData.mpesaNumber}
               onChange={(value) => setFormData({ ...formData, mpesaNumber: String(value) })}
               defaultCountry="KE"
+              error={mpesaNumberError}
               className="rounded-2xl h-14"
+              required
             />
           </div>
 
@@ -109,6 +122,7 @@ export const MPesaDetails: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >

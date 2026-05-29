@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
+import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 import type { RiderBusinessType } from '../../../lib/types';
 
@@ -17,6 +18,7 @@ export const OrganisationDetails: React.FC = () => {
   const navigate = useNavigate();
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setOrganizationInfo = useRiderOnboardingStore((state) => state.setOrganizationInfo);
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   
   const [formData, setFormData] = useState({
     organisationName: draft.organizationInfo.name,
@@ -34,6 +36,16 @@ export const OrganisationDetails: React.FC = () => {
     });
   }, [formData, setOrganizationInfo]);
 
+  const organisationNameValidationError = requiredTextError(formData.organisationName, 'Organisation name');
+  const businessTypeValidationError = selectionError(formData.businessType, 'business type');
+  const organisationNumberValidationError = requiredTextError(formData.organisationNumber, 'Registration number');
+  const taxIdValidationError = requiredTextError(formData.taxId, 'KRA PIN');
+  const organisationNameError = hasAttemptedContinue ? organisationNameValidationError : '';
+  const businessTypeError = hasAttemptedContinue ? businessTypeValidationError : '';
+  const organisationNumberError = hasAttemptedContinue ? organisationNumberValidationError : '';
+  const taxIdError = hasAttemptedContinue ? taxIdValidationError : '';
+  const isFormValid = !organisationNameValidationError && !businessTypeValidationError && !organisationNumberValidationError && !taxIdValidationError;
+
   const businessTypes = [
     { value: 'delivery', label: 'Delivery' },
     { value: 'courier', label: 'Courier' },
@@ -49,7 +61,11 @@ export const OrganisationDetails: React.FC = () => {
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to next step: Administrator Details (Step 2A)
+    if (!isFormValid) {
+      setHasAttemptedContinue(true);
+      return;
+    }
+
     navigate('/company/administrator-details');
   };
 
@@ -111,19 +127,21 @@ export const OrganisationDetails: React.FC = () => {
               placeholder="Enter  name"
               value={formData.organisationName}
               onChange={(value) => setFormData({ ...formData, organisationName: String(value) })}
+              error={organisationNameError}
               leftIcon={<Building2 className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
             />
           </div>
 
           {/* Business Type */}
-          <div className='pb-4'>
+          <div className='pb-6'>
             <Select
               label="Business Type"
               placeholder="Select business type"
               options={businessTypes.map((type) => ({ value: type.value, label: type.label }))}
               value={formData.businessType}
               onChange={(value) => setFormData({ ...formData, businessType: String(value) as RiderBusinessType })}
+              error={businessTypeError}
               className="rounded-2xl h-14"
             />
           </div>
@@ -131,24 +149,28 @@ export const OrganisationDetails: React.FC = () => {
           {/* Organisation Number (Optional) */}
           <div>
             <Input
-              label="Registration Number (Optional)"
+              label="Registration Number"
               placeholder="Enter registration number"
               value={formData.organisationNumber}
               onChange={(value) => setFormData({ ...formData, organisationNumber: String(value) })}
+              error={organisationNumberError}
               leftIcon={<Hash className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
           {/* Tax Identification Number (Optional) */}
           <div>
             <Input
-              label="KRA PIN (Optional)"
+              label="KRA PIN"
               placeholder="Enter KRA PIN"
               value={formData.taxId}
               onChange={(value) => setFormData({ ...formData, taxId: String(value) })}
+              error={taxIdError}
               leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
               className="h-14 rounded-2xl"
+              required
             />
           </div>
 
@@ -160,6 +182,7 @@ export const OrganisationDetails: React.FC = () => {
       <div className="p-6 pb-8 bg-white">
         <Button 
           onClick={handleContinue}
+          type="button"
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}
         >
