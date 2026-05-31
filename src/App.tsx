@@ -61,7 +61,7 @@ import { LoginPage } from './pages/shared/LoginPage';
 import { VerifyIdentityPage } from './pages/shared/VerifyIdentityPage';
 import { OTPPage } from './pages/shared/OTPPage';
 import { RegisterPage } from './pages/customer/RegisterPage';
-import { CustomerHomePage } from './pages/customer/CustomerHomePage';
+import { CustomerHomePage } from './pages/customer/CustomerOrderPage';
 import { CartPage } from './pages/customer/CartPage';
 import { VendorStorePage } from './pages/customer/VendorStorePage';
 import { AccountSettings } from './pages/customer/AccountSettings';
@@ -127,12 +127,12 @@ export default function App() {
           <Route path="/verify-identity" element={<VerifyIdentityPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
-          <Route path="/customer/" element={<CustomerHomePage />} />
-          <Route path="/customer/orders" element={<OrdersPage />} />
-          <Route path="/customer/orders/:orderId" element={<OrderDetailsPage />} />
-          <Route path="/order/:orderId" element={<OrderDetailsPage />} />
-          <Route path="/customer/track-order" element={<TrackOrder />} />
-          <Route path="/customer/my-location" element={<MyLocation />} />
+          <Route path="/customer/" element={protect(<CustomerHomePage />)} />
+          <Route path="/customer/orders" element={protect(<OrdersPage />)} />
+          <Route path="/customer/orders/:orderId" element={protect(<OrderDetailsPage />)} />
+          <Route path="/order/:orderId" element={protect(<OrderDetailsPage />)} />
+          <Route path="/customer/track-order" element={protect(<TrackOrder />)} />
+          <Route path="/customer/my-location" element={protect(<MyLocation />)} />
           <Route path="/customer/location" element={<MyLocation />} />
           <Route path="/customer/profile" element={protect(<AccountSettings />)} />
           <Route path="/cart" element={<CartPage />} />

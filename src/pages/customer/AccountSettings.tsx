@@ -163,7 +163,7 @@ export const AccountSettings: React.FC = () => {
               } catch {
                 // ignore errors from logout
               }
-              navigate('/auth/login');
+              navigate('/');
             }}
           />
         </div>

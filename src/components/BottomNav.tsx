@@ -24,14 +24,14 @@ const navItemsByRole: Record<NavRole, NavItem[]> = {
     {
       label: 'Home',
       icon: Home,
-      path: '/customer/',
-      active: (pathname) => pathname === '/' || pathname === '/customer/',
+      path: '/',
+      active: (pathname) => pathname === '/',
     },
     {
       label: 'Orders',
       icon: ShoppingBag,
-      path: '/customer/orders',
-      active: (pathname) => pathname.startsWith('/customer/orders'),
+      path: '/customer',
+      active: (pathname) => pathname.startsWith('/customer'),
     },
     {
       label: 'Cart',

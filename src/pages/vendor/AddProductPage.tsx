@@ -476,17 +476,7 @@ export const AddProductPage: React.FC = () => {
                       <ChevronDown className="w-4 h-4" />
                     </button>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Visibility <span className="text-error">*</span></label>
-                    <select 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
-                      value={formData.visibility}
-                      onChange={(e) => updateField('visibility', e.target.value)}
-                    >
-                      <option>Visible</option>
-                      <option>Hidden</option>
-                    </select>
-                  </div>
+                  
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Return Policy <span className="text-foreground/40 font-normal">(Optional)</span></label>
                     <button 
@@ -507,23 +497,7 @@ export const AddProductPage: React.FC = () => {
                       onChange={(e) => updateField('tags', e.target.value)}
                     />
                   </div>
-                  <div className="space-y-3 pt-2 border-t border-border">
-                    {[
-                      { label: 'Requires Shipping', key: 'shipping', icon: Package },
-                      { label: 'Digital Product', key: 'digital', icon: ImageIcon },
-                      { label: 'Featured Product', key: 'featured', icon: Tag }
-                    ].map((item) => (
-                      <label key={item.key} className="flex items-center justify-between cursor-pointer">
-                        <span className="text-sm text-foreground/80">{item.label}</span>
-                        <div 
-                          className={`w-10 h-6 rounded-full p-1 transition-colors ${formData[item.key as keyof typeof formData] ? 'bg-primary' : 'bg-gray-200'}`}
-                          onClick={() => updateField(item.key, !formData[item.key as keyof typeof formData])}
-                        >
-                          <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${formData[item.key as keyof typeof formData] ? 'translate-x-4' : 'translate-x-0'}`} />
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                  
                 </div>
               </motion.div>
             )}

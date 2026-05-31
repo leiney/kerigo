@@ -227,7 +227,7 @@ export const CustomerHomePage: React.FC = () => {
         <section className='bg-white rounded-2xl shadow-sm border border-border/50 p-3.5'>
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-base text-foreground">Past Orders</h3>
-            <button className="text-primary text-xs font-semibold flex items-center gap-1">
+            <button onClick={()=>navigate("/customer/orders")} className="text-primary text-xs font-semibold flex items-center gap-1">
               See all <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
