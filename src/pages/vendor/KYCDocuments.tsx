@@ -16,6 +16,7 @@ import { motion } from 'motion/react';
 import { StepDots } from '@/src/components/shared/StepDots';
 import { generateDocumentSerial, type VendorDocumentAttachment } from '../../lib/vendorOnboarding';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
+import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 
 interface DocumentItem {
   id: string;
@@ -25,6 +26,66 @@ interface DocumentItem {
   attachments: VendorDocumentAttachment[];
   acceptedFormats: string;
 }
+
+type VendorKycSnapshot = {
+  filesBySerial: Record<string, File[]>;
+};
+
+const VENDOR_KYC_STORAGE_KEY = 'vendor-kyc-documents';
+
+const createInitialDocuments = (): DocumentItem[] => ([
+  {
+    id: 'national-id',
+    label: 'National ID / Passport',
+    description: 'Front and back',
+    icon: <FileText className="w-5 h-5 text-primary" />,
+    attachments: [],
+    acceptedFormats: 'image/*,.pdf'
+  },
+  {
+    id: 'selfie',
+    label: 'Selfie',
+    description: 'Clear photo of your face',
+    icon: <Camera className="w-5 h-5 text-primary" />,
+    attachments: [],
+    acceptedFormats: 'image/*'
+  },
+  {
+    id: 'proof-of-address',
+    label: 'Proof of Address',
+    description: 'Utility bill or bank statement',
+    icon: <MapPin className="w-5 h-5 text-primary" />,
+    attachments: [],
+    acceptedFormats: 'image/*,.pdf'
+  }
+]);
+
+const rebuildDocuments = (
+  draftDocuments: Array<{ documentType: string; serialNumber: string }>,
+  filesBySerial: Record<string, File[]>
+): DocumentItem[] => {
+  const documents = createInitialDocuments();
+
+  draftDocuments.forEach((document, index) => {
+    const file = filesBySerial[document.serialNumber]?.[0];
+    if (!file) {
+      return;
+    }
+
+    const targetDocument = documents.find((item) => item.label === document.documentType);
+    if (!targetDocument) {
+      return;
+    }
+
+    targetDocument.attachments.push({
+      id: document.serialNumber,
+      fileName: file.name,
+      serialNumber: document.serialNumber,
+    });
+  });
+
+  return documents;
+};
 
 // Custom File Upload Button
 const AttachButton: React.FC<{
@@ -70,34 +131,34 @@ export const KYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setIndividualDocuments = useVendorOnboardingStore((state) => state.setIndividualDocuments);
   const setIndividualDocumentFiles = useVendorOnboardingStore((state) => state.setIndividualDocumentFiles);
-  const individualFiles = useVendorOnboardingStore((state) => state.attachments.individualDocuments);
+  const draft = useVendorOnboardingStore((state) => state.draft);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
-  const [documents, setDocuments] = useState<DocumentItem[]>([
-    {
-      id: 'national-id',
-      label: 'National ID / Passport',
-      description: 'Front and back',
-      icon: <FileText className="w-5 h-5 text-primary" />,
-      attachments: [],
-      acceptedFormats: 'image/*,.pdf'
-    },
-    {
-      id: 'selfie',
-      label: 'Selfie',
-      description: 'Clear photo of your face',
-      icon: <Camera className="w-5 h-5 text-primary" />,
-      attachments: [],
-      acceptedFormats: 'image/*'
-    },
-    {
-      id: 'proof-of-address',
-      label: 'Proof of Address',
-      description: 'Utility bill or bank statement',
-      icon: <MapPin className="w-5 h-5 text-primary" />,
-      attachments: [],
-      acceptedFormats: 'image/*,.pdf'
-    }
-  ]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [documents, setDocuments] = useState<DocumentItem[]>(createInitialDocuments());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async () => {
+      const snapshot = await readOnboardingAttachmentSnapshot<VendorKycSnapshot>(VENDOR_KYC_STORAGE_KEY);
+      if (cancelled) {
+        return;
+      }
+
+      if (snapshot) {
+        setDocuments(rebuildDocuments(draft.individualDocuments || [], snapshot.filesBySerial || {}));
+        setIndividualDocumentFiles(snapshot.filesBySerial || {});
+      }
+
+      setIsHydrated(true);
+    };
+
+    hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.individualDocuments, setIndividualDocumentFiles]);
 
   const handleFileUpload = (id: string, files: File[]) => {
     const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024);
@@ -105,8 +166,7 @@ export const KYCDocuments: React.FC = () => {
       alert('File size must be less than 5MB');
       return;
     }
-    
-    // map new serial numbers to File objects for persistence in store attachments
+
     const newFilesMap: Record<string, File[]> = {};
 
     setDocuments((prev) =>
@@ -117,7 +177,7 @@ export const KYCDocuments: React.FC = () => {
           const serial = generateDocumentSerial(doc.label, doc.attachments.length + index);
           newFilesMap[serial] = [file];
           return {
-            id: `${doc.id}-${Date.now()}-${index}`,
+            id: serial,
             fileName: file.name,
             serialNumber: serial,
           };
@@ -128,8 +188,8 @@ export const KYCDocuments: React.FC = () => {
       })
     );
 
-    // merge into existing attachments map
-    setIndividualDocumentFiles({ ...(individualFiles || {}), ...newFilesMap });
+    const currentFiles = useVendorOnboardingStore.getState().attachments.individualDocuments;
+    setIndividualDocumentFiles({ ...currentFiles, ...newFilesMap });
   };
 
   const handleRemoveFile = (id: string, attachmentId: string) => {
@@ -138,9 +198,17 @@ export const KYCDocuments: React.FC = () => {
         doc.id === id ? { ...doc, attachments: doc.attachments.filter((attachment) => attachment.id !== attachmentId) } : doc
       )
     );
+
+    const currentFiles = useVendorOnboardingStore.getState().attachments.individualDocuments;
+    const nextFiles = Object.fromEntries(Object.entries(currentFiles).filter(([serial]) => serial !== attachmentId));
+    setIndividualDocumentFiles(nextFiles);
   };
 
   useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     setIndividualDocuments(
       documents.flatMap((doc) =>
         doc.attachments.map((attachment) => ({
@@ -149,7 +217,10 @@ export const KYCDocuments: React.FC = () => {
         }))
       )
     );
-  }, [documents, setIndividualDocuments]);
+    void writeOnboardingAttachmentSnapshot<VendorKycSnapshot>(VENDOR_KYC_STORAGE_KEY, {
+      filesBySerial: useVendorOnboardingStore.getState().attachments.individualDocuments,
+    });
+  }, [documents, isHydrated, setIndividualDocuments]);
 
   const allDocumentsUploaded = documents.every((doc) => doc.attachments.length > 0);
   const missingDocuments = documents.filter((doc) => doc.attachments.length === 0);

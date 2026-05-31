@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 import { generateDocumentSerial } from '../../lib/riderOnboarding';
+import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 
 interface UploadedFileItem {
   id: string;
@@ -23,6 +24,50 @@ interface UploadedFileItem {
   name: string;
   size: number;
 }
+
+type KycAttachmentSnapshot = Record<string, UploadedFileItem[]>;
+
+interface DocumentItem {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  files: UploadedFileItem[];
+  acceptedFormats: string;
+  maxFiles: number;
+}
+
+const KYC_ATTACHMENT_STORAGE_KEY = 'rider-individual-kyc-documents';
+
+const createInitialDocuments = (): DocumentItem[] => ([
+  {
+    id: 'national-id',
+    label: 'National ID / Passport',
+    description: 'Front and back',
+    icon: <FileText className="w-5 h-5 text-primary" />,
+    files: [],
+    acceptedFormats: 'image/*,.pdf',
+    maxFiles: 2
+  },
+  {
+    id: 'passport-photo',
+    label: 'Passport Photo',
+    description: 'Portrait photo for verification',
+    icon: <Camera className="w-5 h-5 text-primary" />,
+    files: [],
+    acceptedFormats: 'image/*',
+    maxFiles: 1
+  },
+  {
+    id: 'driving-license',
+    label: 'Driving License',
+    description: 'Front and back',
+    icon: <FileText className="w-5 h-5 text-primary" />,
+    files: [],
+    acceptedFormats: 'image/*,.pdf',
+    maxFiles: 2
+  }
+]);
 
 const AttachButton: React.FC<{
   onUpload: (files: File[]) => void;
@@ -67,49 +112,36 @@ export const KYCDocuments: React.FC = () => {
   const setIndividualDocuments = useRiderOnboardingStore((state) => state.setIndividualDocuments);
   const setIndividualDocumentFiles = useRiderOnboardingStore((state) => state.setIndividualDocumentFiles);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  interface DocumentItem {
-    id: string;
-    label: string;
-    description: string;
-    icon: React.ReactNode;
-    files: UploadedFileItem[];
-    acceptedFormats: string;
-    allowMultiple: boolean;
-  }
-
-  const [documents, setDocuments] = useState<DocumentItem[]>([
-    {
-      id: 'national-id',
-      label: 'National ID / Passport',
-      description: 'Front and back',
-      icon: <FileText className="w-5 h-5 text-primary" />,
-      files: [],
-      acceptedFormats: 'image/*,.pdf',
-      allowMultiple: true
-    },
-    {
-      id: 'passport-photo',
-      label: 'Passport Photo',
-      description: 'Portrait photo for verification',
-      icon: <Camera className="w-5 h-5 text-primary" />,
-      files: [],
-      acceptedFormats: 'image/*'
-      ,
-      allowMultiple: false
-    },
-    {
-      id: 'driving-license',
-      label: 'Driving License',
-      description: 'Front and back',
-      icon: <FileText className="w-5 h-5 text-primary" />,
-      files: [],
-      acceptedFormats: 'image/*,.pdf',
-      allowMultiple: true
-    }
-  ]);
+  const [documents, setDocuments] = useState<DocumentItem[]>(createInitialDocuments());
 
   useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async () => {
+      const snapshot = await readOnboardingAttachmentSnapshot<KycAttachmentSnapshot>(KYC_ATTACHMENT_STORAGE_KEY);
+      if (cancelled || !snapshot) {
+        setIsHydrated(true);
+        return;
+      }
+
+      setDocuments((current) => current.map((doc) => ({ ...doc, files: snapshot[doc.id] ?? [] })));
+      setIsHydrated(true);
+    };
+
+    hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     setIndividualDocuments(
       documents.flatMap((doc) =>
         doc.files.map((item, index) => ({
@@ -128,7 +160,14 @@ export const KYCDocuments: React.FC = () => {
         return accumulator;
       }, {})
     );
-  }, [documents, setIndividualDocuments, setIndividualDocumentFiles]);
+    void writeOnboardingAttachmentSnapshot<KycAttachmentSnapshot>(
+      KYC_ATTACHMENT_STORAGE_KEY,
+      documents.reduce<KycAttachmentSnapshot>((accumulator, doc) => {
+        accumulator[doc.id] = doc.files;
+        return accumulator;
+      }, {})
+    );
+  }, [documents, isHydrated, setIndividualDocuments, setIndividualDocumentFiles]);
 
   const handleFileUpload = (id: string, incomingFiles: File[]) => {
     const filesToAdd = incomingFiles.filter(file => file.size <= 5 * 1024 * 1024);
@@ -148,7 +187,7 @@ export const KYCDocuments: React.FC = () => {
 
       filesToAdd.forEach(file => {
         const duplicate = existingNames.has(file.name);
-        if (!duplicate) {
+        if (!duplicate && nextFiles.length < doc.maxFiles) {
           nextFiles.push({
             id: `${id}-${file.name}-${file.size}-${Date.now()}`,
             file,
@@ -247,13 +286,7 @@ export const KYCDocuments: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-bold text-sm text-foreground">{doc.label}</h3>
-                      {doc.id === 'passport-photo' ? (
-                        doc.files.length > 0 ? (
-                          <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                        ) : (
-                          <Circle className="w-4 h-4 text-gray-300 shrink-0" />
-                        )
-                      ) : doc.files.length >= 2 ? (
+                      {doc.files.length >= doc.maxFiles ? (
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
                       ) : (
                         <Circle className="w-4 h-4 text-gray-300 shrink-0" />
@@ -289,7 +322,7 @@ export const KYCDocuments: React.FC = () => {
                 <AttachButton
                   onUpload={(files) => handleFileUpload(doc.id, files)}
                   accept={doc.acceptedFormats}
-                  multiple={doc.allowMultiple}
+                  multiple={doc.maxFiles > 1}
                 />
               </div>
             ))}

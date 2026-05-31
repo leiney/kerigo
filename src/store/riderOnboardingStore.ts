@@ -62,7 +62,7 @@ export const useRiderOnboardingStore = create<RiderOnboardingStore>()(
               mode,
               details:
                 mode === 'mpesa'
-                  ? { phoneNo: state.draft.phoneNo }
+                  ? { phoneNo: '' }
                   : { bank: '', branch: '', accountNumber: '', accountName: '', swiftCode: '' },
             },
           },

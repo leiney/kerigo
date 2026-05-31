@@ -170,7 +170,7 @@ export const VehicleInformation3A: React.FC = () => {
           
           <h1 className="text-lg font-bold text-foreground mb-2">
             <span className="text-primary mr-1">
-              <Badge className="bg-primary text-white">3A</Badge>
+              <Badge className="bg-primary text-white">3</Badge>
             </span>
             Vehicle Information
           </h1>

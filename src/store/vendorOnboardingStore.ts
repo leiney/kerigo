@@ -49,7 +49,7 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
               mode,
               details:
                 mode === 'mpesa'
-                  ? { phoneNo: state.draft.phoneNo }
+                  ? { phoneNo: '' }
                   : { bank: '', branch: '', accountNumber: '', accountName: '', swiftCode: '' },
             },
           },
@@ -90,7 +90,6 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
           },
         })),
       removeStore: (id) => set((state) => ({ draft: { ...state.draft, stores: state.draft.stores.filter((store) => store.id !== id) } })),
-      reset: () => set({ draft: createEmptyVendorOnboardingDraft() }),
       reset: () => set({ draft: createEmptyVendorOnboardingDraft(), attachments: { individualDocuments: {}, organizationDocuments: {} } }),
     }),
     {

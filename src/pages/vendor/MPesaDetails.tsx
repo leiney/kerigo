@@ -18,8 +18,9 @@ export const MPesaDetails: React.FC = () => {
   const draft = useVendorOnboardingStore((state) => state.draft);
   const setMpesaDetails = useVendorOnboardingStore((state) => state.setMpesaDetails);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
+  const savedMpesaNumber = (draft.payoutInfo?.details as { phoneNo?: string } | undefined)?.phoneNo ?? '';
   const [formData, setFormData] = useState({
-    mpesaNumber: draft.phoneNo,
+    mpesaNumber: savedMpesaNumber && savedMpesaNumber !== draft.phoneNo ? savedMpesaNumber : '',
     accountName: draft.fullName
   });
 

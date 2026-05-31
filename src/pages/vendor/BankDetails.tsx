@@ -122,6 +122,7 @@ export const BankDetails: React.FC = () => {
 
           <Input
             label="Branch Code (Optional)"
+            type="number"
             placeholder="Enter branch code"
             value={formData.branchCode}
             onChange={(value) => setFormData({ ...formData, branchCode: String(value) })}
@@ -141,6 +142,7 @@ export const BankDetails: React.FC = () => {
           {/* Account Number */}
           <Input
             label="Account Number"
+            type="number"
             placeholder="Enter account number"
             value={formData.accountNumber}
             onChange={(value) => setFormData({ ...formData, accountNumber: String(value) })}

@@ -19,9 +19,10 @@ export const MPesaDetails: React.FC = () => {
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setMpesaDetails = useRiderOnboardingStore((state) => state.setMpesaDetails);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
+  const savedMpesaNumber = (draft.payoutInfo?.details as { phoneNo?: string } | undefined)?.phoneNo ?? '';
   
   const [formData, setFormData] = useState({
-    mpesaNumber: (draft.payoutInfo?.details as { phoneNo?: string } | undefined)?.phoneNo ?? ''
+    mpesaNumber: savedMpesaNumber && savedMpesaNumber !== draft.phoneNo ? savedMpesaNumber : ''
   });
 
   useEffect(() => {

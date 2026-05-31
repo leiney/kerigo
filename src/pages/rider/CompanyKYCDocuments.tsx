@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 import { generateDocumentSerial } from '../../lib/riderOnboarding';
+import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 
 interface DocumentFile {
   id: string;
@@ -23,6 +24,14 @@ interface DocumentFile {
   type: string;
   size: number;
 }
+
+type CompanyKycSnapshot = {
+  businessCert: DocumentFile | null;
+  kraPin: DocumentFile | null;
+  otherDocuments: DocumentFile[];
+};
+
+const COMPANY_KYC_STORAGE_KEY = 'rider-company-kyc-documents';
 
 interface FileUploadAreaProps {
   title: string;
@@ -152,6 +161,7 @@ export const CompanyKYCDocuments: React.FC = () => {
   const setCompanyDocuments = useRiderOnboardingStore((state) => state.setCompanyDocuments);
   const setCompanyDocumentFiles = useRiderOnboardingStore((state) => state.setCompanyDocumentFiles);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // Company documents
   const [businessCert, setBusinessCert] = useState<DocumentFile | null>(null);
@@ -159,6 +169,33 @@ export const CompanyKYCDocuments: React.FC = () => {
   const [otherDocuments, setOtherDocuments] = useState<DocumentFile[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async () => {
+      const snapshot = await readOnboardingAttachmentSnapshot<CompanyKycSnapshot>(COMPANY_KYC_STORAGE_KEY);
+      if (cancelled || !snapshot) {
+        setIsHydrated(true);
+        return;
+      }
+
+      setBusinessCert(snapshot.businessCert);
+      setKraPin(snapshot.kraPin);
+      setOtherDocuments(snapshot.otherDocuments ?? []);
+      setIsHydrated(true);
+    };
+
+    hydrate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     const documents = [businessCert, kraPin, ...otherDocuments]
       .filter((document): document is DocumentFile => Boolean(document && document.name))
       .map((document, index) => ({
@@ -178,7 +215,12 @@ export const CompanyKYCDocuments: React.FC = () => {
         return accumulator;
       }, {}),
     });
-  }, [businessCert, kraPin, otherDocuments, setCompanyDocuments, setCompanyDocumentFiles]);
+    void writeOnboardingAttachmentSnapshot<CompanyKycSnapshot>(COMPANY_KYC_STORAGE_KEY, {
+      businessCert,
+      kraPin,
+      otherDocuments,
+    });
+  }, [businessCert, isHydrated, kraPin, otherDocuments, setCompanyDocuments, setCompanyDocumentFiles]);
 
   const handleContinue = () => {
     if (!businessCert || !kraPin) {
