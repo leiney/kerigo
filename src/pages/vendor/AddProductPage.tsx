@@ -22,6 +22,9 @@ import {
 } from 'lucide-react';
 import { Button, Badge, Input, Select } from '@stackloop/ui';
 import { motion, AnimatePresence } from 'motion/react';
+import { productApi } from '../../../lib/api';
+import { buildProductFormData, createEmptyProductVariant } from '../../../lib/products';
+import type { ProductPayload, ProductVariantPayload } from '../../../lib/types';
 
 // --- Mock Data ---
 const CATEGORIES = [
@@ -38,7 +41,7 @@ const STATUSES = ['Active', 'Inactive', 'Out of Stock'];
 
 // --- Components ---
 
-const StepHeader = ({ number, title, isExpanded, isCompleted, onClick }: any) => (
+const StepHeader = ({ number, title, isExpanded, isCompleted, isInvalid, onClick }: any) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center justify-between p-4 rounded-xl transition-colors ${
@@ -47,9 +50,9 @@ const StepHeader = ({ number, title, isExpanded, isCompleted, onClick }: any) =>
   >
     <div className="flex items-center gap-3">
       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-        isCompleted ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'
+        isCompleted ? 'bg-primary text-white' : isInvalid ? 'bg-red-200 text-red-700' : 'bg-gray-200 text-gray-500'
       }`}>
-        {isCompleted ? <Check className="w-3.5 h-3.5" /> : number}
+        {isCompleted ? <Check className="w-3.5 h-3.5" /> : isInvalid ? <AlertCircle className="w-3.5 h-3.5" /> : number}
       </div>
       <span className={`font-semibold text-sm ${isExpanded || isCompleted ? 'text-foreground' : 'text-foreground/60'}`}>
         {title}
@@ -76,7 +79,7 @@ const Modal = ({ isOpen, onClose, title, children }: any) => {
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-background w-full sm:w-[400px] sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-xl"
+        className="bg-background w-full sm:w-100 sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -93,11 +96,65 @@ const Modal = ({ isOpen, onClose, title, children }: any) => {
   );
 };
 
-// --- Main Page ---
+type VariantDraft = {
+  sku: string;
+  barcode: string;
+  price: string;
+  oldPrice: string;
+  stock: string;
+  unit: string;
+  isNew: boolean;
+  active: boolean;
+  images: File[];
+  attributes: { name: string; value: string }[];
+};
+
+const createEmptyVariantDraft = (): VariantDraft => ({
+  sku: '',
+  barcode: '',
+  price: '',
+  oldPrice: '',
+  stock: '',
+  unit: '',
+  isNew: true,
+  active: true,
+  images: [],
+  attributes: [],
+});
+
+const parseList = (value: string) =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const toNumber = (value: string, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const draftToVariantPayload = (draft: VariantDraft): ProductVariantPayload => ({
+  sku: draft.sku.trim(),
+  barcode: draft.barcode.trim() || '',
+  price: toNumber(draft.price),
+  oldPrice: toNumber(draft.oldPrice),
+  stock: toNumber(draft.stock),
+  unit: draft.unit.trim() || undefined,
+  isNew: draft.isNew ?? true,
+  active: draft.active ?? true,
+  images: draft.images,
+  attributes: draft.attributes
+    .map((attribute) => ({ name: attribute.name.trim(), value: attribute.value.trim() }))
+    .filter((attribute) => attribute.name || attribute.value),
+});
+
 
 export const AddProductPage: React.FC = () => {
   const navigate = useNavigate();
   const [expandedStep, setExpandedStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -107,74 +164,165 @@ export const AddProductPage: React.FC = () => {
     sku: '',
     barcode: '',
     price: '',
+    oldPrice: '',
     costPrice: '',
-    vat: '',
-    taxable: false,
     stock: '',
     unit: '',
-    lowStockAlert: '',
     description: '',
+    taxCodes: '',
+    ingredients: '',
     status: 'Active',
-    visibility: 'Visible',
     returnPolicy: '',
     tags: '',
-    shipping: false,
-    digital: false,
-    featured: false
+    returnPolicyMessage: '',
   });
 
   // Variant State
-  const [variants, setVariants] = useState<any[]>([]);
+  const [mediaImages, setMediaImages] = useState<File[]>([]);
+  const [variants, setVariants] = useState<ProductVariantPayload[]>([]);
   const [showVariantModal, setShowVariantModal] = useState(false);
-  const [currentVariant, setCurrentVariant] = useState<{
-    name: string;
-    sku: string;
-    price: string;
-    stock: string;
-    image: any;
-    attributes: { type: string; values: string[] }[];
-  }>({
-    name: '',
-    sku: '',
-    price: '',
-    stock: '',
-    image: null,
-    attributes: []
-  });
+  const [currentVariant, setCurrentVariant] = useState<VariantDraft>(createEmptyVariantDraft());
 
   // Modal States
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showUnitModal, setShowUnitModal] = useState(false);
   const [showReturnPolicyModal, setShowReturnPolicyModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
-  const [selectedAttribute, setSelectedAttribute] = useState<{ type: string; values: string[] }>({ type: '', values: [] });
+  const [selectedAttribute, setSelectedAttribute] = useState<{ name: string; value: string }>({ name: '', value: '' });
 
-  // Helpers
   const updateField = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setMediaImages((prev) => [...prev, ...files]);
+    event.target.value = '';
+  };
+
+  const removeMediaImage = (index: number) => {
+    setMediaImages((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const isVariantDraftEmpty = (draft: VariantDraft) => {
+    return (
+      !draft.sku && !draft.barcode && !draft.price && !draft.oldPrice && !draft.stock && !draft.unit &&
+      draft.images.length === 0 && draft.attributes.length === 0
+    );
+  };
+
   const handleSaveVariant = () => {
-    setVariants([...variants, { ...currentVariant, id: Date.now() }]);
+    const nextVariant = draftToVariantPayload(currentVariant);
+    setVariants((prev) => [...prev, nextVariant]);
     setShowVariantModal(false);
-    setCurrentVariant({ name: '', sku: '', price: '', stock: '', image: null, attributes: [] });
+    setCurrentVariant(createEmptyVariantDraft());
   };
 
-  const handleDeleteVariant = (id: number) => {
-    setVariants(variants.filter(v => v.id !== id));
+  const handleDeleteVariant = (index: number) => {
+    setVariants((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   };
 
-  // Validation Check (Simple)
+  const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setShowValidation(true);
+
+    // collect invalid steps
+    const invalidSteps: number[] = [];
+    for (let s = 1; s <= 9; s++) {
+      if (!isStepValid(s)) invalidSteps.push(s);
+    }
+
+    // variant draft partial check (user started a variant but didn't save)
+    const draftHasData = !isVariantDraftEmpty(currentVariant);
+    if (draftHasData) {
+      // consider variant step invalid if draft has data and not saved
+      if (variants.length === 0) {
+        if (!invalidSteps.includes(9)) invalidSteps.push(9);
+      }
+    }
+
+    if (invalidSteps.length > 0) {
+      setExpandedStep(invalidSteps[0]);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const primaryVariant = variants[0] ?? draftToVariantPayload(currentVariant);
+      const fallbackVariant: ProductVariantPayload = {
+        ...primaryVariant,
+        sku: formData.sku.trim() || primaryVariant.sku,
+        barcode: formData.barcode.trim() || primaryVariant.barcode || '',
+        price: toNumber(formData.price, primaryVariant.price),
+        oldPrice: toNumber(formData.oldPrice, primaryVariant.oldPrice),
+        stock: toNumber(formData.stock, primaryVariant.stock),
+        unit: formData.unit.trim() || primaryVariant.unit,
+        images: mediaImages.length > 0 ? mediaImages : primaryVariant.images,
+      };
+
+      const productPayload: ProductPayload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        category: [
+          {
+            name: formData.category.trim(),
+          },
+        ],
+        tags: parseList(formData.tags),
+        returnPolicy: {
+          isReturnable: formData.returnPolicy !== 'No Return',
+          message:
+            formData.returnPolicy === 'No Return'
+              ? (formData.returnPolicyMessage.trim() || 'No return reason not provided.')
+              : `${formData.returnPolicy || 'Selected'} applies to this product.`,
+        },
+        active: formData.status === 'Active',
+        taxCodes: parseList(formData.taxCodes),
+        info: {
+          ingredients: parseList(formData.ingredients),
+        },
+        variants: variants.length > 0 ? variants : [fallbackVariant],
+      };
+
+      
+      // nimeLog payload na FormData entries for debugging
+      console.log('Product payload (normalized):', productPayload);
+      const formPayload = buildProductFormData(productPayload);
+      console.log('FormData entries:');
+      for (const entry of formPayload.entries()) {
+        const [key, value] = entry as [string, any];
+        if (value instanceof File) {
+          console.log(key, 'File:', value.name, value.size, value.type);
+        } else {
+          console.log(key, value);
+        }
+      }
+
+      await productApi.createProduct(formPayload);
+      navigate('/vendor/products', { replace: true });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const isStepValid = (step: number) => {
     switch(step) {
-      case 2: return !!formData.name && !!formData.category;
+      case 2: return !!formData.name;
       case 3: return !!formData.sku;
       case 4: return !!formData.price;
-      case 5: return !!formData.stock && !!formData.unit;
+      case 5: return !!formData.stock;
+      case 7: return !!formData.status;
+      case 8: return true;
       default: return true;
     }
   };
+
+  const isMissingRequired = (value: string) => showValidation && !value.trim();
+  const isVariantStepInvalid = showValidation && !(variants.length > 0) && !isVariantDraftEmpty(currentVariant);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-32">
@@ -194,12 +342,13 @@ export const AddProductPage: React.FC = () => {
       <div className="px-4 pt-2 space-y-2">
         
         {/* Step 1: Media */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(1) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={1} title="Media" 
             isExpanded={expandedStep === 1} 
-            isCompleted={expandedStep > 1}
-            onClick={() => setExpandedStep(expandedStep === 1 ? 0 : 1)} 
+            isCompleted={mediaImages.length > 0}
+            isInvalid={showValidation && !isStepValid(1)}
+            onClick={() => setExpandedStep((prev) => (prev === 1 ? 0 : 1))} 
           />
           <AnimatePresence>
             {expandedStep === 1 && (
@@ -210,16 +359,44 @@ export const AddProductPage: React.FC = () => {
                 className="overflow-hidden"
               >
                 <div className="p-4 pt-0 space-y-4">
-                  <div className="border-2 border-dashed border-primary/30 rounded-xl p-8 flex flex-col items-center justify-center bg-primary/5 text-center cursor-pointer hover:bg-primary/10 transition-colors">
+                  <input
+                    ref={mediaInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleMediaUpload}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => mediaInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-primary/30 rounded-xl p-8 flex flex-col items-center justify-center bg-primary/5 text-center hover:bg-primary/10 transition-colors"
+                  >
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
                       <UploadCloud className="w-6 h-6 text-primary" />
                     </div>
                     <p className="text-sm font-semibold text-foreground">Drag & drop or tap to upload</p>
                     <p className="text-xs text-foreground/50 mt-1">JPG, PNG or WebP (Max. 5MB)</p>
-                    <button className="mt-4 text-primary text-xs font-bold flex items-center gap-1">
+                    <span className="mt-4 text-primary text-xs font-bold flex items-center gap-1">
                       <Plus className="w-3 h-3" /> Add more
-                    </button>
-                  </div>
+                    </span>
+                  </button>
+                  {mediaImages.length > 0 && (
+                    <div className="grid grid-cols-3 gap-3">
+                      {mediaImages.map((image, index) => (
+                        <div key={`${image.name}-${index}`} className="relative rounded-lg overflow-hidden border border-border bg-secondary aspect-square">
+                          <img src={URL.createObjectURL(image)} alt={`Media ${index + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeMediaImage(index)}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -227,12 +404,13 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 2: Basic Information */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(2) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={2} title="Basic Information" 
             isExpanded={expandedStep === 2} 
             isCompleted={isStepValid(2)}
-            onClick={() => setExpandedStep(2)} 
+            isInvalid={showValidation && !isStepValid(2)}
+            onClick={() => setExpandedStep((prev) => (prev === 2 ? 0 : 2))} 
           />
           <AnimatePresence>
             {expandedStep === 2 && (
@@ -243,7 +421,9 @@ export const AddProductPage: React.FC = () => {
                     <input 
                       type="text" 
                       placeholder="Enter product name" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                      className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all ${
+                        isMissingRequired(formData.name) ? 'border-red-400' : 'border-border'
+                      }`}
                       value={formData.name}
                       onChange={(e) => updateField('name', e.target.value)}
                     />
@@ -275,12 +455,13 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 3: Product Identifiers */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(3) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={3} title="Product Identifiers" 
             isExpanded={expandedStep === 3} 
             isCompleted={isStepValid(3)}
-            onClick={() => setExpandedStep(3)} 
+            isInvalid={showValidation && !isStepValid(3)}
+            onClick={() => setExpandedStep((prev) => (prev === 3 ? 0 : 3))} 
           />
           <AnimatePresence>
             {expandedStep === 3 && (
@@ -291,7 +472,9 @@ export const AddProductPage: React.FC = () => {
                     <input 
                       type="text" 
                       placeholder="Enter SKU" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
+                      className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none ${
+                        isMissingRequired(formData.sku) ? 'border-red-400' : 'border-border'
+                      }`}
                       value={formData.sku}
                       onChange={(e) => updateField('sku', e.target.value)}
                     />
@@ -318,57 +501,41 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 4: Pricing */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(4) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={4} title="Pricing" 
             isExpanded={expandedStep === 4} 
             isCompleted={isStepValid(4)}
-            onClick={() => setExpandedStep(4)} 
+            isInvalid={showValidation && !isStepValid(4)}
+            onClick={() => setExpandedStep((prev) => (prev === 4 ? 0 : 4))} 
           />
           <AnimatePresence>
             {expandedStep === 4 && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                 <div className="p-4 pt-0 space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Price (KES) <span className="text-error">*</span></label>
-                    <input 
-                      type="number" 
-                      placeholder="Enter price" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                      value={formData.price}
-                      onChange={(e) => updateField('price', e.target.value)}
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-foreground mb-1.5 block">VAT</label>
+                      <label className="text-xs font-semibold text-foreground mb-1.5 block">Price (KES) <span className="text-error">*</span></label>
                       <input 
                         type="number" 
-                        placeholder="0%" 
-                        className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                        value={formData.vat}
-                        onChange={(e) => updateField('vat', e.target.value)}
+                        placeholder="Enter price" 
+                        className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none ${
+                          isMissingRequired(formData.price) ? 'border-red-400' : 'border-border'
+                        }`}
+                        value={formData.price}
+                        onChange={(e) => updateField('price', e.target.value)}
                       />
                     </div>
-                    <div className="flex items-end pb-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.taxable ? 'bg-primary border-primary' : 'border-border'}`}>
-                          {formData.taxable && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <input type="checkbox" className="hidden" checked={formData.taxable} onChange={() => updateField('taxable', !formData.taxable)} />
-                        <span className="text-xs font-medium text-foreground/70">Taxable</span>
-                      </label>
+                    <div>
+                      <label className="text-xs font-semibold text-foreground mb-1.5 block">Old Price <span className="text-foreground/40 font-normal">(Optional)</span></label>
+                      <input 
+                        type="number" 
+                        placeholder="Enter old price" 
+                        className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={formData.oldPrice}
+                        onChange={(e) => updateField('oldPrice', e.target.value)}
+                      />
                     </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Cost Price (KES) <span className="text-foreground/40 font-normal">(Optional)</span></label>
-                    <input 
-                      type="number" 
-                      placeholder="Enter cost price" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                      value={formData.costPrice}
-                      onChange={(e) => updateField('costPrice', e.target.value)}
-                    />
                   </div>
                 </div>
               </motion.div>
@@ -377,12 +544,13 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 5: Inventory */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(5) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={5} title="Inventory" 
             isExpanded={expandedStep === 5} 
             isCompleted={isStepValid(5)}
-            onClick={() => setExpandedStep(5)} 
+            isInvalid={showValidation && !isStepValid(5)}
+            onClick={() => setExpandedStep((prev) => (prev === 5 ? 0 : 5))} 
           />
           <AnimatePresence>
             {expandedStep === 5 && (
@@ -393,30 +561,25 @@ export const AddProductPage: React.FC = () => {
                     <input 
                       type="number" 
                       placeholder="Enter stock quantity" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
+                      className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none ${
+                        isMissingRequired(formData.stock) ? 'border-red-400' : 'border-border'
+                      }`}
                       value={formData.stock}
                       onChange={(e) => updateField('stock', e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Unit <span className="text-error">*</span></label>
-                    <button 
-                      onClick={() => setShowUnitModal(true)}
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm text-left text-foreground/60 flex items-center justify-between"
+                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Unit <span className="text-foreground/40 font-normal">(Optional)</span></label>
+                    <select
+                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                      value={formData.unit}
+                      onChange={(e) => updateField('unit', e.target.value)}
                     >
-                      <span>{formData.unit || 'Select unit'}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Low Price Alert (KES) <span className="text-foreground/40 font-normal">(Optional)</span></label>
-                    <input 
-                      type="number" 
-                      placeholder="Enter alert quantity" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                      value={formData.lowStockAlert}
-                      onChange={(e) => updateField('lowStockAlert', e.target.value)}
-                    />
+                      <option value="">Select unit</option>
+                      {UNITS.map((unit) => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </motion.div>
@@ -425,12 +588,13 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 6: Description */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(6) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={6} title="Description" 
             isExpanded={expandedStep === 6} 
             isCompleted={!!formData.description}
-            onClick={() => setExpandedStep(6)} 
+            isInvalid={showValidation && !isStepValid(6)}
+            onClick={() => setExpandedStep((prev) => (prev === 6 ? 0 : 6))} 
           />
           <AnimatePresence>
             {expandedStep === 6 && (
@@ -438,7 +602,7 @@ export const AddProductPage: React.FC = () => {
                 <div className="p-4 pt-0">
                   <textarea 
                     placeholder="Enter product description..." 
-                    className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm min-h-[120px] focus:ring-1 focus:ring-primary outline-none resize-none"
+                    className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm min-h-30 focus:ring-1 focus:ring-primary outline-none resize-none"
                     value={formData.description}
                     onChange={(e) => updateField('description', e.target.value)}
                   />
@@ -455,12 +619,13 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 7: Status & Visibility */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(7) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
-            number={7} title="Status & Visibility" 
+            number={7} title="Status" 
             isExpanded={expandedStep === 7} 
-            isCompleted={true}
-            onClick={() => setExpandedStep(7)} 
+            isCompleted={isStepValid(7)}
+            isInvalid={showValidation && !isStepValid(7)}
+            onClick={() => setExpandedStep((prev) => (prev === 7 ? 0 : 7))} 
           />
           <AnimatePresence>
             {expandedStep === 7 && (
@@ -470,7 +635,9 @@ export const AddProductPage: React.FC = () => {
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Status <span className="text-error">*</span></label>
                     <button 
                       onClick={() => setShowStatusModal(true)}
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm text-left flex items-center justify-between"
+                      className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm text-left flex items-center justify-between ${
+                        isMissingRequired(formData.status) ? 'border-red-400' : 'border-border'
+                      }`}
                     >
                       <span className={formData.status === 'Active' ? 'text-primary' : 'text-foreground'}>{formData.status}</span>
                       <ChevronDown className="w-4 h-4" />
@@ -486,18 +653,18 @@ export const AddProductPage: React.FC = () => {
                       <span>{formData.returnPolicy || 'Select return policy'}</span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
+                    {formData.returnPolicy === 'No Return' && (
+                      <div className="mt-3">
+                        <label className="text-xs font-semibold text-foreground mb-1.5 block">No Return Message</label>
+                        <textarea
+                          placeholder="Why is this item not returnable?"
+                          className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm min-h-24 focus:ring-1 focus:ring-primary outline-none resize-none"
+                          value={formData.returnPolicyMessage}
+                          onChange={(e) => updateField('returnPolicyMessage', e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Tags <span className="text-foreground/40 font-normal">(Optional)</span></label>
-                    <input 
-                      type="text" 
-                      placeholder="Select or add tags" 
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                      value={formData.tags}
-                      onChange={(e) => updateField('tags', e.target.value)}
-                    />
-                  </div>
-                  
                 </div>
               </motion.div>
             )}
@@ -505,18 +672,47 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 8: Additional Options */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${showValidation && !isStepValid(8) ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={8} title="Additional Options" 
             isExpanded={expandedStep === 8} 
-            isCompleted={false}
-            onClick={() => setExpandedStep(8)} 
+            isCompleted={!!formData.tags || !!formData.taxCodes || !!formData.ingredients}
+            isInvalid={showValidation && !isStepValid(8)}
+            onClick={() => setExpandedStep((prev) => (prev === 8 ? 0 : 8))} 
           />
           <AnimatePresence>
             {expandedStep === 8 && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="p-4 pt-0 text-center text-sm text-foreground/50">
-                  No additional options available for this product type.
+                <div className="p-4 pt-0 space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Tags <span className="text-foreground/40 font-normal">(Optional)</span></label>
+                    <input
+                      type="text"
+                      placeholder="Select or add tags"
+                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
+                      value={formData.tags}
+                      onChange={(e) => updateField('tags', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Tax Codes <span className="text-foreground/40 font-normal">(Optional)</span></label>
+                    <input
+                      type="text"
+                      placeholder="VAT16, FOOD01"
+                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
+                      value={formData.taxCodes}
+                      onChange={(e) => updateField('taxCodes', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Ingredients <span className="text-foreground/40 font-normal">(Optional)</span></label>
+                    <textarea
+                      placeholder="Chicken, Flour Coating, Herbs & Spices"
+                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm min-h-24 focus:ring-1 focus:ring-primary outline-none resize-none"
+                      value={formData.ingredients}
+                      onChange={(e) => updateField('ingredients', e.target.value)}
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -524,39 +720,46 @@ export const AddProductPage: React.FC = () => {
         </div>
 
         {/* Step 9: Product Variants */}
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className={`bg-white rounded-xl border overflow-hidden ${isVariantStepInvalid ? 'border-red-400' : 'border-border'}`}>
           <StepHeader 
             number={9} title="Product Variants" 
             isExpanded={expandedStep === 9} 
             isCompleted={variants.length > 0}
-            onClick={() => setExpandedStep(9)} 
+            isInvalid={isVariantStepInvalid}
+            onClick={() => setExpandedStep((prev) => (prev === 9 ? 0 : 9))} 
           />
           <AnimatePresence>
             {expandedStep === 9 && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                 <div className="p-4 pt-0 space-y-4">
                   {variants.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-6 text-center border-2 border-dashed border-border rounded-xl">
+                    <div className={`flex flex-col items-center justify-center py-6 text-center border-2 border-dashed rounded-xl ${
+                      isVariantStepInvalid ? 'border-red-400' : 'border-border'
+                    }`}>
                       <Package className="w-8 h-8 text-foreground/30 mb-2" />
                       <p className="text-sm font-semibold text-foreground/60">No variants added yet</p>
                       <p className="text-xs text-foreground/40 mt-1">Add variants like size, weight, color etc.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {variants.map((variant) => (
-                        <div key={variant.id} className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border">
+                      {variants.map((variant, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 bg-secondary rounded-lg border border-border">
                           <div className="w-10 h-10 bg-white rounded-md flex items-center justify-center border border-border">
-                            {variant.image ? <img src={variant.image} alt="" className="w-full h-full object-cover rounded-md" /> : <ImageIcon className="w-5 h-5 text-foreground/30" />}
+                            {typeof variant.images[0] === 'string' ? (
+                              <img src={variant.images[0]} alt="" className="w-full h-full object-cover rounded-md" />
+                            ) : (
+                              <ImageIcon className="w-5 h-5 text-foreground/30" />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-foreground truncate">{variant.name}</p>
+                            <p className="text-sm font-bold text-foreground truncate">{variant.sku || 'Variant'}</p>
                             <p className="text-xs text-foreground/50">SKU: {variant.sku}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-bold text-primary">KES {variant.price}</p>
                             <p className="text-xs text-foreground/50">{variant.stock} in stock</p>
                           </div>
-                          <button onClick={() => handleDeleteVariant(variant.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                          <button onClick={() => handleDeleteVariant(index)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -580,8 +783,12 @@ export const AddProductPage: React.FC = () => {
 
       {/* Sticky Footer Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t border-border z-30">
-        <Button className="w-full bg-primary text-white font-bold py-3 rounded-md shadow-lg shadow-primary/20">
-          Add Product
+        <Button
+          className="w-full bg-primary text-white font-bold py-3 rounded-md shadow-lg shadow-primary/20"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Creating Product...' : 'Add Product'}
         </Button>
       </div>
 
@@ -593,7 +800,7 @@ export const AddProductPage: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
           <input type="text" placeholder="Search categories..." className="w-full pl-9 pr-3 py-2 bg-secondary border border-border rounded-lg text-sm outline-none" />
         </div>
-        <div className="space-y-1 max-h-[300px] overflow-y-auto">
+        <div className="space-y-1 max-h-75 overflow-y-auto">
           {CATEGORIES.map((cat) => (
             <label key={cat} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
               <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.category === cat ? 'bg-primary border-primary' : 'border-border'}`}>
@@ -606,24 +813,6 @@ export const AddProductPage: React.FC = () => {
         </div>
         <div className="mt-4 pt-4 border-t border-border">
           <Button className="w-full bg-primary text-white" onClick={() => setShowCategoryModal(false)}>Apply</Button>
-        </div>
-      </Modal>
-
-      {/* Unit Modal */}
-      <Modal isOpen={showUnitModal} onClose={() => setShowUnitModal(false)} title="Select Unit">
-        <div className="space-y-1 max-h-[400px] overflow-y-auto">
-          {UNITS.map((unit) => (
-            <label key={unit} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer border border-transparent hover:border-border">
-              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.unit === unit ? 'border-primary' : 'border-border'}`}>
-                {formData.unit === unit && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
-              </div>
-              <input type="radio" name="unit" className="hidden" checked={formData.unit === unit} onChange={() => { updateField('unit', unit); setShowUnitModal(false); }} />
-              <span className="text-sm text-foreground">{unit}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-4 pt-4 border-t border-border">
-          <Button className="w-full bg-primary text-white" onClick={() => setShowUnitModal(false)}>Apply</Button>
         </div>
       </Modal>
 
@@ -666,54 +855,121 @@ export const AddProductPage: React.FC = () => {
       {/* Add Variant Modal */}
       <Modal isOpen={showVariantModal} onClose={() => setShowVariantModal(false)} title="Add Variant">
         <div className="space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-foreground mb-1.5 block">Variant Name <span className="text-error">*</span></label>
-            <input 
-              type="text" 
-              placeholder="e.g. Size, Color" 
-              className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
-              value={currentVariant.name}
-              onChange={(e) => setCurrentVariant({...currentVariant, name: e.target.value})}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-foreground mb-1.5 block">Variant Image (Optional)</label>
-            <div className="border border-dashed border-border rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50">
-              <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                <ImageIcon className="w-5 h-5 text-foreground/40" />
-              </div>
-              <span className="text-sm text-foreground/60">Upload image</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">SKU <span className="text-error">*</span></label>
+              <input
+                type="text"
+                placeholder="KFC-STREETWISE2"
+                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                value={currentVariant.sku}
+                onChange={(e) => setCurrentVariant({ ...currentVariant, sku: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Barcode</label>
+              <input
+                type="text"
+                placeholder="6001234567890"
+                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                value={currentVariant.barcode}
+                onChange={(e) => setCurrentVariant({ ...currentVariant, barcode: e.target.value })}
+              />
             </div>
           </div>
-          
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1.5 block">Variant Images</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="block w-full text-sm text-foreground/70 file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white"
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                setCurrentVariant((prev) => ({ ...prev, images: [...prev.images, ...files] }));
+                event.currentTarget.value = '';
+              }}
+            />
+            {currentVariant.images.length > 0 && (
+              <p className="mt-2 text-xs text-foreground/50">{currentVariant.images.length} file(s) selected</p>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Price (KES) <span className="text-error">*</span></label>
+              <input
+                type="number"
+                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                value={currentVariant.price}
+                onChange={(e) => setCurrentVariant({ ...currentVariant, price: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Old Price</label>
+              <input
+                type="number"
+                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                value={currentVariant.oldPrice}
+                onChange={(e) => setCurrentVariant({ ...currentVariant, oldPrice: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Stock Quantity</label>
+              <input
+                type="number"
+                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                value={currentVariant.stock}
+                onChange={(e) => setCurrentVariant({ ...currentVariant, stock: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1.5 block">Unit</label>
+              <select
+                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                value={currentVariant.unit}
+                onChange={(e) => setCurrentVariant({ ...currentVariant, unit: e.target.value })}
+              >
+                <option value="">Select unit</option>
+                {UNITS.map((unit) => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {/* Hidden: isNew and active default to true */}
+
           <div className="border-t border-border pt-4">
             <div className="flex items-center justify-between mb-3">
               <label className="text-xs font-semibold text-foreground">Variant Attributes</label>
-              <button 
+              <button
                 onClick={() => setShowAttributeModal(true)}
                 className="text-xs text-primary font-bold flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" /> Add Attribute
               </button>
             </div>
-            
-            {/* Attributes List */}
             {currentVariant.attributes.length > 0 ? (
               <div className="space-y-2">
-                {currentVariant.attributes.map((attr: any, idx: number) => (
-                  <div key={idx} className="bg-secondary p-3 rounded-lg border border-border">
+                {currentVariant.attributes.map((attr, idx) => (
+                  <div key={`${attr.name}-${idx}`} className="bg-secondary p-3 rounded-lg border border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-foreground">{attr.type}</span>
-                      <button className="text-red-500"><X className="w-3 h-3" /></button>
+                      <span className="text-xs font-bold text-foreground">{attr.name}</span>
+                      <button
+                        type="button"
+                        className="text-red-500"
+                        onClick={() =>
+                          setCurrentVariant((prev) => ({
+                            ...prev,
+                            attributes: prev.attributes.filter((_, attributeIndex) => attributeIndex !== idx),
+                          }))
+                        }
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {attr.values.map((val: string, vIdx: number) => (
-                        <span key={vIdx} className="px-2 py-1 bg-white border border-border rounded text-[10px] font-medium flex items-center gap-1">
-                          {val}
-                          <X className="w-3 h-3 text-foreground/40" />
-                        </span>
-                      ))}
-                    </div>
+                    <div className="text-xs text-foreground/60">{attr.value}</div>
                   </div>
                 ))}
               </div>
@@ -722,69 +978,58 @@ export const AddProductPage: React.FC = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div>
-              <label className="text-xs font-semibold text-foreground mb-1.5 block">Price (KES)</label>
-              <input 
-                type="number" 
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm outline-none"
-                value={currentVariant.price}
-                onChange={(e) => setCurrentVariant({...currentVariant, price: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-foreground mb-1.5 block">Stock</label>
-              <input 
-                type="number" 
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm outline-none"
-                value={currentVariant.stock}
-                onChange={(e) => setCurrentVariant({...currentVariant, stock: e.target.value})}
-              />
-            </div>
-          </div>
         </div>
         <div className="mt-6 pt-4 border-t border-border">
-          <Button className="w-full bg-primary text-white font-bold" onClick={handleSaveVariant}>Save Variant</Button>
+          <Button className="w-full bg-primary text-white font-bold" onClick={handleSaveVariant}>
+            Save Variant
+          </Button>
         </div>
       </Modal>
 
-      {/* Add Attribute Modal (Nested inside Variant logic visually, but separate modal for demo) */}
+      {/* Add Attribute Modal */}
       <Modal isOpen={showAttributeModal} onClose={() => setShowAttributeModal(false)} title="Add Attribute">
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-foreground mb-1.5 block">Attribute Type <span className="text-error">*</span></label>
-            <input 
-              type="text" 
-              placeholder="Select type" 
+            <label className="text-xs font-semibold text-foreground mb-1.5 block">Attribute Name <span className="text-error">*</span></label>
+            <input
+              type="text"
+              placeholder="Pieces"
               className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
-              value={selectedAttribute.type}
-              onChange={(e) => setSelectedAttribute({...selectedAttribute, type: e.target.value})}
+              value={selectedAttribute.name}
+              onChange={(e) => setSelectedAttribute({ ...selectedAttribute, name: e.target.value })}
             />
           </div>
           <div>
             <label className="text-xs font-semibold text-foreground mb-1.5 block">Attribute Value <span className="text-error">*</span></label>
-            <input 
-              type="text" 
-              placeholder="Enter value" 
-              className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none mb-2"
+            <input
+              type="text"
+              placeholder="2"
+              className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+              value={selectedAttribute.value}
+              onChange={(e) => setSelectedAttribute({ ...selectedAttribute, value: e.target.value })}
             />
-            <div className="flex gap-2">
-              {['S', 'M', 'L'].map(val => (
-                <button key={val} className="px-3 py-1 bg-gray-100 rounded text-xs font-bold text-foreground/70 hover:bg-gray-200">{val}</button>
-              ))}
-              <button className="px-3 py-1 border border-primary text-primary rounded text-xs font-bold">+ Add Value</button>
-            </div>
           </div>
         </div>
         <div className="mt-6 pt-4 border-t border-border">
-          <Button className="w-full bg-primary text-white font-bold" onClick={() => {
-            setCurrentVariant(prev => ({
-              ...prev,
-              attributes: [...(prev.attributes || []), selectedAttribute]
-            }));
-            setShowAttributeModal(false);
-            setSelectedAttribute({ type: '', values: [] });
-          }}>Add Attribute</Button>
+          <Button
+            className="w-full bg-primary text-white font-bold"
+            onClick={() => {
+              setCurrentVariant((prev) => ({
+                ...prev,
+                attributes: [
+                  ...prev.attributes,
+                  {
+                    name: selectedAttribute.name,
+                    value: selectedAttribute.value,
+                  },
+                ],
+              }));
+              setShowAttributeModal(false);
+              setSelectedAttribute({ name: '', value: '' });
+            }}
+          >
+            Add Attribute
+          </Button>
         </div>
       </Modal>
 

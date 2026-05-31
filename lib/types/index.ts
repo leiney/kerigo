@@ -315,6 +315,77 @@ export interface SharedWelcomeData {
   vendors: VendorSummary[];
 }
 
+export interface ProductCategoryPayload {
+  categoryID?: string;
+  name: string;
+  image?: string;
+}
+
+export interface ProductReturnPolicyPayload {
+  isReturnable: boolean;
+  message: string;
+}
+
+export interface ProductInfoPayload {
+  ingredients: string[];
+}
+
+export interface ProductVariantAttributePayload {
+  name: string;
+  value: string;
+}
+
+export interface ProductStorePayload {
+  storeID?: string;
+  price: number;
+  oldPrice: number;
+  stock: number;
+  stockUsed?: number;
+}
+
+export interface ProductVariantPayload {
+  variantID?: string;
+  sku: string;
+  barcode?: string;
+  unit?: string;
+  price: number;
+  oldPrice: number;
+  stock: number;
+  stockUsed?: number;
+  rating?: number;
+  reviewCount?: number;
+  isNew: boolean;
+  active: boolean;
+  images: Array<File | Blob | string>;
+  attributes: ProductVariantAttributePayload[];
+  createdAt?: string;
+  updatedAt?: string;
+  stores?: ProductStorePayload[];
+}
+
+export interface ProductPayload {
+  productID?: string;
+  name: string;
+  description: string;
+  category: ProductCategoryPayload[];
+  tags: string[];
+  returnPolicy: ProductReturnPolicyPayload;
+  rating?: number;
+  reviewCount?: number;
+  active: boolean;
+  taxCodes: string[];
+  info: ProductInfoPayload;
+  createdAt?: string;
+  updatedAt?: string;
+  variants: ProductVariantPayload[];
+}
+
+export interface ProductCreateResponse {
+  message: string;
+  productID?: string;
+  product?: ProductPayload;
+}
+
 export type AccountType = 'individual' | 'organisation';
 export type PayoutMode = 'bank' | 'mpesa';
 

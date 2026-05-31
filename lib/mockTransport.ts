@@ -331,6 +331,13 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
     return clone({ message: 'Cart cleared' }) as T;
   }
 
+  if (method === 'POST' && url === '/products') {
+    return clone({
+      message: 'Product created successfully',
+      productID: `product_${Date.now()}`,
+    }) as T;
+  }
+
   throw new Error(`No mock handler registered for ${method} ${config.url}`);
 };
 

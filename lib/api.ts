@@ -1,5 +1,6 @@
 import { UserProfile } from '@/src/types';
 import { axiosInstance, request } from './axios';
+import { buildProductFormData } from './products';
 import type {
   AccountSettingsData,
   AddressItem,
@@ -8,6 +9,8 @@ import type {
   CustomerHomeData,
   CustomerSettingsData,
   LoginResponse,
+  ProductCreateResponse,
+  ProductPayload,
   NotificationItem,
   NotificationPreferences,
   OtpMetadataResponse,
@@ -149,4 +152,12 @@ export const supportApi = {
   getTopics: customerApi.getHelpTopics,
   getOptions: customerApi.getHelpOptions,
   createTicket: customerApi.createSupportTicket,
+};
+
+export const productApi = {
+  createProduct: async (payload: ProductPayload | FormData): Promise<ProductCreateResponse> => {
+    const formData = payload instanceof FormData ? payload : buildProductFormData(payload);
+    const response = await axiosInstance.post<ProductCreateResponse>('/products/extended/', formData);
+    return response.data;
+  },
 };
