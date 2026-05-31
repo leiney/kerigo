@@ -87,7 +87,6 @@ const rebuildDocuments = (
   return documents;
 };
 
-// Custom File Upload Button
 const AttachButton: React.FC<{
   onUpload: (files: File[]) => void;
   accept: string;

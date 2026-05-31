@@ -45,6 +45,7 @@ import { KYCDocuments } from './pages/vendor/KYCDocuments';
 import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments';
 import { AddYourStores } from './pages/vendor/AddYourStores';
 import { AddStorePage } from './pages/vendor/AddStorePage';
+import { AddStoreDashboardPage } from './pages/vendor/AddStoreDashboardPage';
 import { ManageMultipleStores } from './pages/vendor/ManageMultipleStores';
 import { StoreDetails } from './pages/vendor/StoreDetails';
 import { StoreLocationPicker } from './pages/vendor/StoreLocationPicker';
@@ -177,6 +178,7 @@ export default function App() {
           <Route path="/vendor/kyc-documents" element={<KYCDocuments />} />
           <Route path="/vendor/company-kyc-documents" element={<CompanyKYCDocuments />} />
           <Route path="/vendor/add-store" element={<AddStorePage />} />
+          <Route path="/vendor/products/add-store" element={<AddStoreDashboardPage />} />
           <Route path="/vendor/location-picker" element={<StoreLocationPicker />} />
           <Route path="/vendor/add-your-stores" element={<AddYourStores />} />
           <Route path='/vendor/manage-multiple-stores' element={<ManageMultipleStores />} />

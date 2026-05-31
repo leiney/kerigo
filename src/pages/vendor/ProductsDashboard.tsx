@@ -415,7 +415,7 @@ export const ProductsDashboard: React.FC = () => {
               </span>
             </div>
           </div>
-          <Button size="sm" onClick={() => navigate('/vendor/add-store')} className="bg-primary text-white text-[11px] font-semibold px-2.5 h-7 gap-1 rounded-md">
+          <Button size="sm" onClick={() => navigate('/vendor/products/add-store')} className="bg-primary text-white text-[11px] font-semibold px-2.5 h-7 gap-1 rounded-md">
             <Plus className="w-3 h-3" />
             Add Store
           </Button>
