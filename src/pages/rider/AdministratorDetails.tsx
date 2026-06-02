@@ -76,7 +76,7 @@ export const AdministratorDetails: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={2} />
+        <StepDots currentStep={4} />
 
         {/* Spacer to balance the header */}
         <div className="w-8" />

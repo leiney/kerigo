@@ -10,6 +10,7 @@ import type {
   RegisterVendorPayload,
   Store,
 } from '../../lib/types';
+import { buildFlattenedFormData } from './multipart';
 
 export type VendorStoreDraft = Store & {
   id: string;
@@ -72,9 +73,10 @@ export const generateDocumentSerial = (documentType: string, index: number) => {
   return `${prefix}-${index + 1}-${Date.now()}-${createUniqueSerialSuffix()}`;
 };
 
-export const normalizeDocument = (documentType: string, serialNumber?: string): KYCDocument => ({
+export const normalizeDocument = (documentType: string, serialNumber: string, files: File[]): KYCDocument => ({
   documentType: documentType.trim(),
   serialNumber: serialNumber?.trim() || generateDocumentSerial(documentType, 0),
+  files: files
 });
 
 export const normalizeLocationDetails = (locationDetails: Partial<LocationDetails>): LocationDetails => ({
@@ -98,7 +100,7 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
   if (draft.accountType === 'individual') {
     const otherInfo: IndividualVendorOtherInfo = {
       documents: draft.individualDocuments.map((document, index) =>
-        normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index))
+        normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index), document.files)
       ),
       stores: draft.stores.map((store) => ({
         storeName: store.storeName.trim(),
@@ -133,7 +135,7 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
       locationDetails: normalizeLocationDetails(store.locationDetails),
     })),
     documents: draft.organizationDocuments.map((document, index) =>
-      normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index))
+      normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index), document.files)
     ),
   };
 
@@ -172,9 +174,13 @@ export const businessTypeOptions: Array<{ value: BusinessType; label: string }> 
 export type VendorMultipartAttachments = {
   individualDocuments: Record<string, File[]>;
   organizationDocuments: Record<string, File[]>;
+  avatar: File | null;
+  organizationLogo: File | null;
 };
 
 const attachFilesToVendorPayload = (payloadWithFiles: any, draft: VendorOnboardingDraft, attachments: VendorMultipartAttachments) => {
+  payloadWithFiles.avatar = attachments.avatar ?? null;
+
   if (payloadWithFiles.accountType === 'individual') {
     const docs = payloadWithFiles.otherInfo?.documents || [];
     docs.forEach((doc: any) => {
@@ -182,6 +188,9 @@ const attachFilesToVendorPayload = (payloadWithFiles: any, draft: VendorOnboardi
       doc.files = attachments.individualDocuments[serial] || [];
     });
   } else {
+    const organizationLogo = attachments.organizationLogo ?? null;
+    payloadWithFiles.organizationLogo = organizationLogo;
+    payloadWithFiles.logo = organizationLogo;
     (payloadWithFiles.otherInfo?.documents || []).forEach((doc: any) => {
       const serial = String(doc.serialNumber || '');
       doc.files = attachments.organizationDocuments[serial] || [];
@@ -198,10 +207,5 @@ export const buildVendorSignupPayloadWithFiles = (draft: VendorOnboardingDraft, 
 
 export const buildVendorSignupFormData = (draft: VendorOnboardingDraft, attachments: VendorMultipartAttachments): FormData => {
   const payloadWithFiles = buildVendorSignupPayloadWithFiles(draft, attachments);
-  // imported at call site — keep shape consistent with rider
-  // buildFlattenedFormData is in src/lib/multipart
-  // lazy import to avoid cycles
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { buildFlattenedFormData } = require('./multipart');
   return buildFlattenedFormData(payloadWithFiles);
 };

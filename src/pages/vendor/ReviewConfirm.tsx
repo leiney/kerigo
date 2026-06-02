@@ -10,6 +10,7 @@ import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { authApi } from '../../../lib/api';
 import { buildVendorSignupFormData } from '../../lib/vendorOnboarding';
+import { deleteOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 import { useAuth } from '../../context/AuthContext';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
@@ -21,6 +22,7 @@ export const ReviewConfirm: React.FC = () => {
   const draft = useVendorOnboardingStore((state) => state.draft);
   const attachments = useVendorOnboardingStore((state) => state.attachments);
   const resetDraft = useVendorOnboardingStore((state) => state.reset);
+  const vendorAttachmentKeys = ['vendor-kyc-documents', 'vendor-company-kyc-documents'];
 
   const summaryData = useMemo(() => {
     const payoutSummary = draft.payoutInfo?.mode === 'bank'
@@ -67,6 +69,7 @@ export const ReviewConfirm: React.FC = () => {
         },
       });
       resetDraft();
+      await Promise.all(vendorAttachmentKeys.map((key) => deleteOnboardingAttachmentSnapshot(key)));
       navigate('/vendor/setup-completed', { replace: true });
     } finally {
       setIsSubmitting(false);

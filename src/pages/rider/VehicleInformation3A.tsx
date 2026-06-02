@@ -9,7 +9,8 @@ import {
   ChevronLeft, 
   Plus, 
   Pencil, 
-  Trash2 
+  Trash2,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
@@ -70,6 +71,9 @@ export const VehicleInformation3A: React.FC = () => {
     year: '',
     color: ''
   });
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
+  const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
   const riderSelectionValidationError = riderOptions.length > 0 && !selectedRider ? 'Please select a rider.' : '';
   const vehicleTypeValidationError = selectionError(formData.type, 'vehicle type');
@@ -120,13 +124,51 @@ export const VehicleInformation3A: React.FC = () => {
       riderName,
       ...formData
     };
-    setVehicles((prev) => [...prev, newVehicle]);
+    setVehicles((prev) => {
+      if (sheetMode === 'edit' && editingVehicleId) {
+        return prev.map((vehicle) => (vehicle.id === editingVehicleId ? { ...newVehicle, id: vehicle.id } : vehicle));
+      }
+
+      return [...prev, newVehicle];
+    });
     setFormData({ type: '', regNumber: '', make: '', model: '', year: '', color: '' });
     setHasAttemptedContinue(false);
+    setIsSheetOpen(false);
+    setSheetMode('add');
+    setEditingVehicleId(null);
   };
 
   const handleDeleteVehicle = (id: string) => {
     setVehicles(vehicles.filter(v => v.id !== id));
+  };
+
+  const openAddVehicleSheet = () => {
+    setSheetMode('add');
+    setEditingVehicleId(null);
+    setFormData({ type: '', regNumber: '', make: '', model: '', year: '', color: '' });
+    setIsSheetOpen(true);
+  };
+
+  const openEditVehicleSheet = (vehicle: Vehicle) => {
+    setSheetMode('edit');
+    setEditingVehicleId(vehicle.id);
+    setSelectedRider(vehicle.riderIndex !== null ? String(vehicle.riderIndex) : '');
+    setFormData({
+      type: vehicle.type,
+      regNumber: vehicle.regNumber,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      color: vehicle.color,
+    });
+    setIsSheetOpen(true);
+  };
+
+  const closeSheet = () => {
+    setIsSheetOpen(false);
+    setSheetMode('add');
+    setEditingVehicleId(null);
+    setHasAttemptedContinue(false);
   };
 
   const handleContinue = () => {
@@ -150,7 +192,7 @@ export const VehicleInformation3A: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={3} />
+        <StepDots currentStep={6} />
 
         <div className="w-8" />
       </div>
@@ -179,129 +221,23 @@ export const VehicleInformation3A: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Form Fields */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="w-full max-w-md space-y-4"
         >
-          
-          {/* Rider Selection */}
-          <div className='pb-4'>
-            <Select
-              label="Rider"
-              placeholder="Select rider"
-              options={riderOptions}
-              value={selectedRider}
-              onChange={(value) => setSelectedRider(String(value))}
-              error={riderSelectionError}
-              className="rounded-2xl h-14"
-              required
-            />
-          </div>
-
-        
-          {/* Vehicle Type */}
-          <div className='pb-4'>
-            <Select
-              label="Vehicle Type"
-              placeholder="Select vehicle type"
-              options={vehicleTypes}
-              value={formData.type}
-              onChange={(value) => setFormData({ ...formData, type: String(value) })}
-              error={vehicleTypeError}
-              className="rounded-2xl h-14"
-              required
-            />
-          </div>
-
-          {/* Registration Number */}
-          <div>
-            <Input
-              label="Registration Number"
-              placeholder="Enter registration number"
-              value={formData.regNumber}
-              onChange={(value) => setFormData({ ...formData, regNumber: String(value) })}
-              error={registrationNumberError}
-              leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
-              className="h-14 rounded-2xl"
-              required
-            />
-          </div>
-
-          {/* Make */}
-          <div>
-            <Input
-              label="Make"
-              placeholder="e.g. Honda, TVS"
-              value={formData.make}
-              onChange={(value) => setFormData({ ...formData, make: String(value) })}
-              error={makeError}
-              className="h-14 rounded-2xl"
-              required
-            />
-          </div>
-
-          {/* Model */}
-          <div>
-            <Input
-              label="Model"
-              placeholder="e.g. CG 125"
-              value={formData.model}
-              onChange={(value) => setFormData({ ...formData, model: String(value) })}
-              error={modelError}
-              className="h-14 rounded-2xl"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              label="Registration Year"
-              type="number"
-              placeholder="e.g. 2023"
-              value={formData.year}
-              onChange={(value) => setFormData({ ...formData, year: String(value) })}
-              error={yearFieldError}
-              className="h-14 rounded-2xl"
-              required
-            />
-
-            <Input
-              label="Color"
-              placeholder="e.g. Black"
-              value={formData.color}
-              onChange={(value) => setFormData({ ...formData, color: String(value) })}
-              error={colorError}
-              leftIcon={<Palette className="w-5 h-5 text-foreground/40" />}
-              className="h-14 rounded-2xl"
-              required
-            />
-          </div>
-
-          {/* Add Another Vehicle Button */}
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddVehicle}
-            className="w-full py-3 border-2 border-dashed border-primary/30 rounded-2xl flex items-center justify-center gap-2 text-primary font-medium text-sm hover:bg-primary/5 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Another Vehicle
-          </motion.button>
-
-          {/* Added Vehicles List */}
           <AnimatePresence>
             {vehicles.length > 0 && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="space-y-3 pt-2"
+                className="space-y-3"
               >
                 <p className="text-xs font-medium text-foreground/60">
                   Added Vehicles ({vehicles.length})
                 </p>
-                
+
                 <div className="space-y-2">
                   {vehicles.map((vehicle, index) => (
                     <div key={vehicle.id} className="flex items-center gap-3 bg-secondary rounded-xl p-3">
@@ -313,10 +249,11 @@ export const VehicleInformation3A: React.FC = () => {
                         <p className="text-xs text-foreground/50">Color: {vehicle.color}</p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                        <button type="button" onClick={() => openEditVehicleSheet(vehicle)} className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
                           <Pencil className="w-4 h-4 text-foreground/60" />
                         </button>
                         <button 
+                          type="button"
                           onClick={() => handleDeleteVehicle(vehicle.id)}
                           className="p-2 hover:bg-error/10 rounded-lg transition-colors"
                         >
@@ -330,9 +267,150 @@ export const VehicleInformation3A: React.FC = () => {
             )}
           </AnimatePresence>
 
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={openAddVehicleSheet}
+            className="w-full py-3 border-2 border-dashed border-primary/30 rounded-2xl flex items-center justify-center gap-2 text-primary font-medium text-sm hover:bg-primary/5 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            {vehicles.length > 0 ? 'Add Another Vehicle' : 'Add First Vehicle'}
+          </motion.button>
         </motion.div>
 
       </div>
+
+      <AnimatePresence>
+        {isSheetOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm flex items-end"
+            onClick={closeSheet}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+              className="w-full max-h-[90vh] overflow-y-auto bg-white rounded-t-3xl shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="px-6 pt-5 pb-4 border-b border-border/60 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="mt-1 text-lg font-bold text-foreground">
+                    {sheetMode === 'edit' ? 'Edit vehicle' : vehicles.length > 0 ? 'Add another vehicle' : 'Add first vehicle'}
+                  </h2>
+                </div>
+                <button type="button" onClick={closeSheet} className="p-2 rounded-full hover:bg-secondary transition-colors">
+                  <X className="w-5 h-5 text-foreground" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 space-y-4">
+                <div className="pb-5">
+                  <Select
+                    label="Rider"
+                    placeholder="Select rider"
+                    options={riderOptions}
+                    value={selectedRider}
+                    onChange={(value) => setSelectedRider(String(value))}
+                    error={riderSelectionError}
+                    className="rounded-2xl h-14"
+                    required
+                  />
+                </div>
+
+                <div className="pb-5">
+                  <Select
+                    label="Vehicle Type"
+                    placeholder="Select vehicle type"
+                    options={vehicleTypes}
+                    value={formData.type}
+                    onChange={(value) => setFormData({ ...formData, type: String(value) })}
+                    error={vehicleTypeError}
+                    className="rounded-2xl h-14"
+                    required
+                  />
+                </div>
+
+
+
+                <Input
+                  label="Registration Number"
+                  placeholder="Enter registration number"
+                  value={formData.regNumber}
+                  onChange={(value) => setFormData({ ...formData, regNumber: String(value) })}
+                  error={registrationNumberError}
+                  leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
+                  className="h-14 rounded-2xl"
+                  required
+                />
+
+                <Input
+                  label="Make"
+                  placeholder="e.g. Honda, TVS"
+                  value={formData.make}
+                  onChange={(value) => setFormData({ ...formData, make: String(value) })}
+                  error={makeError}
+                  className="h-14 rounded-2xl"
+                  required
+                />
+
+                <Input
+                  label="Model"
+                  placeholder="e.g. CG 125"
+                  value={formData.model}
+                  onChange={(value) => setFormData({ ...formData, model: String(value) })}
+                  error={modelError}
+                  className="h-14 rounded-2xl"
+                  required
+                />
+
+                <div className="flex gap-2">
+
+                </div>
+                <div className="grid gap-4 grid-cols-2">
+                  <Input
+                    label="Registration Year"
+                    type="number"
+                    placeholder="e.g. 2023"
+                    value={formData.year}
+                    onChange={(value) => setFormData({ ...formData, year: String(value) })}
+                    error={yearFieldError}
+                    className="h-14 rounded-2xl"
+                    required
+                  />
+
+                  <Input
+                    label="Color"
+                    placeholder="e.g. Black"
+                    value={formData.color}
+                    onChange={(value) => setFormData({ ...formData, color: String(value) })}
+                    error={colorError}
+                    leftIcon={<Palette className="w-5 h-5 text-foreground/40" />}
+                    className="h-14 rounded-2xl"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeSheet}
+                    className="h-12 rounded-2xl border border-border text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <Button type="button" onClick={handleAddVehicle} className="h-12 rounded-2xl text-sm font-semibold">
+                    {sheetMode === 'edit' ? 'Save Changes' : 'Add Vehicle'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {/* Footer / Action Button */}
       <div className="absolute bottom-0 w-full p-6 pb-8 bg-white border-t border-border/50">

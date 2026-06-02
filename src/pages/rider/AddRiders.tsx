@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { emailError, phoneError, requiredTextError } from '../../lib/onboardingValidation';
+import { generateDocumentSerial } from '../../lib/riderOnboarding';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 interface RiderDoc {
@@ -26,6 +27,7 @@ interface RiderDoc {
   description: string;
   file: File | null;
   fileName: string;
+  serialNumber?: string;
 }
 
 interface Rider {
@@ -65,7 +67,14 @@ export const AddRiders: React.FC = () => {
     phone: r.phoneNo || '',
     email: r.email || '',
     experience: r.experience || '',
-    docs: (r.documents || []).map((d: any, i: number) => ({ id: `doc-${i}`, label: d.documentType || 'Document', description: '', file: null, fileName: d.serialNumber || '' })),
+    docs: (r.documents || []).map((d: any, i: number) => ({
+      id: `doc-${i}`,
+      label: d.documentType || 'Document',
+      description: '',
+      file: null,
+      fileName: d.serialNumber || '',
+      serialNumber: d.serialNumber || '',
+    })),
   });
 
   const emptyRider = (): Rider => ({
@@ -78,7 +87,7 @@ export const AddRiders: React.FC = () => {
     docs: initialDocs.map((d) => ({ ...d })),
   });
 
-  const [riders, setRiders] = useState<Rider[]>(() => (storeRiders && storeRiders.length ? storeRiders.map(mapStoreToLocal) : [emptyRider()]));
+  const [riders, setRiders] = useState<Rider[]>(() => (storeRiders && storeRiders.length ? storeRiders.map(mapStoreToLocal) : []));
 
   useEffect(() => {
     if (storeRiders && storeRiders.length) {
@@ -91,7 +100,9 @@ export const AddRiders: React.FC = () => {
   }, [storeRiders]);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetForm, setSheetForm] = useState({ name: '', phone: '', email: '', experience: '' });
+  const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
+  const [editingRiderIndex, setEditingRiderIndex] = useState<number | null>(null);
+  const [sheetForm, setSheetForm] = useState({ idNumber: '', name: '', phone: '', email: '', experience: '' });
   const [sheetDocs, setSheetDocs] = useState<RiderDoc[]>(initialDocs);
 
   const riderHasAllDocs = (docs: RiderDoc[]) => docs.every((doc) => Boolean(doc.fileName));
@@ -102,12 +113,14 @@ export const AddRiders: React.FC = () => {
   const allRidersValid = riders.length > 0 && riders.every(isRiderComplete);
 
   const sheetNameError = hasAttemptedContinue ? requiredTextError(sheetForm.name, 'Rider name') : '';
+  const sheetIdNumberError = hasAttemptedContinue ? requiredTextError(sheetForm.idNumber, 'ID number') : '';
   const sheetPhoneError = hasAttemptedContinue ? phoneError(sheetForm.phone, 'Phone number') : '';
   const sheetEmailError = hasAttemptedContinue ? emailError(sheetForm.email) : '';
 
   useEffect(() => {
     setRidersInStore(
       riders.map((rider) => ({
+        idNumber: rider.idNumber,
         fullName: rider.name,
         phoneNo: rider.phone,
         email: rider.email || '',
@@ -116,7 +129,8 @@ export const AddRiders: React.FC = () => {
           .filter((doc) => doc.fileName)
           .map((doc, index) => ({
             documentType: doc.label,
-            serialNumber: doc.fileName || `DOC-${index + 1}`,
+            serialNumber: doc.serialNumber || generateDocumentSerial(doc.label, index),
+            files: [],
           })),
       }))
     );
@@ -124,8 +138,8 @@ export const AddRiders: React.FC = () => {
       setRiderDocumentFiles(
         riders.map((rider) =>
           rider.docs.reduce<Record<string, File[]>>((accumulator, doc) => {
-            if (doc.file) {
-              accumulator[doc.id] = [doc.file];
+            if (doc.file && doc.serialNumber) {
+              accumulator[doc.serialNumber] = [doc.file];
             }
 
             return accumulator;
@@ -136,64 +150,114 @@ export const AddRiders: React.FC = () => {
 
   const handleFileUpload = (docId: string, file: File, isSheet: boolean = false, riderIndex = 0) => {
     if (isSheet) {
-      const newDocs = sheetDocs.map((d) => (d.id === docId ? { ...d, file, fileName: file.name } : d));
+      const newDocs = sheetDocs.map((d, index) =>
+        d.id === docId
+          ? { ...d, file, fileName: file.name, serialNumber: d.serialNumber || generateDocumentSerial(d.label, index) }
+          : d
+      );
       setSheetDocs(newDocs);
       return;
     }
 
     const updatedRiders = [...riders];
     const target = updatedRiders[riderIndex] || emptyRider();
-    target.docs = target.docs.map((d) => (d.id === docId ? { ...d, file, fileName: file.name } : d));
+    target.docs = target.docs.map((d, index) =>
+      d.id === docId
+        ? { ...d, file, fileName: file.name, serialNumber: d.serialNumber || generateDocumentSerial(d.label, index) }
+        : d
+    );
     updatedRiders[riderIndex] = target;
     setRiders(updatedRiders);
   };
 
   const handleRemoveFile = (docId: string, isSheet: boolean = false, riderIndex = 0) => {
     if (isSheet) {
-      setSheetDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, file: null, fileName: '' } : d)));
+      setSheetDocs((prev) => prev.map((d) => (d.id === docId ? { ...d, file: null, fileName: '', serialNumber: undefined } : d)));
       return;
     }
 
     const updatedRiders = [...riders];
     const target = updatedRiders[riderIndex] || emptyRider();
-    target.docs = target.docs.map((d) => (d.id === docId ? { ...d, file: null, fileName: '' } : d));
+    target.docs = target.docs.map((d) => (d.id === docId ? { ...d, file: null, fileName: '', serialNumber: undefined } : d));
     updatedRiders[riderIndex] = target;
     setRiders(updatedRiders);
   };
 
   const handleAddRiderFromSheet = () => {
-    if (!sheetForm.name.trim() || !sheetForm.phone.trim() || !sheetForm.email.trim() || emailError(sheetForm.email) || !riderHasAllDocs(sheetDocs)) {
+    if (!sheetForm.idNumber.trim() || !sheetForm.name.trim() || !sheetForm.phone.trim() || !sheetForm.email.trim() || !sheetForm.experience.trim() || emailError(sheetForm.email) || !riderHasAllDocs(sheetDocs)) {
       setHasAttemptedContinue(true);
       return;
     }
 
     const newRider: Rider = {
       id: Date.now().toString(),
-      idNumber: `ID-${Date.now().toString().slice(-6)}`,
+      idNumber: sheetForm.idNumber.trim(),
       name: sheetForm.name,
       phone: sheetForm.phone,
       email: sheetForm.email || undefined,
       experience: sheetForm.experience || undefined,
-      docs: sheetDocs
+      docs: sheetDocs,
     };
-    setRiders((prev) => [...prev, newRider]);
-    setSheetForm({ name: '', phone: '', email: '', experience: '' });
+    setRiders((prev) => {
+      if (sheetMode === 'edit' && editingRiderIndex !== null) {
+        return prev.map((rider, index) => (index === editingRiderIndex ? { ...newRider, id: rider.id } : rider));
+      }
+
+      return [...prev, newRider];
+    });
+    setSheetForm({ idNumber: '', name: '', phone: '', email: '', experience: '' });
     setSheetDocs(initialDocs);
     setIsSheetOpen(false);
+    setSheetMode('add');
+    setEditingRiderIndex(null);
   };
 
   const handleDeleteRider = (id: string) => {
     setRiders((prev) => {
       const next = prev.filter((r) => r.id !== id);
-      return next.length ? next : [emptyRider()];
+      return next;
     });
   };
 
   useEffect(() => {
     if (!riders || riders.length === 0) {
-      setRiders([emptyRider()]);
+      setRiders([]);
     }
   }, [riders.length]);
+
+  const closeSheet = () => {
+    setIsSheetOpen(false);
+    setHasAttemptedContinue(false);
+    setSheetMode('add');
+    setEditingRiderIndex(null);
+  };
+
+  const openAddRiderSheet = () => {
+    setSheetMode('add');
+    setEditingRiderIndex(null);
+    setSheetForm({ idNumber: '', name: '', phone: '', email: '', experience: '' });
+    setSheetDocs(initialDocs.map((doc) => ({ ...doc, file: null, fileName: '' })));
+    setIsSheetOpen(true);
+  };
+
+  const openEditRiderSheet = (index: number) => {
+    const rider = riders[index];
+    if (!rider) {
+      return;
+    }
+
+    setSheetMode('edit');
+    setEditingRiderIndex(index);
+    setSheetForm({
+      idNumber: rider.idNumber,
+      name: rider.name,
+      phone: rider.phone,
+      email: rider.email || '',
+      experience: rider.experience || '',
+    });
+    setSheetDocs(rider.docs.map((doc) => ({ ...doc })));
+    setIsSheetOpen(true);
+  };
 
   const handleContinue = () => {
     if (!allRidersValid) {
@@ -266,7 +330,7 @@ export const AddRiders: React.FC = () => {
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={3} />
+        <StepDots currentStep={5} />
 
         <div className="w-8" />
       </div>
@@ -295,151 +359,31 @@ export const AddRiders: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Inline Rider Form (Rider 1) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="w-full max-w-md space-y-4"
-        >
-         
-
-          <Input
-            label="Full Name"
-            placeholder="Enter full name"
-            value={riders[0]?.name ?? ''}
-            onChange={(value) => setRiders((prev) => {
-              const next = [...prev];
-              if (!next[0]) next[0] = emptyRider();
-              next[0] = { ...next[0], name: String(value) };
-              return next;
-            })}
-            error={hasAttemptedContinue && !riders[0]?.name.trim() ? 'Full name is required.' : ''}
-            className="h-12 rounded-2xl text-sm"
-            required
-          />
-
-          <div className="pb-6">
-            <Input
-              label="Phone Number"
-              type="tel"
-              placeholder="Enter phone number"
-              value={riders[0]?.phone ?? ''}
-              onChange={(value) => setRiders((prev) => {
-                const next = [...prev];
-                if (!next[0]) next[0] = emptyRider();
-                next[0] = { ...next[0], phone: String(value) };
-                return next;
-              })}
-              defaultCountry="KE"
-              error={hasAttemptedContinue && !riders[0]?.phone.trim() ? 'Phone number is required.' : ''}
-              className="h-12 rounded-2xl text-sm"
-              required
-            />
-          </div>
-
-          <div className="">
-            <Input
-              label="ID Number"
-              type="number"
-              placeholder="Enter ID number"
-              value={riders[0]?.idNumber ?? ''}
-              onChange={(value) => setRiders((prev) => {
-                const next = [...prev];
-                if (!next[0]) next[0] = emptyRider();
-                next[0] = { ...next[0], idNumber: String(value) };
-                return next;
-              })}
-              error={hasAttemptedContinue && !riders[0]?.idNumber.trim() ? 'ID number is required.' : ''}
-              className="h-12 rounded-2xl text-sm"
-              required
-            />
-          </div>
-
-
-          <Input
-            label="Email Address"
-            type="email"
-            placeholder="Enter email address"
-            value={riders[0]?.email ?? ''}
-            onChange={(value) => setRiders((prev) => {
-              const next = [...prev];
-              if (!next[0]) next[0] = emptyRider();
-              next[0] = { ...next[0], email: String(value) };
-              return next;
-            })}
-            error={hasAttemptedContinue ? emailError(riders[0]?.email || '') : ''}
-            className="h-12 rounded-2xl text-sm"
-            required
-          />
-
-          <div className="pb-6">
-            <Select
-              label="Riding Experience"
-              placeholder="Select experience"
-              options={experienceOptions}
-              value={riders[0]?.experience ?? ''}
-              onChange={(value) => setRiders((prev) => {
-                const next = [...prev];
-                if (!next[0]) next[0] = emptyRider();
-                next[0] = { ...next[0], experience: String(value) };
-                return next;
-              })}
-              className="rounded-2xl h-12 text-sm"
-              error={hasAttemptedContinue && !riders[0]?.experience ? 'Please select riding experience.' : ''}
-              required
-            />
-          </div>
-
-          {/* KYC Documents Section */}
-          <div className="space-y-3 pt-2">
-            <h3 className="text-xs font-semibold text-foreground">
-              KYC Documents <span className="text-[10px] text-primary font-normal">(Required)</span>
-            </h3>
-            {(riders[0]?.docs ?? []).map(doc => (
-              <KYCDocUploader key={doc.id} doc={doc} />
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Add Another Rider Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setIsSheetOpen(true)}
-          className="w-full max-w-md mt-6 py-3 border-2 border-dashed border-primary/30 rounded-2xl flex items-center justify-center gap-2 text-primary font-medium text-sm hover:bg-primary/5 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Another Rider
-        </motion.button>
-
-        {/* Added Riders List */}
         {riders.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="w-full max-w-md mt-6 space-y-3"
+            transition={{ delay: 0.1 }}
+            className="w-full max-w-md space-y-3"
           >
             <p className="text-xs font-medium text-foreground/60">
               Added Riders ({riders.length})
             </p>
-            
+
             <div className="space-y-2">
               {riders.map((rider, index) => (
                 <div key={rider.id} className="flex items-center gap-3 bg-secondary rounded-2xl p-3">
                   <span className="text-xs text-foreground/50 w-4">{index + 1}.</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{rider.name}</p>
-                    <p className="text-xs text-foreground/50">{rider.phone}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{rider.name || 'Unnamed rider'}</p>
+                    <p className="text-xs text-foreground/50">{rider.phone || 'No phone number'}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                    <button type="button" onClick={() => openEditRiderSheet(index)} className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
                       <Pencil className="w-4 h-4 text-foreground/60" />
                     </button>
                     <button 
+                      type="button"
                       onClick={() => handleDeleteRider(rider.id)}
                       className="p-2 hover:bg-error/10 rounded-lg transition-colors"
                     >
@@ -452,7 +396,135 @@ export const AddRiders: React.FC = () => {
           </motion.div>
         )}
 
+        {/* Add Another Rider Button */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={openAddRiderSheet}
+          className="w-full max-w-md mt-6 py-3 border-2 border-dashed border-primary/30 rounded-2xl flex items-center justify-center gap-2 text-primary font-medium text-sm hover:bg-primary/5 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          {riders.length > 0 ? 'Add Another Rider' : 'Add First Rider'}
+        </motion.button>
+
       </div>
+
+      <AnimatePresence>
+        {isSheetOpen ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm flex items-end"
+            onClick={closeSheet}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+              className="w-full max-h-[90vh] overflow-y-auto bg-white rounded-t-3xl shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="px-6 pt-5 pb-4 border-b border-border/60 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="mt-1 text-lg font-bold text-foreground">
+                    {sheetMode === 'edit' ? 'Edit rider' : riders.length > 0 ? 'Add another rider' : 'Add first rider'}
+                  </h2>
+                </div>
+                <button type="button" onClick={closeSheet} className="p-2 rounded-full hover:bg-secondary transition-colors">
+                  <X className="w-5 h-5 text-foreground" />
+                </button>
+              </div>
+
+              <div className="px-6 py-5 space-y-4">
+                <Input
+                  label="ID Number"
+                  placeholder="Enter ID number"
+                  value={sheetForm.idNumber}
+                  onChange={(value) => setSheetForm((prev) => ({ ...prev, idNumber: String(value) }))}
+                  error={sheetIdNumberError}
+                  className="h-12 rounded-2xl text-sm"
+                  required
+                />
+
+                <Input
+                  label="Full Name"
+                  placeholder="Enter full name"
+                  value={sheetForm.name}
+                  onChange={(value) => setSheetForm((prev) => ({ ...prev, name: String(value) }))}
+                  error={sheetNameError}
+                  className="h-12 rounded-2xl text-sm"
+                  required
+                />
+                <div className="pb-5">
+                  <Input
+                    label="Phone Number"
+                    type="tel"
+                    placeholder="Enter phone number"
+                    value={sheetForm.phone}
+                    onChange={(value) => setSheetForm((prev) => ({ ...prev, phone: String(value) }))}
+                    defaultCountry="KE"
+                    error={sheetPhoneError}
+                    className="h-12 rounded-2xl text-sm"
+                    required
+                  />
+                </div>
+
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={sheetForm.email}
+                  onChange={(value) => setSheetForm((prev) => ({ ...prev, email: String(value) }))}
+                  error={sheetEmailError}
+                  className="h-12 rounded-2xl text-sm"
+                  required
+                />
+
+                <div className="pb-7">
+                  <Select
+                    label="Riding Experience"
+                    placeholder="Select experience"
+                    options={experienceOptions}
+                    value={sheetForm.experience}
+                    onChange={(value) => setSheetForm((prev) => ({ ...prev, experience: String(value) }))}
+                    className="rounded-2xl h-12 text-sm"
+                    error={hasAttemptedContinue && !sheetForm.experience ? 'Please select riding experience.' : ''}
+                    required
+                  />
+
+                </div>
+
+
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-xs font-semibold text-foreground">
+                    KYC Documents <span className="text-[10px] text-primary font-normal">(Required)</span>
+                  </h3>
+                  {(sheetDocs ?? []).map((doc) => (
+                    <KYCDocUploader key={doc.id} doc={doc} isSheet />
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeSheet}
+                    className="h-12 rounded-2xl border border-border text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <Button type="button" onClick={handleAddRiderFromSheet} className="h-12 rounded-2xl text-sm font-semibold">
+                    {sheetMode === 'edit' ? 'Save Changes' : 'Add Rider'}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
 
       {/* Footer / Action Button */}

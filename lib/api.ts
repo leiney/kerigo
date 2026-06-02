@@ -1,11 +1,15 @@
 import { UserProfile } from '@/src/types';
 import { axiosInstance, request } from './axios';
 import { buildProductFormData } from './products';
+import { buildFlattenedFormData } from '../src/lib/multipart';
 import type {
   AccountSettingsData,
   AddressItem,
   AppPreferenceValues,
   AuthUser,
+  CategoryCreatePayload,
+  CategoryCreateResponse,
+  CategoryItem,
   CustomerHomeData,
   CustomerSettingsData,
   LoginResponse,
@@ -158,6 +162,19 @@ export const productApi = {
   createProduct: async (payload: ProductPayload | FormData): Promise<ProductCreateResponse> => {
     const formData = payload instanceof FormData ? payload : buildProductFormData(payload);
     const response = await axiosInstance.post<ProductCreateResponse>('/products/extended/', formData);
+    return response.data;
+  },
+};
+
+export const categoryApi = {
+  getCategories: async (): Promise<CategoryItem[]> => {
+    const response = await axiosInstance.get<CategoryItem[]>('/categories/');
+    return response.data;
+  },
+
+  createCategory: async (payload: CategoryCreatePayload | FormData): Promise<CategoryCreateResponse> => {
+    const formData = payload instanceof FormData ? payload : buildFlattenedFormData(payload as unknown as Record<string, unknown>);
+    const response = await axiosInstance.post<CategoryCreateResponse>('/categories/', formData);
     return response.data;
   },
 };

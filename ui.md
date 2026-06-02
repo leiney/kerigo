@@ -1497,7 +1497,7 @@ Call `setupRippleEffects()` only once per app (for example in `main.tsx`) to avo
   ```jsx
   import { FileUploader, CameraCapture } from '@stackloop/ui'
 
-  <FileUploader onUpload={(files)=>{}} multiple accept="image/*" />
+
   <CameraCapture onCapture={(file)=>{}} />
   ```
 

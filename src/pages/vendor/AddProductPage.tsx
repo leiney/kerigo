@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
@@ -7,29 +7,17 @@ import {
   UploadCloud,
   Plus,
   X,
-  Search,
   Image as ImageIcon,
   Package,
-  Tag,
   DollarSign,
-  Info,
-  Eye,
-  EyeOff,
   Trash2,
-  Copy,
-  GripVertical,
   AlertCircle
 } from 'lucide-react';
-import { Button, Badge, Input, Select } from '@stackloop/ui';
+import { Button, Select } from '@stackloop/ui';
 import { motion, AnimatePresence } from 'motion/react';
-import { productApi } from '../../../lib/api';
+import { categoryApi, productApi } from '../../../lib/api';
 import { buildProductFormData, createEmptyProductVariant } from '../../../lib/products';
-import type { ProductPayload, ProductVariantPayload } from '../../../lib/types';
-
-// --- Mock Data ---
-const CATEGORIES = [
-  'Electronics', 'Fashion', 'Men', 'Women', 'Kids', 'Footwear', 'Accessories', 'Home & Kitchen', 'Beauty & Personal Care'
-];
+import type { CategoryItem, ProductPayload, ProductVariantPayload } from '../../../lib/types';
 
 const UNITS = [
   'Piece', 'Kilogram (kg)', 'Gram (g)', 'Liter (L)', 'Milliliter (ml)', 'Meter (m)', 'Centimeter (cm)', 'Inch (in)'
@@ -38,6 +26,8 @@ const UNITS = [
 const RETURN_POLICIES = ['7 Days Return', '14 Days Return', '30 Days Return', 'No Return'];
 
 const STATUSES = ['Active', 'Inactive', 'Out of Stock'];
+const STATUS_OPTIONS = STATUSES.map((status) => ({ value: status, label: status }));
+const UNIT_OPTIONS = [{ value: '', label: 'Select unit' }, ...UNITS.map((unit) => ({ value: unit, label: unit }))];
 
 // --- Components ---
 
@@ -122,6 +112,49 @@ const createEmptyVariantDraft = (): VariantDraft => ({
   attributes: [],
 });
 
+type ProductFormState = {
+  name: string;
+  category: string;
+  brand: string;
+  sku: string;
+  barcode: string;
+  price: string;
+  oldPrice: string;
+  costPrice: string;
+  stock: string;
+  unit: string;
+  description: string;
+  taxCodes: string;
+  ingredients: string;
+  status: string;
+  returnPolicy: string;
+  tags: string[];
+  returnPolicyMessage: string;
+};
+
+const normalizeSkuSeed = (value: string) =>
+  value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const buildProductSku = (name: string, category = '') => {
+  const seed = [category, name]
+    .map(normalizeSkuSeed)
+    .filter(Boolean)
+    .join('-');
+
+  return seed || '';
+};
+
+const buildVariantSku = (baseSku: string, variantNumber: number) => {
+  const seed = normalizeSkuSeed(baseSku);
+  return `${seed || 'VARIANT'}-${variantNumber}`;
+};
+
+const normalizeTag = (value: string) => value.trim().replace(/\s+/g, ' ');
+
 const parseList = (value: string) =>
   value
     .split(',')
@@ -134,6 +167,7 @@ const toNumber = (value: string, fallback = 0) => {
 };
 
 const draftToVariantPayload = (draft: VariantDraft): ProductVariantPayload => ({
+  variantID: crypto.randomUUID(),
   sku: draft.sku.trim(),
   barcode: draft.barcode.trim() || '',
   price: toNumber(draft.price),
@@ -155,9 +189,13 @@ export const AddProductPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const [skuTouched, setSkuTouched] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   
   // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormState>({
     name: '',
     category: '',
     brand: '',
@@ -173,7 +211,7 @@ export const AddProductPage: React.FC = () => {
     ingredients: '',
     status: 'Active',
     returnPolicy: '',
-    tags: '',
+    tags: [],
     returnPolicyMessage: '',
   });
 
@@ -184,15 +222,49 @@ export const AddProductPage: React.FC = () => {
   const [currentVariant, setCurrentVariant] = useState<VariantDraft>(createEmptyVariantDraft());
 
   // Modal States
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showReturnPolicyModal, setShowReturnPolicyModal] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<{ name: string; value: string }>({ name: '', value: '' });
 
-  const updateField = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const updateField = <K extends keyof ProductFormState>(field: K, value: ProductFormState[K]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    if (skuTouched) {
+      return;
+    }
+
+    const autoSku = buildProductSku(formData.name, formData.category);
+    if (!autoSku) {
+      return;
+    }
+
+    setFormData((prev) => (prev.sku === autoSku ? prev : { ...prev, sku: autoSku }));
+  }, [formData.name, formData.category, skuTouched]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategories = async () => {
+      try {
+        const items = await categoryApi.getCategories();
+        if (isMounted) {
+          setCategories(items);
+        }
+      } finally {
+        if (isMounted) {
+          setIsCategoriesLoading(false);
+        }
+      }
+    };
+
+    void loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -204,6 +276,56 @@ export const AddProductPage: React.FC = () => {
     setMediaImages((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   };
 
+  const addTagsFromInput = () => {
+    const nextTags = parseList(tagInput).map(normalizeTag).filter(Boolean);
+    if (nextTags.length === 0) {
+      return;
+    }
+
+    setFormData((prev) => {
+      const existing = new Set(prev.tags.map(normalizeTag));
+      const merged = [...prev.tags];
+
+      nextTags.forEach((tag) => {
+        if (!existing.has(tag)) {
+          existing.add(tag);
+          merged.push(tag);
+        }
+      });
+
+      return { ...prev, tags: merged };
+    });
+    setTagInput('');
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
+
+  const handleTagInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      addTagsFromInput();
+    }
+  };
+
+  const getAutoVariantSku = () => buildVariantSku(formData.sku || formData.name || formData.category, variants.length + 1);
+
+  const openVariantModal = () => {
+    setCurrentVariant((prev) =>
+      prev.sku.trim()
+        ? prev
+        : {
+            ...prev,
+            sku: getAutoVariantSku(),
+          }
+    );
+    setShowVariantModal(true);
+  };
+
   const isVariantDraftEmpty = (draft: VariantDraft) => {
     return (
       !draft.sku && !draft.barcode && !draft.price && !draft.oldPrice && !draft.stock && !draft.unit &&
@@ -212,7 +334,10 @@ export const AddProductPage: React.FC = () => {
   };
 
   const handleSaveVariant = () => {
-    const nextVariant = draftToVariantPayload(currentVariant);
+    const nextVariant = draftToVariantPayload({
+      ...currentVariant,
+      sku: currentVariant.sku.trim() || getAutoVariantSku(),
+    });
     setVariants((prev) => [...prev, nextVariant]);
     setShowVariantModal(false);
     setCurrentVariant(createEmptyVariantDraft());
@@ -253,9 +378,10 @@ export const AddProductPage: React.FC = () => {
 
     try {
       const primaryVariant = variants[0] ?? draftToVariantPayload(currentVariant);
+      const autoSku = buildProductSku(formData.name, formData.category);
       const fallbackVariant: ProductVariantPayload = {
         ...primaryVariant,
-        sku: formData.sku.trim() || primaryVariant.sku,
+        sku: formData.sku.trim() || primaryVariant.sku || autoSku,
         barcode: formData.barcode.trim() || primaryVariant.barcode || '',
         price: toNumber(formData.price, primaryVariant.price),
         oldPrice: toNumber(formData.oldPrice, primaryVariant.oldPrice),
@@ -267,12 +393,13 @@ export const AddProductPage: React.FC = () => {
       const productPayload: ProductPayload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
+        
         category: [
           {
             name: formData.category.trim(),
           },
         ],
-        tags: parseList(formData.tags),
+        tags: formData.tags,
         returnPolicy: {
           isReturnable: formData.returnPolicy !== 'No Return',
           message:
@@ -323,6 +450,7 @@ export const AddProductPage: React.FC = () => {
 
   const isMissingRequired = (value: string) => showValidation && !value.trim();
   const isVariantStepInvalid = showValidation && !(variants.length > 0) && !isVariantDraftEmpty(currentVariant);
+  const categoryOptions = categories.map((category) => ({ value: category.name, label: category.name }));
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-32">
@@ -429,14 +557,15 @@ export const AddProductPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Product Category <span className="text-error">*</span></label>
-                    <button 
-                      onClick={() => setShowCategoryModal(true)}
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm text-left text-foreground/60 flex items-center justify-between hover:bg-gray-100"
-                    >
-                      <span>{formData.category || 'Select category'}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
+                    <label className="text-xs font-semibold text-foreground mb-1.5 block">Product Category <span className="text-foreground/40 font-normal">(Optional)</span></label>
+                    <Select
+                      options={categoryOptions}
+                      value={formData.category}
+                      onChange={(value) => updateField('category', String(value))}
+                      placeholder="Select category"
+                      hint={isCategoriesLoading ? 'Loading categories...' : categories.length === 0 ? 'No categories available yet. Add one from Categories.' : undefined}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Brand <span className="text-foreground/40 font-normal">(Optional)</span></label>
@@ -471,13 +600,17 @@ export const AddProductPage: React.FC = () => {
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">SKU <span className="text-error">*</span></label>
                     <input 
                       type="text" 
-                      placeholder="Enter SKU" 
+                      placeholder="Auto-generated from product name" 
                       className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none ${
                         isMissingRequired(formData.sku) ? 'border-red-400' : 'border-border'
                       }`}
                       value={formData.sku}
-                      onChange={(e) => updateField('sku', e.target.value)}
+                      onChange={(e) => {
+                        setSkuTouched(true);
+                        updateField('sku', e.target.value);
+                      }}
                     />
+                    <p className="mt-1 text-[11px] text-foreground/40">Automatically generated from the product name until you edit it.</p>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Barcode <span className="text-foreground/40 font-normal">(Optional)</span></label>
@@ -570,16 +703,13 @@ export const AddProductPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Unit <span className="text-foreground/40 font-normal">(Optional)</span></label>
-                    <select
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+                    <Select
+                      options={UNIT_OPTIONS}
                       value={formData.unit}
-                      onChange={(e) => updateField('unit', e.target.value)}
-                    >
-                      <option value="">Select unit</option>
-                      {UNITS.map((unit) => (
-                        <option key={unit} value={unit}>{unit}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => updateField('unit', String(value))}
+                      placeholder="Select unit"
+                      className="w-full"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -633,15 +763,13 @@ export const AddProductPage: React.FC = () => {
                 <div className="p-4 pt-0 space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Status <span className="text-error">*</span></label>
-                    <button 
-                      onClick={() => setShowStatusModal(true)}
-                      className={`w-full px-3 py-2.5 bg-secondary border rounded-lg text-sm text-left flex items-center justify-between ${
-                        isMissingRequired(formData.status) ? 'border-red-400' : 'border-border'
-                      }`}
-                    >
-                      <span className={formData.status === 'Active' ? 'text-primary' : 'text-foreground'}>{formData.status}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
+                    <Select
+                      options={STATUS_OPTIONS}
+                      value={formData.status}
+                      onChange={(value) => updateField('status', String(value))}
+                      placeholder="Select status"
+                      className={`w-full ${isMissingRequired(formData.status) ? 'ring-1 ring-red-400' : ''}`}
+                    />
                   </div>
                   
                   <div>
@@ -676,7 +804,7 @@ export const AddProductPage: React.FC = () => {
           <StepHeader 
             number={8} title="Additional Options" 
             isExpanded={expandedStep === 8} 
-            isCompleted={!!formData.tags || !!formData.taxCodes || !!formData.ingredients}
+            isCompleted={formData.tags.length > 0 || !!formData.taxCodes || !!formData.ingredients}
             isInvalid={showValidation && !isStepValid(8)}
             onClick={() => setExpandedStep((prev) => (prev === 8 ? 0 : 8))} 
           />
@@ -686,13 +814,31 @@ export const AddProductPage: React.FC = () => {
                 <div className="p-4 pt-0 space-y-4">
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Tags <span className="text-foreground/40 font-normal">(Optional)</span></label>
-                    <input
-                      type="text"
-                      placeholder="Select or add tags"
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
-                      value={formData.tags}
-                      onChange={(e) => updateField('tags', e.target.value)}
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Add a tag and press Enter"
+                        className="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm focus:ring-1 focus:ring-primary outline-none"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleTagInputKeyDown}
+                      />
+                      <Button type="button" variant="outline" onClick={addTagsFromInput} disabled={!tagInput.trim()}>
+                        Add
+                      </Button>
+                    </div>
+                    {formData.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {formData.tags.map((tag) => (
+                          <span key={tag} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-foreground">
+                            {tag}
+                            <button type="button" onClick={() => removeTag(tag)} className="text-foreground/40 hover:text-error">
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Tax Codes <span className="text-foreground/40 font-normal">(Optional)</span></label>
@@ -769,7 +915,7 @@ export const AddProductPage: React.FC = () => {
                   <Button 
                     variant="outline" 
                     className="w-full border-primary/30 text-primary hover:bg-primary/5 font-semibold gap-1"
-                    onClick={() => setShowVariantModal(true)}
+                    onClick={openVariantModal}
                   >
                     <Plus className="w-4 h-4" /> Add Variant
                   </Button>
@@ -794,28 +940,6 @@ export const AddProductPage: React.FC = () => {
 
       {/* --- Modals --- */}
 
-      {/* Category Modal */}
-      <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title="Select Category">
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-          <input type="text" placeholder="Search categories..." className="w-full pl-9 pr-3 py-2 bg-secondary border border-border rounded-lg text-sm outline-none" />
-        </div>
-        <div className="space-y-1 max-h-75 overflow-y-auto">
-          {CATEGORIES.map((cat) => (
-            <label key={cat} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className={`w-5 h-5 rounded border flex items-center justify-center ${formData.category === cat ? 'bg-primary border-primary' : 'border-border'}`}>
-                {formData.category === cat && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <input type="radio" name="category" className="hidden" checked={formData.category === cat} onChange={() => { updateField('category', cat); setShowCategoryModal(false); }} />
-              <span className="text-sm text-foreground">{cat}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-4 pt-4 border-t border-border">
-          <Button className="w-full bg-primary text-white" onClick={() => setShowCategoryModal(false)}>Apply</Button>
-        </div>
-      </Modal>
-
       {/* Return Policy Modal */}
       <Modal isOpen={showReturnPolicyModal} onClose={() => setShowReturnPolicyModal(false)} title="Select Return Policy">
         <div className="space-y-1">
@@ -834,24 +958,6 @@ export const AddProductPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Status Modal */}
-      <Modal isOpen={showStatusModal} onClose={() => setShowStatusModal(false)} title="Select Status">
-        <div className="space-y-1">
-          {STATUSES.map((status) => (
-            <label key={status} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.status === status ? 'border-primary' : 'border-border'}`}>
-                {formData.status === status && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
-              </div>
-              <input type="radio" name="status" className="hidden" checked={formData.status === status} onChange={() => { updateField('status', status); setShowStatusModal(false); }} />
-              <span className={`text-sm font-medium ${status === 'Active' ? 'text-primary' : status === 'Inactive' ? 'text-warning' : 'text-error'}`}>{status}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-4 pt-4 border-t border-border">
-          <Button className="w-full bg-primary text-white" onClick={() => setShowStatusModal(false)}>Apply</Button>
-        </div>
-      </Modal>
-
       {/* Add Variant Modal */}
       <Modal isOpen={showVariantModal} onClose={() => setShowVariantModal(false)} title="Add Variant">
         <div className="space-y-4">
@@ -860,11 +966,12 @@ export const AddProductPage: React.FC = () => {
               <label className="text-xs font-semibold text-foreground mb-1.5 block">SKU <span className="text-error">*</span></label>
               <input
                 type="text"
-                placeholder="KFC-STREETWISE2"
+                placeholder="Auto-generated variant SKU"
                 className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
                 value={currentVariant.sku}
                 onChange={(e) => setCurrentVariant({ ...currentVariant, sku: e.target.value })}
               />
+              <p className="mt-1 text-[11px] text-foreground/40">You can edit this after it is generated.</p>
             </div>
             <div>
               <label className="text-xs font-semibold text-foreground mb-1.5 block">Barcode</label>
@@ -926,16 +1033,13 @@ export const AddProductPage: React.FC = () => {
             </div>
             <div>
               <label className="text-xs font-semibold text-foreground mb-1.5 block">Unit</label>
-              <select
-                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm outline-none"
+              <Select
+                options={UNIT_OPTIONS}
                 value={currentVariant.unit}
-                onChange={(e) => setCurrentVariant({ ...currentVariant, unit: e.target.value })}
-              >
-                <option value="">Select unit</option>
-                {UNITS.map((unit) => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
+                onChange={(value) => setCurrentVariant({ ...currentVariant, unit: String(value) })}
+                placeholder="Select unit"
+                className="w-full"
+              />
             </div>
           </div>
           {/* Hidden: isNew and active default to true */}

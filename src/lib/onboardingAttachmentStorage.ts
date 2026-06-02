@@ -50,3 +50,20 @@ export const writeOnboardingAttachmentSnapshot = async <T,>(key: string, value: 
     database.close();
   }
 };
+
+export const deleteOnboardingAttachmentSnapshot = async (key: string): Promise<void> => {
+  const database = await openDatabase();
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(key);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    database.close();
+  }
+};

@@ -1,158 +1,116 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button } from '@stackloop/ui';
-import { 
-  Shield, 
-  Upload, 
-  FileText, 
-  Plus, 
-  ArrowRight, 
+import {
+  Shield,
+  FileText,
+  Camera,
+  ArrowRight,
   ChevronLeft,
   CheckCircle2,
-  X
+  Circle,
+  File,
+  X,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
-import { generateDocumentSerial } from '../../lib/riderOnboarding';
 import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 
-interface DocumentFile {
+interface UploadedFileItem {
   id: string;
   file: File;
   name: string;
-  type: string;
   size: number;
 }
 
-type CompanyKycSnapshot = {
-  businessCert: DocumentFile | null;
-  kraPin: DocumentFile | null;
-  otherDocuments: DocumentFile[];
+type CompanyKycSnapshot = Record<string, UploadedFileItem[]>;
+
+interface DocumentItem {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  files: UploadedFileItem[];
+  acceptedFormats: string;
+  required: boolean;
 };
 
 const COMPANY_KYC_STORAGE_KEY = 'rider-company-kyc-documents';
 
-interface FileUploadAreaProps {
-  title: string;
-  required: boolean;
-  description?: string;
-  acceptedFormats: string;
-  maxSize: string;
-  onFileUpload: (file: File) => void;
-  uploadedFile?: DocumentFile | null;
-  onRemove?: () => void;
-}
+const createUuid = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
 
-const FileUploadArea: React.FC<FileUploadAreaProps> = ({
-  title,
-  required,
-  description,
-  acceptedFormats,
-  maxSize,
-  onFileUpload,
-  uploadedFile,
-  onRemove
-}) => {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const createInitialDocuments = (): DocumentItem[] => ([
+  {
+    id: 'business-cert',
+    label: 'Business Registration Certificate',
+    description: 'Certificate of incorporation or registration',
+    icon: <FileText className="w-5 h-5 text-primary" />,
+    files: [],
+    acceptedFormats: 'image/*,.pdf',
+    required: true,
+  },
+  {
+    id: 'kra-pin',
+    label: 'KRA PIN',
+    description: 'Tax registration certificate',
+    icon: <FileText className="w-5 h-5 text-primary" />,
+    files: [],
+    acceptedFormats: 'image/*,.pdf',
+    required: true,
+  },
+  {
+    id: 'director-id',
+    label: 'Company Director ID',
+    description: 'National ID of authorised director',
+    icon: <Camera className="w-5 h-5 text-primary" />,
+    files: [],
+    acceptedFormats: 'image/*,.pdf',
+    required: false,
+  },
+]);
+
+const AttachButton: React.FC<{
+  onUpload: (files: File[]) => void;
+  accept: string;
+}> = ({ onUpload, accept }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      onFileUpload(file);
-    }
-  };
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length > 0) {
+      onUpload(files);
+      event.target.value = '';
+    }
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-1.5">
-        <h3 className="text-sm font-semibold text-foreground">
-          {title}
-        </h3>
-        {required && (
-          <span className="text-xs text-primary font-medium">
-            (Required)
-          </span>
-        )}
-      </div>
-      
-      {description && (
-        <p className="text-xs text-foreground/60">
-          {description}
-        </p>
-      )}
-
-      <div className="mt-2">
-        {!uploadedFile ? (
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            onClick={handleClick}
-            className="border-2 border-dashed border-border rounded-2xl p-6 cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileChange}
-              accept={acceptedFormats}
-              className="hidden"
-            />
-            
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-                <Upload className="w-5 h-5 text-primary" />
-              </div>
-              
-              <p className="text-sm font-medium text-foreground mb-1">
-                Upload {title}
-              </p>
-              <p className="text-xs text-foreground/50">
-                {acceptedFormats}
-              </p>
-              <p className="text-xs text-foreground/50 mt-0.5">
-                (max {maxSize})
-              </p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="border-2 border-primary/30 bg-primary/5 rounded-2xl p-4 flex items-center gap-3"
-          >
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <FileText className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {uploadedFile.name}
-              </p>
-              <p className="text-xs text-foreground/50">
-                {formatFileSize(uploadedFile.size)}
-              </p>
-            </div>
-            <button
-              onClick={onRemove}
-              className="p-2 hover:bg-error/10 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4 text-error" />
-            </button>
-          </motion.div>
-        )}
-      </div>
-    </div>
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={accept}
+        onChange={handleChange}
+        className="hidden"
+      />
+      <button
+        type="button"
+        onClick={handleClick}
+        className="px-4 py-2 bg-primary/10 text-primary text-sm font-bold rounded-lg hover:bg-primary/20 transition-colors"
+      >
+        Attach
+      </button>
+    </>
   );
 };
 
@@ -160,27 +118,18 @@ export const CompanyKYCDocuments: React.FC = () => {
   const navigate = useNavigate();
   const setCompanyDocuments = useRiderOnboardingStore((state) => state.setCompanyDocuments);
   const setCompanyDocumentFiles = useRiderOnboardingStore((state) => state.setCompanyDocumentFiles);
+  const [documents, setDocuments] = useState<DocumentItem[]>(createInitialDocuments());
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  
-  // Company documents
-  const [businessCert, setBusinessCert] = useState<DocumentFile | null>(null);
-  const [kraPin, setKraPin] = useState<DocumentFile | null>(null);
-  const [otherDocuments, setOtherDocuments] = useState<DocumentFile[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
     const hydrate = async () => {
       const snapshot = await readOnboardingAttachmentSnapshot<CompanyKycSnapshot>(COMPANY_KYC_STORAGE_KEY);
-      if (cancelled || !snapshot) {
-        setIsHydrated(true);
-        return;
+      if (!cancelled && snapshot) {
+        setDocuments((current) => current.map((doc) => ({ ...doc, files: snapshot[doc.id] ?? [] })));
       }
-
-      setBusinessCert(snapshot.businessCert);
-      setKraPin(snapshot.kraPin);
-      setOtherDocuments(snapshot.otherDocuments ?? []);
       setIsHydrated(true);
     };
 
@@ -196,94 +145,106 @@ export const CompanyKYCDocuments: React.FC = () => {
       return;
     }
 
-    const documents = [businessCert, kraPin, ...otherDocuments]
-      .filter((document): document is DocumentFile => Boolean(document && document.name))
-      .map((document, index) => ({
-        documentType: document.name,
-        serialNumber: document.name || generateDocumentSerial(document.name, index),
-      }));
+    setCompanyDocuments(
+      documents.flatMap((doc) =>
+        doc.files.map((file) => ({
+          documentType: doc.label,
+          serialNumber: file.id,
+          files: [file.file],
+        }))
+      )
+    );
 
-    setCompanyDocuments(documents);
-    setCompanyDocumentFiles({
-      ...(businessCert ? { businessCert: [businessCert.file] } : {}),
-      ...(kraPin ? { kraPin: [kraPin.file] } : {}),
-      ...otherDocuments.reduce<Record<string, File[]>>((accumulator, document, index) => {
-        if (document.file) {
-          accumulator[`otherDocument_${index + 1}`] = [document.file];
-        }
+    setCompanyDocumentFiles(
+      documents.reduce<Record<string, File[]>>((accumulator, doc) => {
+        doc.files.forEach((item) => {
+          accumulator[item.id] = [item.file];
+        });
 
         return accumulator;
-      }, {}),
-    });
-    void writeOnboardingAttachmentSnapshot<CompanyKycSnapshot>(COMPANY_KYC_STORAGE_KEY, {
-      businessCert,
-      kraPin,
-      otherDocuments,
-    });
-  }, [businessCert, isHydrated, kraPin, otherDocuments, setCompanyDocuments, setCompanyDocumentFiles]);
+      }, {})
+    );
+
+    void writeOnboardingAttachmentSnapshot<CompanyKycSnapshot>(COMPANY_KYC_STORAGE_KEY, documents.reduce<CompanyKycSnapshot>((accumulator, doc) => {
+      accumulator[doc.id] = doc.files;
+      return accumulator;
+    }, {}));
+  }, [documents, isHydrated, setCompanyDocuments, setCompanyDocumentFiles]);
+
+  const handleFileUpload = (documentId: string, incomingFiles: File[]) => {
+    const filesToAdd = incomingFiles.filter((file) => file.size <= 5 * 1024 * 1024);
+
+    if (filesToAdd.length === 0) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    setDocuments((prev) => prev.map((doc) => {
+      if (doc.id !== documentId) {
+        return doc;
+      }
+
+      const nextFiles = [...doc.files];
+      const existingNames = new Set(nextFiles.map((item) => item.name));
+
+      filesToAdd.forEach((file) => {
+        if (nextFiles.length >= 1 || existingNames.has(file.name)) {
+          return;
+        }
+
+        nextFiles.push({
+          id: createUuid(),
+          file,
+          name: file.name,
+          size: file.size,
+        });
+        existingNames.add(file.name);
+      });
+
+      return { ...doc, files: nextFiles };
+    }));
+  };
+
+  const handleRemoveFile = (documentId: string, fileId: string) => {
+    setDocuments((prev) => prev.map((doc) => {
+      if (doc.id !== documentId) {
+        return doc;
+      }
+
+      return {
+        ...doc,
+        files: doc.files.filter((item) => item.id !== fileId),
+      };
+    }));
+  };
+
+  const allRequiredUploaded = documents.filter((doc) => doc.required).every((doc) => doc.files.length >= 1);
 
   const handleContinue = () => {
-    if (!businessCert || !kraPin) {
+    if (!allRequiredUploaded) {
       setHasAttemptedContinue(true);
       return;
     }
-    navigate('/company/create-password');
-  };
-
-  const handleAddAnotherDocument = () => {
-    const newDoc: DocumentFile = {
-      id: Date.now().toString(),
-      file: new File([], ''),
-      name: '',
-      type: '',
-      size: 0
-    };
-    setOtherDocuments([...otherDocuments, newDoc]);
-  };
-
-  const handleOtherDocumentUpload = (id: string, file: File) => {
-    setOtherDocuments(docs => 
-      docs.map(doc => 
-        doc.id === id 
-          ? { 
-              ...doc, 
-              file, 
-              name: file.name, 
-              type: file.type,
-              size: file.size 
-            }
-          : doc
-      )
-    );
-  };
-
-  const handleRemoveOtherDocument = (id: string) => {
-    setOtherDocuments(docs => docs.filter(doc => doc.id !== id));
+    navigate('/company/administrator-details');
   };
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
-      
-      {/* Top Header / Navigation */}
       <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <button 
-          onClick={() => navigate(-1)} 
+        <button
+          onClick={() => navigate(-1)}
           className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
         >
           <ChevronLeft className="w-6 h-6 text-foreground" />
         </button>
 
-        <StepDots currentStep={5} />
+        <StepDots currentStep={3} />
 
-        {/* Spacer to balance the header */}
         <div className="w-8" />
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 px-6 pt-6 flex flex-col items-center">
-        
-        {/* Step Icon & Title */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
@@ -291,109 +252,83 @@ export const CompanyKYCDocuments: React.FC = () => {
           <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Shield className="w-7 h-7 text-primary" />
           </div>
-          
           <h1 className="text-lg font-bold text-foreground mb-2">
             <span className="text-primary mr-1">
-              <Badge className="bg-primary text-white">5</Badge>
+              <Badge className="bg-primary text-white">3</Badge>
             </span>
-            Company KYC Documents
+            KYC Documents
           </h1>
           <p className="text-sm text-foreground/60 leading-relaxed max-w-70 mx-auto">
-            Upload required documents to verify your organisation.
+            Verify your business documents.
           </p>
         </motion.div>
 
-        {/* Form Fields */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="w-full max-w-md space-y-6"
+          className="w-full max-w-md"
         >
-          
-          {/* Business Registration Certificate */}
-          <FileUploadArea
-            title="Business Registration Certificate"
-            required={true}
-            acceptedFormats="PNG, JPG or PDF"
-            maxSize="5MB"
-            onFileUpload={(file) => setBusinessCert({
-              id: 'business-cert',
-              file,
-              name: file.name,
-              type: file.type,
-              size: file.size
-            })}
-            uploadedFile={businessCert}
-            onRemove={() => setBusinessCert(null)}
-          />
-          {hasAttemptedContinue && !businessCert ? <p className="text-xs text-error">Upload this document to continue.</p> : null}
+          <h2 className="text-sm font-bold text-foreground mb-4">Required Documents</h2>
 
-          {/* KRA PIN */}
-          <FileUploadArea
-            title="KRA PIN"
-            required={true}
-            acceptedFormats="PNG, JPG or PDF"
-            maxSize="5MB"
-            onFileUpload={(file) => setKraPin({
-              id: 'kra-pin',
-              file,
-              name: file.name,
-              type: file.type,
-              size: file.size
-            })}
-            uploadedFile={kraPin}
-            onRemove={() => setKraPin(null)}
-          />
-          {hasAttemptedContinue && !kraPin ? <p className="text-xs text-error">Upload this document to continue.</p> : null}
-
-          {/* Other Documents */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Other Documents
-                </h3>
-                <span className="text-xs text-foreground/50">
-                  (Optional)
-                </span>
-              </div>
-              <button
-                onClick={handleAddAnotherDocument}
-                type="button"
-                disabled={!businessCert || !kraPin}
-                className="text-xs text-primary font-medium flex items-center gap-1 hover:opacity-80 transition-opacity"
+          <div className="space-y-4">
+            {documents.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-start justify-between gap-4 py-3 border-b border-border last:border-0"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add Another Document
-              </button>
-            </div>
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="mt-0.5">{doc.icon}</div>
 
-            <AnimatePresence>
-              {otherDocuments.map((doc, index) => (
-                <motion.div
-                  key={doc.id}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="border-2 border-dashed border-border rounded-2xl p-4"
-                >
-                  <FileUploadArea
-                    title={`Document ${index + 1}`}
-                    required={false}
-                    acceptedFormats="PNG, JPG or PDF"
-                    maxSize="5MB"
-                    onFileUpload={(file) => handleOtherDocumentUpload(doc.id, file)}
-                    uploadedFile={doc.size > 0 ? doc : null}
-                    onRemove={() => handleRemoveOtherDocument(doc.id)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-sm text-foreground">{doc.label}</h3>
+                      {doc.required ? <span className="text-xs text-primary font-medium">Required</span> : null}
+                      {doc.files.length > 0 ? (
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-gray-300 shrink-0" />
+                      )}
+                    </div>
+
+                    <p className="text-xs text-foreground/50 mb-1">{doc.description}</p>
+
+                    <div className="mt-2 space-y-2">
+                      {doc.files.length > 0 ? (
+                        doc.files.map((file) => (
+                          <div key={file.id} className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 bg-primary/5 rounded-lg px-2 py-1.5 flex-1 min-w-0">
+                              <File className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-xs text-foreground font-medium truncate max-w-37.5">
+                                {file.name}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFile(doc.id, file.id)}
+                              className="p-1 hover:bg-secondary rounded transition-colors"
+                            >
+                              <X className="w-3.5 h-3.5 text-foreground/40" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-foreground/40">No file attached</p>
+                      )}
+                    </div>
+
+                    {hasAttemptedContinue && doc.required && doc.files.length === 0 ? (
+                      <p className="mt-2 text-xs text-error">Upload this document to continue.</p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <AttachButton onUpload={(files) => handleFileUpload(doc.id, files)} accept={doc.acceptedFormats} />
+              </div>
+            ))}
           </div>
 
-          {/* Security Note */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
@@ -409,9 +344,8 @@ export const CompanyKYCDocuments: React.FC = () => {
 
       </div>
 
-      {/* Footer / Action Button */}
       <div className="p-6 pb-8 bg-white">
-        <Button 
+        <Button
           onClick={handleContinue}
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
           icon={<ArrowRight className="w-5 h-5" />}

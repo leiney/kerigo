@@ -21,11 +21,11 @@ export const BankDetails: React.FC = () => {
   const setBankDetails = useVendorOnboardingStore((state) => state.setBankDetails);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [formData, setFormData] = useState({
-    bank: '',
-    accountNumber: '',
-    branchCode: '',
-    accountName: draft.fullName,
-    swiftCode: '',
+    bank: (draft.payoutInfo?.details as { bank?: string } | undefined)?.bank ?? '',
+    accountNumber: (draft.payoutInfo?.details as { accountNumber?: string } | undefined)?.accountNumber ?? '',
+    branchCode: (draft.payoutInfo?.details as { branch?: string } | undefined)?.branch ?? '',
+    accountName: (draft.payoutInfo?.details as { accountName?: string } | undefined)?.accountName ?? draft.fullName,
+    swiftCode: (draft.payoutInfo?.details as { swiftCode?: string } | undefined)?.swiftCode ?? '',
   });
 
   useEffect(() => {

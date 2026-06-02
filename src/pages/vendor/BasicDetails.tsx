@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Input, PhoneInput } from '@stackloop/ui';
+import { Badge, Button, Input } from '@stackloop/ui';
 import { 
   User, 
   Mail, 
   ArrowRight, 
   ChevronLeft,
-  Phone
+  Camera,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
@@ -17,7 +19,11 @@ export const BasicDetails: React.FC = () => {
   const navigate = useNavigate();
   const draft = useVendorOnboardingStore((state) => state.draft);
   const setIdentityDetails = useVendorOnboardingStore((state) => state.setIdentityDetails);
+  const avatarFile = useVendorOnboardingStore((state) => state.attachments.avatar);
+  const setAvatarFile = useVendorOnboardingStore((state) => state.setAvatarFile);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: draft.fullName,
@@ -33,13 +39,35 @@ export const BasicDetails: React.FC = () => {
     });
   }, [formData, setIdentityDetails]);
 
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [avatarFile]);
+
   const fullNameValidationError = requiredTextError(formData.fullName, 'Full name');
   const phoneNumberValidationError = phoneError(formData.phoneNumber, 'Phone number');
   const emailAddressValidationError = emailError(formData.email);
+  const avatarValidationError = avatarFile ? '' : 'Avatar is required.';
   const fullNameError = hasAttemptedContinue ? fullNameValidationError : '';
   const phoneNumberError = hasAttemptedContinue ? phoneNumberValidationError : '';
   const emailAddressError = hasAttemptedContinue ? emailAddressValidationError : '';
-  const isFormValid = !fullNameValidationError && !phoneNumberValidationError && !emailAddressValidationError;
+  const avatarError = hasAttemptedContinue ? avatarValidationError : '';
+  const isFormValid = !fullNameValidationError && !phoneNumberValidationError && !emailAddressValidationError && !avatarValidationError;
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (file) {
+      setAvatarFile(file);
+    }
+    event.target.value = '';
+  };
 
   const handleContinue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,6 +173,75 @@ export const BasicDetails: React.FC = () => {
               required
             />
           </div>
+
+
+          <div className="space-y-3 pt-1">
+            <div>
+              <label className="block text-[15px] font-bold text-foreground">
+                Avatar <span className="text-error">*</span>
+              </label>
+              <p className="mt-2 text-sm text-foreground/55">This will represent your logo at store front.</p>
+            </div>
+
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => avatarInputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  avatarInputRef.current?.click();
+                }
+              }}
+              className={`w-full rounded-3xl border-2 border-dashed px-4 py-4 text-left transition-colors cursor-pointer ${
+                avatarError ? 'border-error/60 bg-error/5' : 'border-border/70 bg-white hover:border-primary/40 hover:bg-primary/5'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden border border-border/50">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Selected avatar preview" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <Camera className="h-7 w-7" />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-bold text-foreground">Upload avatar</p>
+                  <p className="mt-1 text-sm text-foreground/55">PNG, JPG or WEBP. Max 2MB.</p>
+                  <p className="mt-1 truncate text-xs text-foreground/40">
+                    {avatarFile ? avatarFile.name : 'Tap to choose a clear Logo image.'}
+                  </p>
+                </div>
+
+                {avatarFile ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setAvatarFile(null);
+                    }}
+                    className="p-2 rounded-full hover:bg-secondary transition-colors"
+                  >
+                    <X className="h-4 w-4 text-foreground/45" />
+                  </button>
+                ) : (
+                  <ImageIcon className="h-5 w-5 shrink-0 text-foreground/35" />
+                )}
+              </div>
+            </div>
+
+            {avatarError ? <p className="text-xs text-error">{avatarError}</p> : null}
+          </div>
+
 
         </motion.form>
 

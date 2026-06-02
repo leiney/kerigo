@@ -134,6 +134,7 @@ export const KYCDocuments: React.FC = () => {
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [documents, setDocuments] = useState<DocumentItem[]>(createInitialDocuments());
+  const [filesBySerial, setFilesBySerial] = useState<Record<string, File[]>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +147,7 @@ export const KYCDocuments: React.FC = () => {
 
       if (snapshot) {
         setDocuments(rebuildDocuments(draft.individualDocuments || [], snapshot.filesBySerial || {}));
+        setFilesBySerial(snapshot.filesBySerial || {});
         setIndividualDocumentFiles(snapshot.filesBySerial || {});
       }
 
@@ -157,7 +159,7 @@ export const KYCDocuments: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [draft.individualDocuments, setIndividualDocumentFiles]);
+  }, []);
 
   const handleFileUpload = (id: string, files: File[]) => {
     const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024);
@@ -166,7 +168,7 @@ export const KYCDocuments: React.FC = () => {
       return;
     }
 
-    const newFilesMap: Record<string, File[]> = {};
+    const nextFilesBySerial: Record<string, File[]> = { ...filesBySerial };
 
     setDocuments((prev) =>
       prev.map((doc) => {
@@ -174,7 +176,7 @@ export const KYCDocuments: React.FC = () => {
 
         const added = validFiles.map((file, index) => {
           const serial = generateDocumentSerial(doc.label, doc.attachments.length + index);
-          newFilesMap[serial] = [file];
+          nextFilesBySerial[serial] = [file];
           return {
             id: serial,
             fileName: file.name,
@@ -187,8 +189,8 @@ export const KYCDocuments: React.FC = () => {
       })
     );
 
-    const currentFiles = useVendorOnboardingStore.getState().attachments.individualDocuments;
-    setIndividualDocumentFiles({ ...currentFiles, ...newFilesMap });
+    setFilesBySerial(nextFilesBySerial);
+    setIndividualDocumentFiles(nextFilesBySerial);
   };
 
   const handleRemoveFile = (id: string, attachmentId: string) => {
@@ -198,9 +200,11 @@ export const KYCDocuments: React.FC = () => {
       )
     );
 
-    const currentFiles = useVendorOnboardingStore.getState().attachments.individualDocuments;
-    const nextFiles = Object.fromEntries(Object.entries(currentFiles).filter(([serial]) => serial !== attachmentId));
-    setIndividualDocumentFiles(nextFiles);
+    setFilesBySerial((currentFiles) => {
+      const nextFiles = Object.fromEntries(Object.entries(currentFiles).filter(([serial]) => serial !== attachmentId));
+      setIndividualDocumentFiles(nextFiles);
+      return nextFiles;
+    });
   };
 
   useEffect(() => {
@@ -213,13 +217,15 @@ export const KYCDocuments: React.FC = () => {
         doc.attachments.map((attachment) => ({
           documentType: doc.label,
           serialNumber: attachment.serialNumber,
+          files: [],
         }))
       )
     );
+    setIndividualDocumentFiles(filesBySerial);
     void writeOnboardingAttachmentSnapshot<VendorKycSnapshot>(VENDOR_KYC_STORAGE_KEY, {
-      filesBySerial: useVendorOnboardingStore.getState().attachments.individualDocuments,
+      filesBySerial,
     });
-  }, [documents, isHydrated, setIndividualDocuments]);
+  }, [documents, filesBySerial, isHydrated, setIndividualDocuments, setIndividualDocumentFiles]);
 
   const allDocumentsUploaded = documents.every((doc) => doc.attachments.length > 0);
   const missingDocuments = documents.filter((doc) => doc.attachments.length === 0);

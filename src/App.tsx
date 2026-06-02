@@ -42,7 +42,7 @@ import { BasicDetails } from './pages/vendor/BasicDetails';
 import { CompanyDetails } from './pages/vendor/CompanyDetails';
 import { AdministratorDetails as VendorAdministratorDetails } from './pages/vendor/AdministratorDetails';
 import { KYCDocuments } from './pages/vendor/KYCDocuments';
-import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments';
+import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments.tsx';
 import { AddYourStores } from './pages/vendor/AddYourStores';
 import { AddStorePage } from './pages/vendor/AddStorePage';
 import { AddStoreDashboardPage } from './pages/vendor/AddStoreDashboardPage';
@@ -52,6 +52,8 @@ import { StoreLocationPicker } from './pages/vendor/StoreLocationPicker';
 import { ProductsDashboard } from './pages/vendor/ProductsDashboard';
 import { ProductDetailPage } from './pages/vendor/ProductDetailPage';
 import { AddProductPage } from './pages/vendor/AddProductPage';
+import { ManageCategoriesPage } from './pages/vendor/ManageCategoriesPage';
+import { AddCategoryPage } from './pages/vendor/AddCategoryPage';
 import { PayoutMethod } from './pages/vendor/PayoutMethod';
 import { BankDetails } from './pages/vendor/BankDetails';
 import { MPesaDetails } from './pages/vendor/MPesaDetails';
@@ -194,6 +196,8 @@ export default function App() {
           <Route path='/vendor/mark-as-ready-assign-rider' element={<MarkAsReadyAssignRider />} />
           <Route path='/vendor/orders' element={<VendorDashboard />} />
           <Route path='/vendor/products' element={<ProductsDashboard />} />
+          <Route path='/vendor/categories' element={<ManageCategoriesPage />} />
+          <Route path='/vendor/add-category' element={<AddCategoryPage />} />
           <Route path='/vendor/product/:id' element={<ProductDetailPage />} />
           <Route path='/vendor/add-product' element={<AddProductPage />} />
           <Route path='/vendor' element={<Navigate to="/vendor/dashboard" replace />} />
@@ -217,13 +221,13 @@ export default function App() {
           <Route path="/individual/kyc-documents" element={<RiderKYCDocuments />} />
           <Route path="/individual/create-password" element={<RiderCreatePassword />} />
           <Route path="/company/organisation-details" element={<OrganisationDetails />} />
+          <Route path="/company/kyc-documents" element={<RiderCompanyKYCDocuments />} />
           <Route path="/company/administrator-details" element={<RiderAdministratorDetails />} />
           <Route path="/company/add-riders" element={<AddRiders />} />
           <Route path="/company/vehicle-information" element={<VehicleInformation3A />} />
           <Route path="/company/payout-details" element={<PayoutDetails />} />
           <Route path="/company/bank-details" element={<RiderBankDetails />} />
           <Route path="/company/mpesa-details" element={<RiderMPesaDetails />} />
-          <Route path="/company/kyc-documents" element={<RiderCompanyKYCDocuments />} />
           <Route path="/company/create-password" element={<RiderCreatePassword />} />
           <Route path="/rider/review-confirmation" element={<ReviewAndConfirm />} />
           <Route path="/rider/success" element={<SuccessPage />} />

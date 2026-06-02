@@ -10,6 +10,7 @@ import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { authApi } from '../../../lib/api';
 import { buildRiderSignupFormData, buildRiderSignupPayloadWithFiles } from '../../lib/riderOnboarding';
+import { deleteOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 import { useAuth } from '../../context/AuthContext';
 import type { UserProfile } from '../../types';
@@ -22,6 +23,7 @@ export const ReviewAndConfirm: React.FC = () => {
   const attachments = useRiderOnboardingStore((state) => state.attachments);
   const reset = useRiderOnboardingStore((state) => state.reset);
   const isIndividual = draft.accountType !== 'organisation';
+  const riderAttachmentKeys = ['rider-individual-kyc-documents', 'rider-company-kyc-documents'];
 
   const summaryData = useMemo(() => {
     const payoutLabel = draft.payoutInfo
@@ -69,6 +71,7 @@ export const ReviewAndConfirm: React.FC = () => {
 
       login({ token: response.token, user });
       reset();
+      await Promise.all(riderAttachmentKeys.map((key) => deleteOnboardingAttachmentSnapshot(key)));
       navigate('/rider/success');
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Could not submit rider signup.');

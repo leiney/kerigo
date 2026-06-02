@@ -15,7 +15,6 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
-import { generateDocumentSerial } from '../../lib/riderOnboarding';
 import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../lib/onboardingAttachmentStorage';
 
 interface UploadedFileItem {
@@ -146,7 +145,8 @@ export const KYCDocuments: React.FC = () => {
       documents.flatMap((doc) =>
         doc.files.map((item, index) => ({
           documentType: doc.label,
-          serialNumber: item.name || generateDocumentSerial(doc.label, index),
+          serialNumber: doc.id,
+          files: [item.file],
         }))
       )
     );

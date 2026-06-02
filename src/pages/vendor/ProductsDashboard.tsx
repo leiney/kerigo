@@ -485,9 +485,12 @@ export const ProductsDashboard: React.FC = () => {
               className="w-full pl-9 pr-3 py-2.25 bg-white border border-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/50"
             />
           </div>
-          <button className="bg-white border border-border rounded-md px-3 py-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground/70">
+          <button
+            onClick={() => navigate('/vendor/categories')}
+            className="bg-white border border-border rounded-md px-3 py-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground/70"
+          >
             <List className="w-3 h-3" />
-            Category
+            Categories
           </button>
           {/* Filter Button Trigger */}
           <button 

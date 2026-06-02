@@ -66,7 +66,7 @@ export const OrganisationDetails: React.FC = () => {
       return;
     }
 
-    navigate('/company/administrator-details');
+    navigate('/company/kyc-documents');
   };
 
   return (

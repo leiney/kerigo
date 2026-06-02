@@ -2,6 +2,7 @@ import type {
   AccountSettingsData,
   AppPreferenceValues,
   AuthUser,
+  CategoryItem,
   CustomerHomeData,
   CustomerOrdersPageData,
   OrderDetailData,
@@ -420,6 +421,33 @@ const supportOptions: SupportOption[] = [
   { id: 'phone', title: 'Call Support', subtitle: '+254 700 000 000' },
 ];
 
+const vendorCategories: CategoryItem[] = [
+  {
+    categoryID: 'category_1',
+    name: 'Buckets',
+    description: 'Shared family and combo buckets.',
+    status: 'active',
+    displayOrder: 1,
+    imageUrl: '/buckets.jpeg',
+  },
+  {
+    categoryID: 'category_2',
+    name: 'Burgers',
+    description: 'Burgers, wraps, and sandwiches.',
+    status: 'active',
+    displayOrder: 2,
+    imageUrl: '/burgers.jpeg',
+  },
+  {
+    categoryID: 'category_3',
+    name: 'Drinks',
+    description: 'Cold and hot beverages.',
+    status: 'inactive',
+    displayOrder: 3,
+    imageUrl: '/drinks.jpeg',
+  },
+];
+
 const notifications: NotificationItem[] = [
   { id: 'notification_1', title: 'Order confirmed', message: 'Your order KR1024 has been confirmed and is being prepared.', timestamp: '5 mins ago', isRead: false, type: 'order' },
   { id: 'notification_2', title: 'Wallet topped up', message: 'KES 1,000 was added to your KeriGo Wallet.', timestamp: '2 hours ago', isRead: true, type: 'payment' },
@@ -438,6 +466,7 @@ export const mockData = {
     verificationId: 'verification_001',
   },
   shared: sharedMockData,
+  categories: vendorCategories,
   customer: {
     home: {
       greetingName: 'Leiney',

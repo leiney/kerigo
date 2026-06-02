@@ -91,6 +91,30 @@ export interface VendorCategory {
   imageUrl: string;
 }
 
+export type CategoryStatus = 'active' | 'inactive';
+
+export interface CategoryItem {
+  categoryID: string;
+  imageUrl: string;
+  name: string;
+  description: string;
+  status: CategoryStatus;
+  displayOrder: number;
+}
+
+export interface CategoryCreatePayload {
+  image?: File | Blob | string | null;
+  name: string;
+  description: string;
+  status: CategoryStatus;
+  displayOrder: number;
+}
+
+export interface CategoryCreateResponse {
+  message: string;
+  category: CategoryItem;
+}
+
 export interface VendorMenuItem {
   id: number;
   name: string;
@@ -441,6 +465,7 @@ export interface PayoutInfo {
 export interface KYCDocument {
   documentType: string;
   serialNumber: string;
+  files: File[];
 }
 
 export interface LocationDetails {
@@ -496,6 +521,7 @@ export interface OrganizationInfo {
 }
 
 export interface RiderInfo {
+  idNumber: string;
   fullName: string;
   phoneNo: string;
   email: string;

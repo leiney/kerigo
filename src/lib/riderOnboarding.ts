@@ -82,9 +82,10 @@ export const generateDocumentSerial = (documentType: string, index: number) => {
   return `${prefix}-${index + 1}-${Date.now()}-${createUniqueSerialSuffix()}`;
 };
 
-export const normalizeDocument = (documentType: string, serialNumber?: string): KYCDocument => ({
+export const normalizeDocument = (documentType: string, serialNumber: string, files: File[]): KYCDocument => ({
   documentType: documentType.trim(),
   serialNumber: serialNumber?.trim() || generateDocumentSerial(documentType, 0),
+  files: [...files]
 });
 
 export const buildRiderSignupPayload = (draft: RiderOnboardingDraft): RegisterRiderPayload => {
@@ -102,7 +103,7 @@ export const buildRiderSignupPayload = (draft: RiderOnboardingDraft): RegisterRi
     const otherInfo: IndividualOtherInfo = {
       vehicleInfo,
       documents: draft.individualDocuments.map((document, index) =>
-        normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index))
+        normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index), document.files)
       ),
     };
 
@@ -122,8 +123,9 @@ export const buildRiderSignupPayload = (draft: RiderOnboardingDraft): RegisterRi
     vehicleInfo: draft.organizationVehicles,
     riders: draft.riders.map((rider) => ({
       ...rider,
+      idNumber: rider.idNumber.trim(),
       documents: rider.documents.map((document, index) =>
-        normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index))
+        normalizeDocument(document.documentType, document.serialNumber || generateDocumentSerial(document.documentType, index), document.files)
       ),
     })),
   };
@@ -153,6 +155,7 @@ const attachFilesToPayload = (
     payloadWithFiles.otherInfo.companyDocuments = (draft.companyDocuments || []).map((d) => ({
       documentType: d.documentType,
       serialNumber: d.serialNumber,
+      files: [...d.files]
     }));
 
     (payloadWithFiles.otherInfo.companyDocuments || []).forEach((doc: any) => {
