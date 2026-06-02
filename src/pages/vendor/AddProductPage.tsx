@@ -24,6 +24,7 @@ const UNITS = [
 ];
 
 const RETURN_POLICIES = ['7 Days Return', '14 Days Return', '30 Days Return', 'No Return'];
+const RETURN_POLICY_OPTIONS = [{ value: '', label: 'Select return policy' }, ...RETURN_POLICIES.map((policy) => ({ value: policy, label: policy }))];
 
 const STATUSES = ['Active', 'Inactive', 'Out of Stock'];
 const STATUS_OPTIONS = STATUSES.map((status) => ({ value: status, label: status }));
@@ -136,21 +137,25 @@ const normalizeSkuSeed = (value: string) =>
   value
     .trim()
     .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-const buildProductSku = (name: string, category = '') => {
-  const seed = [category, name]
-    .map(normalizeSkuSeed)
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .split(' ')
     .filter(Boolean)
+    .map((part) => part.slice(0, 4))
     .join('-');
 
-  return seed || '';
+const makeSkuSuffix = () => Math.random().toString(36).slice(2, 6).toUpperCase();
+
+const buildProductSku = (name: string, category = '') => {
+  const categorySeed = normalizeSkuSeed(category);
+  const nameSeed = normalizeSkuSeed(name);
+  const parts = ['SKU', categorySeed, nameSeed].filter(Boolean);
+
+  return `${parts.join('-')}-${makeSkuSuffix()}`;
 };
 
 const buildVariantSku = (baseSku: string, variantNumber: number) => {
-  const seed = normalizeSkuSeed(baseSku);
-  return `${seed || 'VARIANT'}-${variantNumber}`;
+  const seed = normalizeSkuSeed(baseSku) || 'SKU';
+  return `${seed}-V${variantNumber}`;
 };
 
 const normalizeTag = (value: string) => value.trim().replace(/\s+/g, ' ');
@@ -222,7 +227,6 @@ export const AddProductPage: React.FC = () => {
   const [currentVariant, setCurrentVariant] = useState<VariantDraft>(createEmptyVariantDraft());
 
   // Modal States
-  const [showReturnPolicyModal, setShowReturnPolicyModal] = useState(false);
   const [showAttributeModal, setShowAttributeModal] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<{ name: string; value: string }>({ name: '', value: '' });
 
@@ -347,6 +351,13 @@ export const AddProductPage: React.FC = () => {
     setVariants((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   };
 
+  const removeCurrentVariantImage = (index: number) => {
+    setCurrentVariant((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, currentIndex) => currentIndex !== index),
+    }));
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) {
       return;
@@ -377,18 +388,22 @@ export const AddProductPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const primaryVariant = variants[0] ?? draftToVariantPayload(currentVariant);
       const autoSku = buildProductSku(formData.name, formData.category);
-      const fallbackVariant: ProductVariantPayload = {
-        ...primaryVariant,
-        sku: formData.sku.trim() || primaryVariant.sku || autoSku,
-        barcode: formData.barcode.trim() || primaryVariant.barcode || '',
-        price: toNumber(formData.price, primaryVariant.price),
-        oldPrice: toNumber(formData.oldPrice, primaryVariant.oldPrice),
-        stock: toNumber(formData.stock, primaryVariant.stock),
-        unit: formData.unit.trim() || primaryVariant.unit,
-        images: mediaImages.length > 0 ? mediaImages : primaryVariant.images,
+      const productVariant: ProductVariantPayload = {
+        variantID: crypto.randomUUID(),
+        sku: formData.sku.trim() || autoSku,
+        barcode: formData.barcode.trim() || '',
+        price: toNumber(formData.price),
+        oldPrice: toNumber(formData.oldPrice),
+        stock: toNumber(formData.stock),
+        unit: formData.unit.trim() || undefined,
+        isNew: true,
+        active: formData.status === 'Active',
+        images: mediaImages,
+        attributes: [],
       };
+
+      const variantsToSubmit = [productVariant, ...variants];
 
       const productPayload: ProductPayload = {
         name: formData.name.trim(),
@@ -412,7 +427,7 @@ export const AddProductPage: React.FC = () => {
         info: {
           ingredients: parseList(formData.ingredients),
         },
-        variants: variants.length > 0 ? variants : [fallbackVariant],
+        variants: variantsToSubmit,
       };
 
       
@@ -774,13 +789,13 @@ export const AddProductPage: React.FC = () => {
                   
                   <div>
                     <label className="text-xs font-semibold text-foreground mb-1.5 block">Return Policy <span className="text-foreground/40 font-normal">(Optional)</span></label>
-                    <button 
-                      onClick={() => setShowReturnPolicyModal(true)}
-                      className="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-sm text-left text-foreground/60 flex items-center justify-between"
-                    >
-                      <span>{formData.returnPolicy || 'Select return policy'}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
+                    <Select
+                      options={RETURN_POLICY_OPTIONS}
+                      value={formData.returnPolicy}
+                      onChange={(value) => updateField('returnPolicy', String(value))}
+                      placeholder="Select return policy"
+                      className="w-full"
+                    />
                     {formData.returnPolicy === 'No Return' && (
                       <div className="mt-3">
                         <label className="text-xs font-semibold text-foreground mb-1.5 block">No Return Message</label>
@@ -940,24 +955,6 @@ export const AddProductPage: React.FC = () => {
 
       {/* --- Modals --- */}
 
-      {/* Return Policy Modal */}
-      <Modal isOpen={showReturnPolicyModal} onClose={() => setShowReturnPolicyModal(false)} title="Select Return Policy">
-        <div className="space-y-1">
-          {RETURN_POLICIES.map((policy) => (
-            <label key={policy} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.returnPolicy === policy ? 'border-primary' : 'border-border'}`}>
-                {formData.returnPolicy === policy && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
-              </div>
-              <input type="radio" name="policy" className="hidden" checked={formData.returnPolicy === policy} onChange={() => { updateField('returnPolicy', policy); setShowReturnPolicyModal(false); }} />
-              <span className="text-sm text-foreground">{policy}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-4 pt-4 border-t border-border">
-          <Button className="w-full bg-primary text-white" onClick={() => setShowReturnPolicyModal(false)}>Apply</Button>
-        </div>
-      </Modal>
-
       {/* Add Variant Modal */}
       <Modal isOpen={showVariantModal} onClose={() => setShowVariantModal(false)} title="Add Variant">
         <div className="space-y-4">
@@ -998,7 +995,20 @@ export const AddProductPage: React.FC = () => {
               }}
             />
             {currentVariant.images.length > 0 && (
-              <p className="mt-2 text-xs text-foreground/50">{currentVariant.images.length} file(s) selected</p>
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                {currentVariant.images.map((image, index) => (
+                  <div key={`${image.name}-${index}`} className="relative rounded-lg overflow-hidden border border-border bg-secondary aspect-square">
+                    <img src={URL.createObjectURL(image)} alt={`Variant ${index + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeCurrentVariantImage(index)}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">

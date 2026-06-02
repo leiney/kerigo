@@ -10,6 +10,46 @@ const toNumber = (value: unknown, fallback = 0): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const compactValue = (value: unknown): unknown => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (
+    (typeof File !== 'undefined' && value instanceof File) ||
+    (typeof Blob !== 'undefined' && value instanceof Blob) ||
+    (typeof FileList !== 'undefined' && value instanceof FileList)
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const compactedItems = value
+      .map((item) => compactValue(item))
+      .filter((item) => item !== undefined);
+
+    return compactedItems.length > 0 ? compactedItems : undefined;
+  }
+
+  if (typeof value === 'object') {
+    const compactedEntries = Object.entries(value as Record<string, unknown>).reduce<Record<string, unknown>>((accumulator, [key, childValue]) => {
+      const compactedChild = compactValue(childValue);
+      if (compactedChild !== undefined) {
+        accumulator[key] = compactedChild;
+      }
+      return accumulator;
+    }, {});
+
+    return Object.keys(compactedEntries).length > 0 ? compactedEntries : undefined;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() === '' ? undefined : value;
+  }
+
+  return value;
+};
+
 export const createEmptyProductStore = (): ProductStorePayload => ({
   price: 0,
   oldPrice: 0,
@@ -24,18 +64,17 @@ export const createEmptyProductVariant = (): ProductVariantPayload => ({
   price: 0,
   oldPrice: 0,
   stock: 0,
-  rating: 0,
   isNew: false,
   active: true,
   images: [],
   attributes: [],
-  stores: [],
 });
 
 export const normalizeProductPayload = (payload: ProductPayload): ProductPayload => ({
-  ...payload,
-  rating: toNumber(payload.rating, 0),
-  reviewCount: payload.reviewCount === undefined ? undefined : toNumber(payload.reviewCount, 0),
+  ...(() => {
+    const { rating, reviewCount, ...rest } = payload;
+    return rest;
+  })(),
   active: Boolean(payload.active),
   tags: payload.tags.filter(Boolean),
   taxCodes: payload.taxCodes.filter(Boolean),
@@ -49,15 +88,16 @@ export const normalizeProductPayload = (payload: ProductPayload): ProductPayload
     image: item.image?.trim() || undefined,
   })),
   variants: payload.variants.map((variant) => ({
-    ...variant,
+    ...(() => {
+      const { rating, reviewCount, ...rest } = variant;
+      return rest;
+    })(),
     sku: variant.sku.trim(),
     barcode: variant.barcode?.trim() || '',
     unit: variant.unit?.trim() || undefined,
     price: toNumber(variant.price, 0),
     oldPrice: toNumber(variant.oldPrice, 0),
     stock: toNumber(variant.stock, 0),
-    rating: toNumber(variant.rating, 0),
-    reviewCount: variant.reviewCount === undefined ? undefined : toNumber(variant.reviewCount, 0),
     isNew: Boolean(variant.isNew),
     active: Boolean(variant.active),
     attributes: variant.attributes.map((attribute) => ({
@@ -75,5 +115,7 @@ export const normalizeProductPayload = (payload: ProductPayload): ProductPayload
 });
 
 export const buildProductFormData = (payload: ProductPayload): FormData => {
-  return buildFlattenedFormData(normalizeProductPayload(payload) as unknown as Record<string, unknown>);
+  const normalizedPayload = normalizeProductPayload(payload) as unknown as Record<string, unknown>;
+  const compactedPayload = compactValue(normalizedPayload) as Record<string, unknown>;
+  return buildFlattenedFormData(compactedPayload);
 };
