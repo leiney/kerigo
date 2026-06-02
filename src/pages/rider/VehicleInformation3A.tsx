@@ -103,7 +103,7 @@ export const VehicleInformation3A: React.FC = () => {
         regYear: Number(vehicle.year) || new Date().getFullYear(),
         color: vehicle.color,
         rider: {
-          idNumber: (vehicle.riderIndex !== null && draft.riders[vehicle.riderIndex]) ? (draft.riders[vehicle.riderIndex].phoneNo || '') : '',
+          idNumber: (vehicle.riderIndex !== null && draft.riders[vehicle.riderIndex]) ? (draft.riders[vehicle.riderIndex].idNumber || '') : '',
           fullName: (vehicle.riderIndex !== null && draft.riders[vehicle.riderIndex]) ? draft.riders[vehicle.riderIndex].fullName : vehicle.riderName,
         },
       }))

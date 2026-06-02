@@ -59,7 +59,7 @@ export const ManageCategoriesPage: React.FC = () => {
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <div>
-              <h1 className="text-xl font-bold leading-tight">Manage Product Categories</h1>
+              <h1 className="text-xl font-bold leading-tight">Categories</h1>
               <p className="text-xs text-foreground/50 mt-1">Organize your products into categories</p>
             </div>
           </div>
@@ -82,7 +82,7 @@ export const ManageCategoriesPage: React.FC = () => {
           <Input
             placeholder="Search categories"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(value) => setSearchQuery(String(value))}
             className="pl-10 bg-secondary border-transparent focus:border-primary/30"
           />
         </div>
@@ -97,7 +97,7 @@ export const ManageCategoriesPage: React.FC = () => {
         )}
         {filteredCategories.map((category, idx) => (
           <motion.div
-            key={category.id}
+            key={category.categoryID}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03 }}
