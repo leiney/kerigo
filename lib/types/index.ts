@@ -477,6 +477,8 @@ export interface LocationDetails {
   postalCode?: string;
 }
 
+
+
 export interface Store {
   storeName: string;
   businessType: BusinessType;

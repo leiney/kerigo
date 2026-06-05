@@ -20,13 +20,26 @@ export const phoneError = (value: unknown, label = 'Phone number') => {
   const text = toText(value);
   if (!text) return `${label} is required.`;
 
-  const digits = text.replace(/\D/g, '');
-  if (digits.length < 9 || digits.length > 15) {
-    return 'Enter a valid phone number.';
+  const phonePattern = /^\+254\d{9}$/;
+  if (text.length !== 13 || !phonePattern.test(text)) {
+    return 'Phone number must be in the format +254XXXXXXXXX (exactly 13 characters).';
   }
 
   return '';
 };
+
+export const alphanumericError = (value: unknown, label: string) => {
+  const text = toText(value);
+  if (!text) return `${label} is required.`;
+
+  const pattern = /^[a-zA-Z0-9]+$/;
+  if (!pattern.test(text)) {
+    return `${label} must contain only alphanumeric characters (no spaces or special characters).`;
+  }
+
+  return '';
+};
+
 
 export const yearError = (value: unknown, label = 'Registration year') => {
   const text = toText(value);

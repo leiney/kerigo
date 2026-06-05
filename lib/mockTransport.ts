@@ -338,6 +338,10 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
     }) as T;
   }
 
+  if (method === 'POST' && url === '/product-stores') {
+    return clone(config.data) as T;
+  }
+
   throw new Error(`No mock handler registered for ${method} ${config.url}`);
 };
 

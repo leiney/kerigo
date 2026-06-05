@@ -34,6 +34,7 @@ import type {
   VendorStoreData,
   VerificationMethod,
   WalletSummary,
+  Store,
 } from './types';
 
 type PasswordPayload = {
@@ -175,6 +176,13 @@ export const categoryApi = {
   createCategory: async (payload: CategoryCreatePayload | FormData): Promise<CategoryCreateResponse> => {
     const formData = payload instanceof FormData ? payload : buildFlattenedFormData(payload as unknown as Record<string, unknown>);
     const response = await axiosInstance.post<CategoryCreateResponse>('/categories/', formData);
+    return response.data;
+  },
+};
+
+export const storeApi = {
+  createStore: async (payload: Store): Promise<Store> => {
+    const response = await axiosInstance.post<Store>('/product-stores/', payload);
     return response.data;
   },
 };

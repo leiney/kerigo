@@ -22,7 +22,7 @@ export const MPesaDetails: React.FC = () => {
   const savedMpesaNumber = (draft.payoutInfo?.details as { phoneNo?: string } | undefined)?.phoneNo ?? '';
   
   const [formData, setFormData] = useState({
-    mpesaNumber: savedMpesaNumber && savedMpesaNumber !== draft.phoneNo ? savedMpesaNumber : ''
+    mpesaNumber: savedMpesaNumber
   });
 
   useEffect(() => {

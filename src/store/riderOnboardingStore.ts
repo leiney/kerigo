@@ -55,18 +55,21 @@ export const useRiderOnboardingStore = create<RiderOnboardingStore>()(
       setIdentityDetails: (details) => set((state) => ({ draft: { ...state.draft, ...details } })),
       setPassword: (password) => set((state) => ({ draft: { ...state.draft, password } })),
       setPayoutMode: (mode) =>
-        set((state) => ({
-          draft: {
-            ...state.draft,
-            payoutInfo: {
-              mode,
-              details:
-                mode === 'mpesa'
-                  ? { phoneNo: '' }
-                  : { bank: '', branch: '', accountNumber: '', accountName: '', swiftCode: '' },
+        set((state) => {
+          if (state.draft.payoutInfo?.mode === mode) return {};
+          return {
+            draft: {
+              ...state.draft,
+              payoutInfo: {
+                mode,
+                details:
+                  mode === 'mpesa'
+                    ? { phoneNo: '' }
+                    : { bank: '', branch: '', accountNumber: '', accountName: '', swiftCode: '' },
+              },
             },
-          },
-        })),
+          };
+        }),
       setMpesaDetails: (phoneNo) =>
         set((state) => ({
           draft: {

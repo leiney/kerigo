@@ -5,7 +5,7 @@ import { Building2, ArrowRight, ChevronLeft, Camera, FileText, Image as ImageIco
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
 import { businessTypeOptions } from '../../lib/vendorOnboarding';
-import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
+import { requiredTextError, selectionError, alphanumericError } from '../../lib/onboardingValidation';
 import { useVendorOnboardingStore } from '../../store/vendorOnboardingStore';
 
 export const CompanyDetails: React.FC = () => {
@@ -47,8 +47,8 @@ export const CompanyDetails: React.FC = () => {
   }, [logoFile]);
 
   const companyNameValidationError = requiredTextError(formData.companyName, 'Company name');
-  const registrationNumberValidationError = requiredTextError(formData.businessRegistrationNumber, 'Business registration number');
-  const kraPinValidationError = requiredTextError(formData.kraPIN, 'KRA PIN');
+  const registrationNumberValidationError = alphanumericError(formData.businessRegistrationNumber, 'Business registration number');
+  const kraPinValidationError = alphanumericError(formData.kraPIN, 'KRA PIN');
   const businessTypeValidationError = selectionError(formData.businessType, 'business type');
   const logoValidationError = logoFile ? '' : 'Logo is required.';
   const companyNameError = hasAttemptedContinue ? companyNameValidationError : '';

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
-import { requiredTextError, selectionError, yearError } from '../../lib/onboardingValidation';
+import { requiredTextError, selectionError, yearError, alphanumericError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 export const VehicleInformation: React.FC = () => {
@@ -40,7 +40,7 @@ export const VehicleInformation: React.FC = () => {
   }, [formData, setVehicleInfo]);
 
   const vehicleTypeValidationError = selectionError(formData.vehicleType, 'vehicle type');
-  const registrationNumberValidationError = requiredTextError(formData.registrationNumber, 'Registration number');
+  const registrationNumberValidationError = alphanumericError(formData.registrationNumber, 'Registration number');
   const makeValidationError = requiredTextError(formData.make, 'Make');
   const modelValidationError = requiredTextError(formData.model, 'Model');
   const yearValidationError = yearError(formData.year, 'Registration year');

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
-import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
+import { requiredTextError, selectionError, alphanumericError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 import type { RiderBusinessType } from '../../../lib/types';
 
@@ -38,8 +38,8 @@ export const OrganisationDetails: React.FC = () => {
 
   const organisationNameValidationError = requiredTextError(formData.organisationName, 'Organisation name');
   const businessTypeValidationError = selectionError(formData.businessType, 'business type');
-  const organisationNumberValidationError = requiredTextError(formData.organisationNumber, 'Registration number');
-  const taxIdValidationError = requiredTextError(formData.taxId, 'KRA PIN');
+  const organisationNumberValidationError = alphanumericError(formData.organisationNumber, 'Registration number');
+  const taxIdValidationError = alphanumericError(formData.taxId, 'KRA PIN');
   const organisationNameError = hasAttemptedContinue ? organisationNameValidationError : '';
   const businessTypeError = hasAttemptedContinue ? businessTypeValidationError : '';
   const organisationNumberError = hasAttemptedContinue ? organisationNumberValidationError : '';

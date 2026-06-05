@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StepDots } from '../../components/shared/StepDots';
-import { requiredTextError, selectionError, yearError } from '../../lib/onboardingValidation';
+import { requiredTextError, selectionError, yearError, alphanumericError } from '../../lib/onboardingValidation';
 import { useRiderOnboardingStore } from '../../store/riderOnboardingStore';
 
 interface Vehicle {
@@ -46,10 +46,6 @@ export const VehicleInformation3A: React.FC = () => {
   const draft = useRiderOnboardingStore((state) => state.draft);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
-  const riderOptions = (draft.riders || []).map((r, i) => ({ value: String(i), label: r.fullName || `Rider ${i + 1}` }));
-
-  const [selectedRider, setSelectedRider] = useState<string>(riderOptions.length ? riderOptions[0].value : '');
-
   const mapStoreVehicleToLocal = (v: any, idx: number): Vehicle => ({
     id: v.id || `v-${idx}-${Date.now()}`,
     riderIndex: typeof v.rider === 'object' ? (draft.riders || []).findIndex((rr) => rr.fullName === v.rider.fullName) : null,
@@ -75,9 +71,26 @@ export const VehicleInformation3A: React.FC = () => {
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add');
   const [editingVehicleId, setEditingVehicleId] = useState<string | null>(null);
 
+  const [selectedRider, setSelectedRider] = useState<string>('');
+
+  const riderOptions = (draft.riders || [])
+    .map((r, i) => ({ value: String(i), label: r.fullName || `Rider ${i + 1}` }))
+    .filter((option) => {
+      const riderIdx = Number(option.value);
+      const isAssignedToOtherVehicle = vehicles.some((v) => {
+        if (sheetMode === 'edit' && v.id === editingVehicleId) {
+          return false;
+        }
+        return v.riderIndex === riderIdx;
+      });
+      return !isAssignedToOtherVehicle;
+    });
+
+
+
   const riderSelectionValidationError = riderOptions.length > 0 && !selectedRider ? 'Please select a rider.' : '';
   const vehicleTypeValidationError = selectionError(formData.type, 'vehicle type');
-  const registrationNumberValidationError = requiredTextError(formData.regNumber, 'Registration number');
+  const registrationNumberValidationError = alphanumericError(formData.regNumber, 'Registration number');
   const makeValidationError = requiredTextError(formData.make, 'Make');
   const modelValidationError = requiredTextError(formData.model, 'Model');
   const yearValidationError = yearError(formData.year, 'Registration year');
@@ -146,6 +159,13 @@ export const VehicleInformation3A: React.FC = () => {
     setSheetMode('add');
     setEditingVehicleId(null);
     setFormData({ type: '', regNumber: '', make: '', model: '', year: '', color: '' });
+    const availableOptions = (draft.riders || [])
+      .map((r, i) => ({ value: String(i), label: r.fullName || `Rider ${i + 1}` }))
+      .filter((option) => {
+        const riderIdx = Number(option.value);
+        return !vehicles.some((v) => v.riderIndex === riderIdx);
+      });
+    setSelectedRider(availableOptions.length ? availableOptions[0].value : '');
     setIsSheetOpen(true);
   };
 
@@ -267,14 +287,20 @@ export const VehicleInformation3A: React.FC = () => {
             )}
           </AnimatePresence>
 
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={openAddVehicleSheet}
-            className="w-full py-3 border-2 border-dashed border-primary/30 rounded-2xl flex items-center justify-center gap-2 text-primary font-medium text-sm hover:bg-primary/5 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {vehicles.length > 0 ? 'Add Another Vehicle' : 'Add First Vehicle'}
-          </motion.button>
+          {vehicles.length < (draft.riders || []).length ? (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={openAddVehicleSheet}
+              className="w-full py-3 border-2 border-dashed border-primary/30 rounded-2xl flex items-center justify-center gap-2 text-primary font-medium text-sm hover:bg-primary/5 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {vehicles.length > 0 ? 'Add Another Vehicle' : 'Add First Vehicle'}
+            </motion.button>
+          ) : (
+            <div className="w-full py-3 bg-secondary/50 rounded-2xl text-center text-foreground/40 text-sm font-medium border border-border">
+              All riders have been assigned to a vehicle
+            </div>
+          )}
         </motion.div>
 
       </div>

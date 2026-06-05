@@ -1,66 +1,100 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, Input } from '@stackloop/ui';
-import { ChevronLeft, ImageIcon, Lightbulb, Store, Upload } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Badge, Button, Input, Select } from '@stackloop/ui';
+import { ChevronLeft, MapPin, Navigation } from 'lucide-react';
 import { motion } from 'motion/react';
+import { businessTypeOptions } from '../../lib/vendorOnboarding';
+import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
+import type { LocationDetails, Store, BusinessType } from '../../../lib/types';
+import { storeApi } from '../../../lib/api';
 
-type FormState = {
+type StoreFormState = {
   storeName: string;
-  description: string;
+  businessType: string;
+  country: string;
+  locationDetails: LocationDetails;
+};
+
+type PickerState = {
+  locationDetails?: LocationDetails;
+  formData?: Partial<StoreFormState>;
 };
 
 export const AddStoreDashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const logoInputRef = useRef<HTMLInputElement | null>(null);
-  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [formState, setFormState] = useState<FormState>({
+  const location = useLocation();
+  const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
+  const [formData, setFormData] = useState<StoreFormState>({
     storeName: '',
-    description: '',
+    businessType: '',
+    country: 'Kenya',
+    locationDetails: {
+      latitude: 0,
+      longitude: 0,
+      address: '',
+      city: '',
+      country: 'Kenya',
+      postalCode: '',
+    },
   });
 
   useEffect(() => {
-    return () => {
-      if (logoPreview) {
-        URL.revokeObjectURL(logoPreview);
-      }
-    };
-  }, [logoPreview]);
+    const state = location.state as PickerState | null;
+    if (!state) return;
 
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+    setFormData((prev) => ({
+      ...prev,
+      ...(state.formData ?? {}),
+      locationDetails: state.locationDetails
+        ? state.locationDetails
+        : prev.locationDetails,
+    }));
+  }, [location.state]);
 
-    if (logoPreview) {
-      URL.revokeObjectURL(logoPreview);
-      setLogoPreview(null);
-    }
-
-    setLogoFile(file);
-
-    if (file) {
-      setLogoPreview(URL.createObjectURL(file));
-    }
+  const handlePickLocation = () => {
+    navigate('/vendor/location-picker', {
+      state: {
+        returnTo: '/vendor/products/add-store',
+        formData,
+        locationDetails: formData.locationDetails,
+      },
+    });
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    setHasAttemptedSubmit(true);
+  const handleContinue = async () => {
+    const cityTown = formData.locationDetails.city || '';
+    const storeNameError = requiredTextError(formData.storeName, 'Store name');
+    const businessTypeError = selectionError(formData.businessType, 'business type');
+    const locationError = !formData.locationDetails.address || !cityTown
+      ? 'Store location is required.'
+      : '';
 
-    const storeName = formState.storeName.trim();
-    const description = formState.description.trim();
-
-    if (!storeName || !description || !logoFile) {
+    if (storeNameError || businessTypeError || locationError) {
+      setHasAttemptedContinue(true);
       return;
     }
 
-    navigate('/vendor/products');
-  };
+    const store: Store = {
+      storeName: formData.storeName,
+      businessType: formData.businessType as BusinessType,
+      cityTown,
+      locationDetails: {
+        longitude: formData.locationDetails.longitude,
+        latitude: formData.locationDetails.latitude,
+        address: formData.locationDetails.address,
+        city: cityTown,
+        country: formData.country,
+        postalCode: formData.locationDetails.postalCode || undefined,
+      },
+    };
 
-  const descriptionCount = formState.description.length;
-  const storeNameError = hasAttemptedSubmit && !formState.storeName.trim() ? 'Store name is required.' : '';
-  const descriptionError = hasAttemptedSubmit && !formState.description.trim() ? 'Store description is required.' : '';
-  const logoError = hasAttemptedSubmit && !logoFile ? 'Store logo is required.' : '';
+    try {
+      await storeApi.createStore(store);
+      navigate('/vendor/dashboard');
+    } catch (error) {
+      console.error('Failed to create store:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased flex flex-col relative overflow-hidden">
@@ -82,118 +116,89 @@ export const AddStoreDashboardPage: React.FC = () => {
         <div className="w-10" />
       </header>
 
-      <main className="flex-1 px-4 pb-6 flex flex-col items-center">
+      <div className="flex-1 px-6 pt-6 flex flex-col items-center">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="w-full max-w-md rounded-3xl border border-border/70 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)] px-5 py-6"
+          transition={{ delay: 0.1 }}
+          className="w-full max-w-md space-y-4"
         >
-          <div className="mb-8">
-            <h2 className="text-[19px] font-extrabold text-foreground">Basic Details</h2>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-foreground block">
+              Store Name <span className="text-error ml-0.5">*</span>
+            </label>
+            <Input
+              placeholder="Enter store name"
+              value={formData.storeName}
+              onChange={(value) => setFormData({ ...formData, storeName: String(value) })}
+              error={hasAttemptedContinue ? requiredTextError(formData.storeName, 'Store name') : ''}
+              className="h-14 rounded-2xl"
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div>
-              <Input
-                label="Store Name"
-                placeholder="Enter store name"
-                value={formState.storeName}
-                onChange={(value) => setFormState((current) => ({ ...current, storeName: String(value) }))}
-                error={storeNameError}
-                leftIcon={<Store className="w-5 h-5 text-foreground/40" />}
-                className="h-14 rounded-2xl"
-                required
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-foreground block">
+              Business Type <span className="text-error ml-0.5">*</span>
+            </label>
+            <Select
+              placeholder="Select business type"
+              options={businessTypeOptions.map((type) => ({ value: type.value, label: type.label }))}
+              value={formData.businessType}
+              onChange={(value) => setFormData({ ...formData, businessType: String(value) })}
+              error={hasAttemptedContinue ? selectionError(formData.businessType, 'business type') : ''}
+              className="h-14 rounded-2xl"
+              required
+            />
+          </div>
 
-            <div className="space-y-3">
-              <label className="block text-[15px] font-bold text-foreground">
-                Store Description <span className="text-error">*</span>
-              </label>
-              <div className="relative">
-                <textarea
-                  value={formState.description}
-                  onChange={(event) => setFormState((current) => ({ ...current, description: event.target.value.slice(0, 250) }))}
-                  placeholder="Describe your store, products and services..."
-                  maxLength={250}
-                  rows={6}
-                  className={`w-full rounded-2xl border bg-white px-4 py-4 pr-14 text-[15px] outline-none transition-colors placeholder:text-foreground/30 focus:border-primary focus:ring-4 focus:ring-primary/10 resize-none ${
-                    descriptionError ? 'border-error' : 'border-border'
-                  }`}
-                />
-                <span className="absolute bottom-3 right-4 text-[13px] text-foreground/45">{descriptionCount}/250</span>
-              </div>
-              {descriptionError ? <p className="text-xs text-error">{descriptionError}</p> : null}
-            </div>
-
-            <div className="space-y-3">
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-3">
+            {(() => {
+              const cityTown = formData.locationDetails.city || '';
+              return hasAttemptedContinue && (!formData.locationDetails.address || !cityTown) ? (
+                <p className="text-xs text-error">Store location is required.</p>
+              ) : null;
+            })()}
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <label className="block text-[15px] font-bold text-foreground">
-                  Store Logo <span className="text-error">*</span>
-                </label>
-                <p className="mt-2 text-sm text-foreground/55">This will be shown on your store profile.</p>
+                <p className="text-sm font-semibold text-foreground">Location Details</p>
+                <p className="text-xs text-foreground/50">Use GPS to capture the store location</p>
               </div>
-
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/svg+xml"
-                className="hidden"
-                onChange={handleLogoChange}
-              />
-
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                className={`w-full rounded-2xl border-2 border-dashed px-4 py-4 text-left transition-colors ${
-                  logoError ? 'border-error/60 bg-error/5' : 'border-border/70 bg-white hover:border-primary/40 hover:bg-primary/5'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 overflow-hidden">
-                    {logoPreview ? (
-                      <img src={logoPreview} alt="Selected store logo preview" className="h-full w-full rounded-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-7 w-7" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[15px] font-bold text-foreground">Upload logo</p>
-                    <p className="mt-1 text-sm text-foreground/55">PNG, JPG or SVG (Max. 2MB)</p>
-                    <p className="mt-1 truncate text-xs text-foreground/40">
-                      {logoFile ? logoFile.name : 'Tap to choose a square logo for the best results.'}
-                    </p>
-                  </div>
-
-                  <Upload className="h-5 w-5 shrink-0 text-foreground/35" />
-                </div>
-              </button>
-
-              {logoError ? <p className="text-xs text-error">{logoError}</p> : null}
-
-              <div className="flex items-center gap-2 text-sm text-foreground/65">
-                <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-                <span>Use a square logo for the best results.</span>
-              </div>
-            </div>
-
-            <div className="pt-4">
               <Button
-                type="submit"
-                className="h-14 w-full rounded-2xl bg-linear-to-r from-[#1b7a14] to-[#0e5f0b] text-lg font-bold shadow-[0_14px_28px_rgba(16,124,18,0.22)]"
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePickLocation}
+                className="h-10 rounded-xl text-xs font-semibold gap-2"
               >
-                Create Store
+                <Navigation className="w-4 h-4" />
+                Pick Location
               </Button>
             </div>
-          </form>
-        </motion.div>
-      </main>
 
-      <footer className="px-6 pb-6 text-center text-sm text-foreground/60">
-        By creating a store, you agree to our <button type="button" className="font-semibold text-primary">Terms &amp; Conditions</button>
-      </footer>
+            <div className="grid grid-cols-1 gap-3 text-xs text-foreground/70">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-foreground/40 mt-0.5" />
+                <span>{formData.locationDetails.address || 'Address will appear here after location capture'}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Navigation className="w-4 h-4 text-foreground/40 mt-0.5" />
+                <span>{formData.locationDetails.city || 'City/Town will appear here after location capture'}</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="pt-4 p-6">
+        <Button
+          type="button"
+          onClick={handleContinue}
+          className="h-14 w-full rounded-2xl bg-linear-to-r from-[#1b7a14] to-[#0e5f0b] text-lg font-bold shadow-[0_14px_28px_rgba(16,124,18,0.22)]"
+        >
+          Create Store
+        </Button>
+      </div>
     </div>
   );
 };
