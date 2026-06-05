@@ -22,7 +22,7 @@ export const phoneError = (value: unknown, label = 'Phone number') => {
 
   const phonePattern = /^\+254\d{9}$/;
   if (text.length !== 13 || !phonePattern.test(text)) {
-    return 'Phone number must be in the format +254XXXXXXXXX (exactly 13 characters).';
+    return 'Phone number must be valid.';
   }
 
   return '';
@@ -34,7 +34,7 @@ export const alphanumericError = (value: unknown, label: string) => {
 
   const pattern = /^[a-zA-Z0-9]+$/;
   if (!pattern.test(text)) {
-    return `${label} must contain only alphanumeric characters (no spaces or special characters).`;
+    return `${label} must contain only alphanumeric characters.`;
   }
 
   return '';

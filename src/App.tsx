@@ -9,57 +9,27 @@ import '@stackloop/ui/theme.css';
 // Shared Pages
 import { WelcomePage } from './pages/shared/WelcomePage';
 
-
 // Vendor Pages
 import { VendorLandingPage } from './pages/vendor/VendorLandingPage';
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
 import { MarkAsReadyAssignRider } from './pages/vendor/MarkAsReadyAssignRider';
-// Rider Pages
-import { RiderLandingPage } from './pages/rider/RiderLandingPage';
-import { RiderDashboard } from './pages/rider/RiderDashboard';
-import { MarkAsDeliveredPage } from './pages/rider/MarkAsDeliveredPage';
-import { MarkAsPickedUpPage } from './pages/rider/MarkAsPickedUpPage';
-import { RiderTypeSelection } from './pages/rider/RiderTypeSelection';
-import { BasicDetails as RiderBasicDetails } from './pages/rider/BasicDetails';
-import { OrganisationDetails } from './pages/rider/OrganisationDetails';
-import { KYCDocuments as RiderKYCDocuments } from './pages/rider/KYCDocuments';
-import { CompanyKYCDocuments as RiderCompanyKYCDocuments } from './pages/rider/CompanyKYCDocuments';
-import { AddRiders } from './pages/rider/AddRiders';
-import { AdministratorDetails as RiderAdministratorDetails } from './pages/rider/AdministratorDetails';
-import { BankDetails as RiderBankDetails } from './pages/rider/BankDetails';
-import { MPesaDetails as RiderMPesaDetails } from './pages/rider/MPesaDetails';
-import { PayoutDetails } from './pages/rider/PayoutDetails';
-import { CreatePassword as RiderCreatePassword } from './pages/rider/CreatePassword';
-import { ReviewAndConfirm, ReviewAndConfirm as RiderReviewAndConfirm } from './pages/rider/ReviewAndConfirm';
-import { SuccessPage as RiderSuccessPage, SuccessPage } from './pages/rider/SuccessPage';
-import { VehicleInformation } from './pages/rider/VehicleInformation';
-import { VehicleInformation3A } from './pages/rider/VehicleInformation3A';
-
-
-import { useAuth } from './context/AuthContext';
-import { ChooseAccountType } from './pages/vendor/AccountType';
-import { BasicDetails } from './pages/vendor/BasicDetails';
-import { CompanyDetails } from './pages/vendor/CompanyDetails';
-import { AdministratorDetails as VendorAdministratorDetails } from './pages/vendor/AdministratorDetails';
-import { KYCDocuments } from './pages/vendor/KYCDocuments';
-import { CompanyKYCDocuments } from './pages/vendor/CompanyKYCDocuments.tsx';
-import { AddYourStores } from './pages/vendor/AddYourStores';
-import { AddStorePage } from './pages/vendor/AddStorePage';
+import { VendorOnboarding } from './pages/vendor/VendorOnboarding';
 import { AddStoreDashboardPage } from './pages/vendor/AddStoreDashboardPage';
-import { ManageMultipleStores } from './pages/vendor/ManageMultipleStores';
-import { StoreDetails } from './pages/vendor/StoreDetails';
 import { StoreLocationPicker } from './pages/vendor/StoreLocationPicker';
 import { ProductsDashboard } from './pages/vendor/ProductsDashboard';
 import { ProductDetailPage } from './pages/vendor/ProductDetailPage';
 import { AddProductPage } from './pages/vendor/AddProductPage';
 import { ManageCategoriesPage } from './pages/vendor/ManageCategoriesPage';
 import { AddCategoryPage } from './pages/vendor/AddCategoryPage';
-import { PayoutMethod } from './pages/vendor/PayoutMethod';
-import { BankDetails } from './pages/vendor/BankDetails';
-import { MPesaDetails } from './pages/vendor/MPesaDetails';
-import { CreatePassword } from './pages/vendor/CreatePassword';
-import { ReviewConfirm } from './pages/vendor/ReviewConfirm';
-import { SetupComplete } from './pages/vendor/SetupComplete';
+
+// Rider Pages
+import { RiderLandingPage } from './pages/rider/RiderLandingPage';
+import { RiderDashboard } from './pages/rider/RiderDashboard';
+import { MarkAsDeliveredPage } from './pages/rider/MarkAsDeliveredPage';
+import { MarkAsPickedUpPage } from './pages/rider/MarkAsPickedUpPage';
+import { RiderOnboarding } from './pages/rider/RiderOnboarding';
+
+import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/shared/LoginPage';
 import { VerifyIdentityPage } from './pages/shared/VerifyIdentityPage';
 import { OTPPage } from './pages/shared/OTPPage';
@@ -172,26 +142,9 @@ export default function App() {
 
 
           <Route path="/vendor-landing" element={<VendorLandingPage />} />
-          <Route path="/vendor/onboarding" element={<Navigate to="/vendor/choose-account" replace />} />
-          <Route path="/vendor/choose-account" element={<ChooseAccountType />} />
-          <Route path="/vendor/basic-details" element={<BasicDetails />} />
-          <Route path="/vendor/company-details" element={<CompanyDetails />} />
-          <Route path="/vendor/administrator-details" element={<VendorAdministratorDetails />} />
-          <Route path="/vendor/kyc-documents" element={<KYCDocuments />} />
-          <Route path="/vendor/company-kyc-documents" element={<CompanyKYCDocuments />} />
-          <Route path="/vendor/add-store" element={<AddStorePage />} />
+          <Route path="/vendor/onboarding" element={<VendorOnboarding />} />
           <Route path="/vendor/products/add-store" element={<AddStoreDashboardPage />} />
           <Route path="/vendor/location-picker" element={<StoreLocationPicker />} />
-          <Route path="/vendor/add-your-stores" element={<AddYourStores />} />
-          <Route path='/vendor/manage-multiple-stores' element={<ManageMultipleStores />} />
-          <Route path="/vendor/store-details" element={<StoreDetails />} />
-          <Route path='/vendor/payment-method' element={<Navigate to="/vendor/payout-method" replace />} />
-          <Route path='/vendor/payout-method' element={<PayoutMethod />} />
-          <Route path='/vendor/bank-details' element={<BankDetails />} />
-          <Route path='/vendor/mpesa-details' element={<MPesaDetails />} />
-          <Route path='/vendor/create-password' element={<CreatePassword />} />
-          <Route path='/vendor/review-confirmation' element={<ReviewConfirm />} />
-          <Route path='/vendor/setup-completed' element={<SetupComplete />} />
           <Route path='/vendor/dashboard' element={<VendorDashboard />} />
           <Route path='/vendor/mark-as-ready-assign-rider' element={<MarkAsReadyAssignRider />} />
           <Route path='/vendor/orders' element={<VendorDashboard />} />
@@ -206,31 +159,13 @@ export default function App() {
 
 
           <Route path="/rider-landing" element={<RiderLandingPage />} />
-          <Route path="/rider/onboarding" element={<RiderTypeSelection />} />
+          <Route path="/rider/onboarding" element={<RiderOnboarding />} />
           <Route path="/rider/dashboard" element={<RiderDashboard />} />
           <Route path="/rider/mark-as-delivered" element={<MarkAsDeliveredPage />} />
           <Route path="/rider/mark-as-picked-up" element={<MarkAsPickedUpPage />} />
           <Route path="/rider/orders" element={<RiderDashboard />} />
           <Route path="/rider/earnings" element={<RiderDashboard />} />
           <Route path="/rider/profile" element={<RiderDashboard />} />
-          <Route path="/individual/basic-details" element={<RiderBasicDetails />} />
-          <Route path="/individual/vehicle-information" element={<VehicleInformation />} />
-          <Route path="/individual/payout-details" element={<PayoutDetails />} />
-          <Route path="/individual/bank-details" element={<RiderBankDetails />} />
-          <Route path="/individual/mpesa-details" element={<RiderMPesaDetails />} />
-          <Route path="/individual/kyc-documents" element={<RiderKYCDocuments />} />
-          <Route path="/individual/create-password" element={<RiderCreatePassword />} />
-          <Route path="/company/organisation-details" element={<OrganisationDetails />} />
-          <Route path="/company/kyc-documents" element={<RiderCompanyKYCDocuments />} />
-          <Route path="/company/administrator-details" element={<RiderAdministratorDetails />} />
-          <Route path="/company/add-riders" element={<AddRiders />} />
-          <Route path="/company/vehicle-information" element={<VehicleInformation3A />} />
-          <Route path="/company/payout-details" element={<PayoutDetails />} />
-          <Route path="/company/bank-details" element={<RiderBankDetails />} />
-          <Route path="/company/mpesa-details" element={<RiderMPesaDetails />} />
-          <Route path="/company/create-password" element={<RiderCreatePassword />} />
-          <Route path="/rider/review-confirmation" element={<ReviewAndConfirm />} />
-          <Route path="/rider/success" element={<SuccessPage />} />
 
          
          
