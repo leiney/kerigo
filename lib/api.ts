@@ -165,7 +165,15 @@ export const productApi = {
     const response = await axiosInstance.post<ProductCreateResponse>('/products/extended/', formData);
     return response.data;
   },
+  getProducts: async (params?: Record<string, unknown>): Promise<ProductPayload[]> => {
+    const response = await axiosInstance.get<ProductPayload[]>('/products', { params });
+    return response.data;
+  },
 };
+
+
+
+
 
 export const categoryApi = {
   getCategories: async (): Promise<CategoryItem[]> => {
@@ -182,6 +190,7 @@ export const categoryApi = {
 
 export const storeApi = {
   createStore: async (payload: Store): Promise<Store> => {
+    
     const response = await axiosInstance.post<Store>('/product-stores/', payload);
     return response.data;
   },

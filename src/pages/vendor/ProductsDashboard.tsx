@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -27,6 +27,9 @@ import {
 import { Button, Badge, Input, BottomSheet, Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import { motion, AnimatePresence } from 'motion/react';
+import { ProductPayload } from '@/lib/types';
+import { BASE_URL, TENANT_ID } from '@/config';
+import { productApi } from '@/lib/api';
 
 // --- Mock Data ---
 const products = [
@@ -326,6 +329,8 @@ export const ProductsDashboard: React.FC = () => {
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showDuplicateSheet, setShowDuplicateSheet] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
+
+  const [products, setProducts] = useState<ProductPayload[]>([]);
   
   // Selected Product for actions
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -346,6 +351,19 @@ export const ProductsDashboard: React.FC = () => {
     { id: 'inactive', label: 'Inactive', count: 18 },
     { id: 'out-of-stock', label: 'Out of Stock', count: 14 }
   ];
+
+  useEffect(()=>{
+
+    const fetchProducts = async () => {
+      const params = {
+        page: 1,
+        size: 3,
+      }
+      const productsdata = await productApi.getProducts(params );
+      setProducts(productsdata);
+    };
+    fetchProducts();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -542,16 +560,16 @@ export const ProductsDashboard: React.FC = () => {
         <div className="space-y-2">
           {products.map((product, index) => (
             <motion.div
-              key={product.id}
+              key={product.productID}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className="bg-white rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer border border-border/50 "
-              onClick={() => navigate(`/vendor/product/${product.id}`)}
+              onClick={() => navigate(`/vendor/product/${product.productID}`)}
             >
               {/* Product Image */}
               <div className="w-11 h-11 border border-gray-200 p-1  rounded-none bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                <img src={`${product.variants[0].images && product?.variants[0]?.images[0]  ? `${BASE_URL}/resources/download/${product.variants[0].images[0].toString()}?tenant-id=${TENANT_ID}` : '/logo.png'}`} alt={product.name} className="w-full h-full object-cover" />
               </div>
 
               {/* Product Info */}
@@ -559,17 +577,17 @@ export const ProductsDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-0.5">
                   <h3 className="font-semibold text-[13px] text-foreground truncate">{product.name}</h3>
                 </div>
-                <p className="text-[10px] text-foreground/50">{product.category}</p>
+                <p className="text-[10px] text-foreground/50">{product.category[0] && product.category[0].name}</p>
                 <p className="text-[12px] font-bold text-primary mt-0.5">
-                  KES {product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  KES {product.variants[0].price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
 
               {/* Status & Stock */}
               <div className="flex flex-col items-end gap-0.5 shrink-0">
-                {getStatusBadge(product.status)}
-                <span className={`text-[10px] font-medium ${product.stock === 0 ? 'text-red-500' : 'text-foreground/60'}`}>
-                  Stock: {product.stock}
+                {getStatusBadge(product.active ? "Active" : "Inactive")}
+                <span className={`text-[10px] font-medium ${product.variants[0].stock === 0 ? 'text-red-500' : 'text-foreground/60'}`}>
+                  Stock: {product.variants[0].stock}
                 </span>
               </div>
 
