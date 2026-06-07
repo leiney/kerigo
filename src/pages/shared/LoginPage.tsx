@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   Mail, 
   Lock,
-  Leaf
+  Leaf,
+  Home
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
@@ -51,7 +52,7 @@ export const LoginPage: React.FC = () => {
       case 'vendor-admin':
         return '/vendor/dashboard';
       default:
-        return '/customer/';clea
+        return '/customer/';
     }
   };
 
@@ -102,12 +103,20 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* Header / Logo */}
-      <div className="pt-8 pb-4 flex justify-start relative z-10">
+      <div className="pt-8 pb-4 flex justify-between items-center relative z-10">
         <img 
           src="kerigo.png" 
           alt="KeriGo Logo" 
           className="h-12 sm:h-14 object-contain" 
         />
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="p-2.5 rounded-full border border-border bg-white text-foreground/70 hover:bg-secondary hover:text-foreground transition-all shadow-sm flex items-center justify-center cursor-pointer"
+          title="Go to Home"
+        >
+          <Home className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Hero Section */}
