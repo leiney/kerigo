@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Store, Building2 } from 'lucide-react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { SelectionCardList, type SelectionOption } from '../../../components/onboarding/SelectionCardList';
+import { useVendorOnboardingStore } from '../../../store/vendorOnboardingStore';
 
 type AddYourStoresStepProps = {
   onNext: (storeSetup: 'one' | 'multiple') => void;
@@ -9,7 +10,8 @@ type AddYourStoresStepProps = {
 };
 
 export const AddYourStoresStep: React.FC<AddYourStoresStepProps> = ({ onNext, onBack }) => {
-  const [storeSetup, setStoreSetup] = useState<'one' | 'multiple'>('one');
+  const storeSetup = useVendorOnboardingStore((state) => state.draft.storeSetup ?? 'one');
+  const setStoreSetup = useVendorOnboardingStore((state) => state.setStoreSetup);
 
   const options: SelectionOption<'one' | 'multiple'>[] = [
     { 

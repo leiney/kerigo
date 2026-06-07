@@ -132,13 +132,13 @@ export const KYCDocumentsStep: React.FC<KYCDocumentsStepProps> = ({ onNext, onBa
     }
 
     setIndividualDocuments(
-      documents.flatMap((doc) =>
-        doc.files.map((item) => ({
+      documents
+        .filter((doc) => doc.files.length > 0)
+        .map((doc) => ({
           documentType: doc.label,
           serialNumber: doc.id,
-          files: [item.file],
+          files: [],
         }))
-      )
     );
 
     setIndividualDocumentFiles(

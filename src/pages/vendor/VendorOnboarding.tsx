@@ -28,8 +28,7 @@ export const VendorOnboarding: React.FC = () => {
   const payoutMode = useVendorOnboardingStore((state) => state.draft.payoutInfo?.mode ?? 'bank');
   const storeCount = useVendorOnboardingStore((state) => state.draft.stores.length);
 
-  // We can infer the storeSetup from whether they have multiple stores or store details
-  const storeSetup = storeCount > 1 ? 'multiple' : 'one';
+  const storeSetup = useVendorOnboardingStore((state) => state.draft.storeSetup ?? 'one');
 
   // Get current step from search query, default to first step
   const currentStepKey = searchParams.get('step') || 'choose-account';
@@ -66,26 +65,26 @@ export const VendorOnboarding: React.FC = () => {
 
   const handleNext = (customStep?: string) => {
     if (customStep) {
-      setSearchParams({ step: customStep });
+      navigate(`/vendor/onboarding?step=${customStep}`, { state: null });
       return;
     }
 
     const currentIndex = stepSequence.indexOf(currentStepKey);
     if (currentIndex !== -1 && currentIndex < stepSequence.length - 1) {
-      setSearchParams({ step: stepSequence[currentIndex + 1] });
+      navigate(`/vendor/onboarding?step=${stepSequence[currentIndex + 1]}`, { state: null });
     }
   };
 
   const handleBack = () => {
     // If we are on the add-store sub-page, go back to manage-multiple-stores
     if (currentStepKey === 'add-store') {
-      setSearchParams({ step: 'manage-multiple-stores' });
+      navigate('/vendor/onboarding?step=manage-multiple-stores', { state: null });
       return;
     }
 
     const currentIndex = stepSequence.indexOf(currentStepKey);
     if (currentIndex > 0) {
-      setSearchParams({ step: stepSequence[currentIndex - 1] });
+      navigate(`/vendor/onboarding?step=${stepSequence[currentIndex - 1]}`, { state: null });
     } else {
       navigate('/vendor-landing');
     }

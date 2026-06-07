@@ -27,7 +27,7 @@ import {
 import { Button, Badge, Input, BottomSheet, Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import { motion, AnimatePresence } from 'motion/react';
-import { ProductPayload } from '@/lib/types';
+import { ProductPayload, Store } from '@/lib/types';
 import { BASE_URL, TENANT_ID } from '@/config';
 import { productApi } from '@/lib/api';
 
@@ -205,7 +205,22 @@ const DuplicateBottomSheet = ({ isOpen, onClose, product }: any) => {
   const [duplicateImages, setDuplicateImages] = useState(true);
   const [newName, setNewName] = useState(product ? `${product.name} (Copy)` : '');
 
+  useEffect(() => {
+    if (product) {
+      setNewName(`${product.name} (Copy)`);
+    }
+  }, [product]);
+
   if (!product) return null;
+
+  const firstVariant = product.variants?.[0];
+  const price = firstVariant?.price ?? 0;
+  const stock = firstVariant?.stock ?? 0;
+  const categoryName = product.category?.[0]?.name ?? '';
+  const imageId = firstVariant?.images?.[0]?.toString();
+  const imageUrl = imageId
+    ? `${BASE_URL}/resources/download/${imageId}?tenant-id=${TENANT_ID}`
+    : '/logo.png';
 
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} animate={false} title="Duplicate Product" className='z-100' showCloseButton={false}>
@@ -223,15 +238,15 @@ const DuplicateBottomSheet = ({ isOpen, onClose, product }: any) => {
         {/* Product Summary Card */}
         <div className="bg-secondary border border-border rounded-xl p-3 flex items-center gap-3">
           <div className="w-12 h-12 bg-white rounded-lg overflow-hidden shrink-0 border border-border">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-sm text-foreground truncate">{product.name}</h4>
-            <p className="text-xs text-foreground/50">{product.category}</p>
+            <p className="text-xs text-foreground/50">{categoryName}</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-bold text-primary">KES {product.price.toFixed(2)}</span>
+              <span className="text-xs font-bold text-primary">KES {price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span className="text-xs text-foreground/40">•</span>
-              <span className="text-xs text-foreground/50">Stock: {product.stock}</span>
+              <span className="text-xs text-foreground/50">Stock: {stock}</span>
             </div>
           </div>
         </div>
@@ -276,6 +291,15 @@ const DuplicateBottomSheet = ({ isOpen, onClose, product }: any) => {
 const DeleteBottomSheet = ({ isOpen, onClose, product }: any) => {
   if (!product) return null;
 
+  const firstVariant = product.variants?.[0];
+  const price = firstVariant?.price ?? 0;
+  const stock = firstVariant?.stock ?? 0;
+  const categoryName = product.category?.[0]?.name ?? '';
+  const imageId = firstVariant?.images?.[0]?.toString();
+  const imageUrl = imageId
+    ? `${BASE_URL}/resources/download/${imageId}?tenant-id=${TENANT_ID}`
+    : '/logo.png';
+
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} animate={false} title="Remove Product?" className='z-100' showCloseButton={false}>
       <div className="pb-8 space-y-6">
@@ -292,15 +316,15 @@ const DeleteBottomSheet = ({ isOpen, onClose, product }: any) => {
         {/* Product Summary Card */}
         <div className="bg-secondary border border-border rounded-xl p-3 flex items-center gap-3">
           <div className="w-12 h-12 bg-white rounded-lg overflow-hidden shrink-0 border border-border">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-sm text-foreground truncate">{product.name}</h4>
-            <p className="text-xs text-foreground/50">{product.category}</p>
+            <p className="text-xs text-foreground/50">{categoryName}</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-foreground/50">Stock: {product.stock}</span>
+              <span className="text-xs text-foreground/50">Stock: {stock}</span>
               <span className="text-xs text-foreground/40">•</span>
-              <span className="text-xs font-bold text-primary">KES {product.price.toFixed(2)}</span>
+              <span className="text-xs font-bold text-primary">KES {price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>
@@ -335,6 +359,11 @@ export const ProductsDashboard: React.FC = () => {
   // Selected Product for actions
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
+  // Store selection state
+  const [stores, setStores] = useState<Store[]>([]);
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+
   const openDuplicate = (product: any) => {
     setSelectedProduct(product);
     setShowDuplicateSheet(true);
@@ -352,15 +381,33 @@ export const ProductsDashboard: React.FC = () => {
     { id: 'out-of-stock', label: 'Out of Stock', count: 14 }
   ];
 
-  useEffect(()=>{
-
-    const fetchProducts = async () => {
-      const params = {
-        page: 1,
-        size: 3,
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const storesData = await productApi.getStores();
+        setStores(storesData);
+        if (storesData.length > 0) {
+          setSelectedStore(storesData[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stores:', error);
       }
-      const productsdata = await productApi.getProducts(params );
-      setProducts(productsdata);
+    };
+    fetchStores();
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const params = {
+          page: 1,
+          size: 3,
+        };
+        const productsdata = await productApi.getProducts(params);
+        setProducts(productsdata);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      }
     };
     fetchProducts();
   }, []);
@@ -419,24 +466,51 @@ export const ProductsDashboard: React.FC = () => {
       {/* --- Main Content --- */}
       <div className="px-3 space-y-3">
         {/* Store Selector */}
-        <div className="bg-white rounded-md p-2.5 flex items-center justify-between border border-border/50 ">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-100 overflow-hidden shrink-0">
-              <img src="/store.png" alt="FreshMart Grocery" className="w-full h-full object-cover" />
+        <div className="relative w-full">
+          <div 
+            onClick={() => stores.length > 0 && setShowStoreDropdown(!showStoreDropdown)}
+            className={`bg-white rounded-md p-2.5 flex items-center justify-between border border-border/50 ${stores.length > 0 ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-100 overflow-hidden shrink-0 flex items-center justify-center">
+                <img src="/store.png" alt={selectedStore?.storeName ?? "Store"} className="w-full h-full object-cover" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-[13px]">{selectedStore?.storeName ?? "FreshMart Grocery"}</span>
+                <span className="bg-green-50 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                  Open
+                  <ChevronDown className="w-3 h-3" />
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-[13px]">FreshMart Grocery</span>
-              <span className="bg-green-50 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-primaryrounded-full"></span>
-                Open
-                <ChevronDown className="w-3 h-3" />
-              </span>
-            </div>
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); navigate('/vendor/products/add-store'); }} className="bg-primary text-white text-[11px] font-semibold px-2.5 h-7 gap-1 rounded-md">
+              <Plus className="w-3 h-3" />
+              Add Store
+            </Button>
           </div>
-          <Button size="sm" onClick={() => navigate('/vendor/products/add-store')} className="bg-primary text-white text-[11px] font-semibold px-2.5 h-7 gap-1 rounded-md">
-            <Plus className="w-3 h-3" />
-            Add Store
-          </Button>
+
+          {/* Store Dropdown Menu */}
+          {showStoreDropdown && stores.length > 0 && (
+            <div className="absolute left-0 right-0 mt-1 bg-white border border-border rounded-md shadow-lg z-50 overflow-hidden divide-y divide-border">
+              {stores.map((store) => (
+                <div
+                  key={store.storeName}
+                  onClick={() => {
+                    setSelectedStore(store);
+                    setShowStoreDropdown(false);
+                  }}
+                  className={`px-4 py-3 text-xs font-semibold cursor-pointer hover:bg-gray-50 flex items-center justify-between ${selectedStore?.storeName === store.storeName ? 'text-primary bg-primary/5' : 'text-foreground'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <img src="/store.png" alt={store.storeName} className="w-6 h-6 rounded-full object-cover" />
+                    <span>{store.storeName}</span>
+                  </div>
+                  <span className="text-[10px] text-foreground/40">{store.cityTown}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -595,13 +669,6 @@ export const ProductsDashboard: React.FC = () => {
               <div className="flex items-center gap-1 shrink-0">
                 <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); /* edit action */ }}>
                   <Pencil className="w-3 h-3 text-foreground/50" />
-                </button>
-                {/* Duplicate Button Trigger */}
-                <button 
-                  onClick={(e) => { e.stopPropagation(); openDuplicate(product); }}
-                  className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-gray-50"
-                >
-                  <Copy className="w-3 h-3 text-foreground/50" />
                 </button>
                 
                 {/* Dropdown for more options including Delete */}

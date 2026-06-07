@@ -136,13 +136,13 @@ export const CompanyKYCDocumentsStep: React.FC<CompanyKYCDocumentsStepProps> = (
     }
 
     setCompanyDocuments(
-      documents.flatMap((doc) =>
-        doc.files.map((file) => ({
+      documents
+        .filter((doc) => doc.files.length > 0)
+        .map((doc) => ({
           documentType: doc.label,
           serialNumber: doc.id,
-          files: [file.file],
+          files: [],
         }))
-      )
     );
 
     setCompanyDocumentFiles(

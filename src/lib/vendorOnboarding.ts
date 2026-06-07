@@ -33,6 +33,7 @@ export type VendorOnboardingDraft = {
   organizationInfo: OrganizationInfo;
   organizationDocuments: KYCDocument[];
   stores: VendorStoreDraft[];
+  storeSetup?: 'one' | 'multiple';
 };
 
 export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
@@ -51,6 +52,7 @@ export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
   },
   organizationDocuments: [],
   stores: [],
+  storeSetup: 'one',
 });
 
 const sanitizeSerialPart = (value: string) =>

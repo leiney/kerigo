@@ -75,6 +75,16 @@ export const authApi = {
     const response = await axiosInstance.post<UserProfile>('/login/', payload);
     return response.data;
   },
+
+  getProfile: async () : Promise<UserProfile> => {
+    const response = await axiosInstance.get<UserProfile>('/me/');
+    return response.data;
+  },
+  
+  updateProfile: async (payload: Partial<UserProfile>) : Promise<UserProfile> => {
+    const response = await axiosInstance.patch<UserProfile>('/me/', payload);
+    return response.data;
+  },
   
   verifyLogin: async (identifier: string, code: string): Promise<LoginResponse> => apiPost('/auth/login/verify/', { identifier, code }),
   resendCode: async (identifier: string): Promise<{ message: string }> => apiPost('/auth/login/resend-code/', { identifier }),
@@ -169,7 +179,18 @@ export const productApi = {
     const response = await axiosInstance.get<ProductPayload[]>('/products', { params });
     return response.data;
   },
+  getStores: async (): Promise<Store[]> => {
+    const response = await axiosInstance.get<Store[]>('/product-stores/');
+    return response.data;
+  },
+  getProduct: async (id: string): Promise<ProductPayload> => {
+    const response = await axiosInstance.get<ProductPayload>(`/products/${id}`);
+    return response.data;
+  },
 };
+
+
+
 
 
 

@@ -28,21 +28,41 @@ type PickerState = {
 export const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ onNext, onBack }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const stores = useVendorOnboardingStore((state) => state.draft.stores);
   const addStore = useVendorOnboardingStore((state) => state.addStore);
+  const updateStore = useVendorOnboardingStore((state) => state.updateStore);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
 
-  const [formData, setFormData] = useState<StoreFormState>({
-    storeName: '',
-    businessType: '',
-    country: 'Kenya',
-    locationDetails: {
-      latitude: 0,
-      longitude: 0,
-      address: '',
-      city: '',
+  const [formData, setFormData] = useState<StoreFormState>(() => {
+    const existingStore = stores[0];
+    if (existingStore) {
+      return {
+        storeName: existingStore.storeName,
+        businessType: existingStore.businessType,
+        country: existingStore.locationDetails.country || 'Kenya',
+        locationDetails: {
+          latitude: existingStore.locationDetails.latitude,
+          longitude: existingStore.locationDetails.longitude,
+          address: existingStore.locationDetails.address,
+          city: existingStore.locationDetails.city,
+          country: existingStore.locationDetails.country || 'Kenya',
+          postalCode: existingStore.locationDetails.postalCode || '',
+        },
+      };
+    }
+    return {
+      storeName: '',
+      businessType: '',
       country: 'Kenya',
-      postalCode: '',
-    },
+      locationDetails: {
+        latitude: 0,
+        longitude: 0,
+        address: '',
+        city: '',
+        country: 'Kenya',
+        postalCode: '',
+      },
+    };
   });
 
   useEffect(() => {
@@ -79,8 +99,9 @@ export const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ onNext, onBa
       return;
     }
 
+    const existingStore = stores[0];
     const store: VendorStoreDraft = {
-      id: `store-${Date.now()}`,
+      id: existingStore ? existingStore.id : `store-${Date.now()}`,
       storeName: formData.storeName,
       businessType: formData.businessType as any,
       cityTown,
@@ -94,7 +115,11 @@ export const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ onNext, onBa
       },
     };
 
-    addStore(store);
+    if (existingStore) {
+      updateStore(existingStore.id, store);
+    } else {
+      addStore(store);
+    }
     onNext();
   };
 

@@ -16,6 +16,7 @@ interface DocumentItem {
   label: string;
   description: string;
   icon: React.ReactNode;
+  serialNumber: string;
   attachments: VendorDocumentAttachment[];
   acceptedFormats: string;
 }
@@ -32,6 +33,7 @@ const createInitialDocuments = (): DocumentItem[] => ([
     label: 'National ID / Passport',
     description: 'Front and back',
     icon: <FileText className="w-5 h-5 text-primary" />,
+    serialNumber: generateDocumentSerial('National ID / Passport', 0),
     attachments: [],
     acceptedFormats: 'image/*,.pdf'
   },
@@ -40,6 +42,7 @@ const createInitialDocuments = (): DocumentItem[] => ([
     label: 'Selfie',
     description: 'Clear photo of your face',
     icon: <Camera className="w-5 h-5 text-primary" />,
+    serialNumber: generateDocumentSerial('Selfie', 1),
     attachments: [],
     acceptedFormats: 'image/*'
   },
@@ -48,6 +51,7 @@ const createInitialDocuments = (): DocumentItem[] => ([
     label: 'Proof of Address',
     description: 'Utility bill or bank statement',
     icon: <MapPin className="w-5 h-5 text-primary" />,
+    serialNumber: generateDocumentSerial('Proof of Address', 2),
     attachments: [],
     acceptedFormats: 'image/*,.pdf'
   }
@@ -59,22 +63,17 @@ const rebuildDocuments = (
 ): DocumentItem[] => {
   const documents = createInitialDocuments();
 
-  draftDocuments.forEach((document) => {
-    const file = filesBySerial[document.serialNumber]?.[0];
-    if (!file) {
-      return;
+  documents.forEach((item) => {
+    const draftDoc = draftDocuments.find((d) => d.documentType === item.label);
+    if (draftDoc) {
+      item.serialNumber = draftDoc.serialNumber;
+      const files = filesBySerial[draftDoc.serialNumber] || [];
+      item.attachments = files.map((file, idx) => ({
+        id: `${draftDoc.serialNumber}-${idx}`,
+        fileName: file.name,
+        serialNumber: draftDoc.serialNumber,
+      }));
     }
-
-    const targetDocument = documents.find((item) => item.label === document.documentType);
-    if (!targetDocument) {
-      return;
-    }
-
-    targetDocument.attachments.push({
-      id: document.serialNumber,
-      fileName: file.name,
-      serialNumber: document.serialNumber,
-    });
   });
 
   return documents;
@@ -160,43 +159,58 @@ export const KYCDocumentsStep: React.FC<KYCDocumentsStepProps> = ({ onNext, onBa
       return;
     }
 
-    const nextFilesBySerial: Record<string, File[]> = { ...filesBySerial };
-
     setDocuments((prev) =>
       prev.map((doc) => {
         if (doc.id !== id) return doc;
 
-        const added = validFiles.map((file, index) => {
-          const serial = generateDocumentSerial(doc.label, doc.attachments.length + index);
-          nextFilesBySerial[serial] = [file];
-          return {
-            id: serial,
-            fileName: file.name,
-            serialNumber: serial,
-          };
+        const nextAttachments = [...doc.attachments];
+        const newFiles = [...(filesBySerial[doc.serialNumber] || [])];
+
+        validFiles.forEach((file) => {
+          if (!nextAttachments.some((att) => att.fileName === file.name)) {
+            const attachmentId = `${doc.serialNumber}-${nextAttachments.length}`;
+            nextAttachments.push({
+              id: attachmentId,
+              fileName: file.name,
+              serialNumber: doc.serialNumber,
+            });
+            newFiles.push(file);
+          }
         });
 
-        const nextAttachments = [...doc.attachments, ...added];
+        setFilesBySerial((current) => {
+          const next = { ...current };
+          next[doc.serialNumber] = newFiles;
+          setIndividualDocumentFiles(next);
+          return next;
+        });
+
         return { ...doc, attachments: nextAttachments };
       })
     );
-
-    setFilesBySerial(nextFilesBySerial);
-    setIndividualDocumentFiles(nextFilesBySerial);
   };
 
   const handleRemoveFile = (id: string, attachmentId: string) => {
     setDocuments((prev) =>
-      prev.map((doc) =>
-        doc.id === id ? { ...doc, attachments: doc.attachments.filter((attachment) => attachment.id !== attachmentId) } : doc
-      )
-    );
+      prev.map((doc) => {
+        if (doc.id !== id) return doc;
 
-    setFilesBySerial((currentFiles) => {
-      const nextFiles = Object.fromEntries(Object.entries(currentFiles).filter(([serial]) => serial !== attachmentId));
-      setIndividualDocumentFiles(nextFiles);
-      return nextFiles;
-    });
+        const attToRemove = doc.attachments.find((att) => att.id === attachmentId);
+        if (!attToRemove) return doc;
+
+        const nextAttachments = doc.attachments.filter((att) => att.id !== attachmentId);
+
+        setFilesBySerial((current) => {
+          const next = { ...current };
+          const files = current[doc.serialNumber] || [];
+          next[doc.serialNumber] = files.filter((f) => f.name !== attToRemove.fileName);
+          setIndividualDocumentFiles(next);
+          return next;
+        });
+
+        return { ...doc, attachments: nextAttachments };
+      })
+    );
   };
 
   useEffect(() => {
@@ -205,13 +219,13 @@ export const KYCDocumentsStep: React.FC<KYCDocumentsStepProps> = ({ onNext, onBa
     }
 
     setIndividualDocuments(
-      documents.flatMap((doc) =>
-        doc.attachments.map((attachment) => ({
+      documents
+        .filter((doc) => doc.attachments.length > 0)
+        .map((doc) => ({
           documentType: doc.label,
-          serialNumber: attachment.serialNumber,
+          serialNumber: doc.serialNumber,
           files: [],
         }))
-      )
     );
     setIndividualDocumentFiles(filesBySerial);
     void writeOnboardingAttachmentSnapshot<VendorKycSnapshot>(VENDOR_KYC_STORAGE_KEY, {

@@ -21,6 +21,11 @@ import { ProductDetailPage } from './pages/vendor/ProductDetailPage';
 import { AddProductPage } from './pages/vendor/AddProductPage';
 import { ManageCategoriesPage } from './pages/vendor/ManageCategoriesPage';
 import { AddCategoryPage } from './pages/vendor/AddCategoryPage';
+import { VendorAccountSettings } from './pages/vendor/settings/VendorAccountSettings';
+import { VendorPersonalInformation } from './pages/vendor/settings/VendorPersonalInformation';
+import { VendorOrganizationDetails } from './pages/vendor/settings/VendorOrganizationDetails';
+import { VendorKYCDocuments } from './pages/vendor/settings/VendorKYCDocuments';
+import { VendorPayoutDetails } from './pages/vendor/settings/VendorPayoutDetails';
 
 // Rider Pages
 import { RiderLandingPage } from './pages/rider/RiderLandingPage';
@@ -28,6 +33,11 @@ import { RiderDashboard } from './pages/rider/RiderDashboard';
 import { MarkAsDeliveredPage } from './pages/rider/MarkAsDeliveredPage';
 import { MarkAsPickedUpPage } from './pages/rider/MarkAsPickedUpPage';
 import { RiderOnboarding } from './pages/rider/RiderOnboarding';
+import { RiderAccountSettings } from './pages/rider/settings/RiderAccountSettings';
+import { RiderPersonalInformation } from './pages/rider/settings/RiderPersonalInformation';
+import { RiderVehicleDetails } from './pages/rider/settings/RiderVehicleDetails';
+import { RiderKYCDocuments } from './pages/rider/settings/RiderKYCDocuments';
+import { RiderPayoutDetails } from './pages/rider/settings/RiderPayoutDetails';
 
 import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/shared/LoginPage';
@@ -74,9 +84,27 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   return <>{children}</>;
 };
 
+const UnauthorizedPage = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 text-center">
+      <h1 className="text-2xl font-bold text-error mb-2">Access Denied</h1>
+      <p className="text-sm text-foreground/60 mb-6">You do not have permission to view this page.</p>
+      <button
+        onClick={() => navigate('/')}
+        className="bg-primary hover:bg-primary/95 text-white font-bold py-2.5 px-6 rounded-full text-sm shadow-md"
+      >
+        Go to Home
+      </button>
+    </div>
+  );
+};
+
 export default function App() {
-    const location = useLocation();
+  const location = useLocation();
   const protect = (children: React.ReactNode) => <ProtectedRoute>{children}</ProtectedRoute>;
+  const protectVendor = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['vendor']}>{children}</ProtectedRoute>;
+  const protectRider = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['rider']}>{children}</ProtectedRoute>;
 
 
    useEffect(() => {
@@ -141,31 +169,41 @@ export default function App() {
           <Route path="/settings/about" element={protect(<AccountSettings />)} />
 
 
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
           <Route path="/vendor-landing" element={<VendorLandingPage />} />
           <Route path="/vendor/onboarding" element={<VendorOnboarding />} />
-          <Route path="/vendor/products/add-store" element={<AddStoreDashboardPage />} />
+          <Route path="/vendor/products/add-store" element={protectVendor(<AddStoreDashboardPage />)} />
           <Route path="/vendor/location-picker" element={<StoreLocationPicker />} />
-          <Route path='/vendor/dashboard' element={<VendorDashboard />} />
-          <Route path='/vendor/mark-as-ready-assign-rider' element={<MarkAsReadyAssignRider />} />
-          <Route path='/vendor/orders' element={<VendorDashboard />} />
-          <Route path='/vendor/products' element={<ProductsDashboard />} />
-          <Route path='/vendor/categories' element={<ManageCategoriesPage />} />
-          <Route path='/vendor/add-category' element={<AddCategoryPage />} />
-          <Route path='/vendor/product/:id' element={<ProductDetailPage />} />
-          <Route path='/vendor/add-product' element={<AddProductPage />} />
+          <Route path='/vendor/dashboard' element={protectVendor(<VendorDashboard />)} />
+          <Route path='/vendor/mark-as-ready-assign-rider' element={protectVendor(<MarkAsReadyAssignRider />)} />
+          <Route path='/vendor/orders' element={protectVendor(<VendorDashboard />)} />
+          <Route path='/vendor/products' element={protectVendor(<ProductsDashboard />)} />
+          <Route path='/vendor/categories' element={protectVendor(<ManageCategoriesPage />)} />
+          <Route path='/vendor/add-category' element={protectVendor(<AddCategoryPage />)} />
+          <Route path='/vendor/product/:id' element={protectVendor(<ProductDetailPage />)} />
+          <Route path='/vendor/add-product' element={protectVendor(<AddProductPage />)} />
           <Route path='/vendor' element={<Navigate to="/vendor/dashboard" replace />} />
           <Route path='/vendor/' element={<Navigate to="/vendor/dashboard" replace />} />
-          <Route path='/vendor/profile' element={<VendorDashboard />} />
+          <Route path='/vendor/profile' element={protectVendor(<VendorAccountSettings />)} />
+          <Route path='/vendor/settings/personal' element={protectVendor(<VendorPersonalInformation />)} />
+          <Route path='/vendor/settings/organization' element={protectVendor(<VendorOrganizationDetails />)} />
+          <Route path='/vendor/settings/documents' element={protectVendor(<VendorKYCDocuments />)} />
+          <Route path='/vendor/settings/payout' element={protectVendor(<VendorPayoutDetails />)} />
 
 
           <Route path="/rider-landing" element={<RiderLandingPage />} />
           <Route path="/rider/onboarding" element={<RiderOnboarding />} />
-          <Route path="/rider/dashboard" element={<RiderDashboard />} />
-          <Route path="/rider/mark-as-delivered" element={<MarkAsDeliveredPage />} />
-          <Route path="/rider/mark-as-picked-up" element={<MarkAsPickedUpPage />} />
-          <Route path="/rider/orders" element={<RiderDashboard />} />
-          <Route path="/rider/earnings" element={<RiderDashboard />} />
-          <Route path="/rider/profile" element={<RiderDashboard />} />
+          <Route path="/rider/dashboard" element={protectRider(<RiderDashboard />)} />
+          <Route path="/rider/mark-as-delivered" element={protectRider(<MarkAsDeliveredPage />)} />
+          <Route path="/rider/mark-as-picked-up" element={protectRider(<MarkAsPickedUpPage />)} />
+          <Route path="/rider/orders" element={protectRider(<RiderDashboard />)} />
+          <Route path="/rider/earnings" element={protectRider(<RiderDashboard />)} />
+          <Route path="/rider/profile" element={protectRider(<RiderAccountSettings />)} />
+          <Route path='/rider/settings/personal' element={protectRider(<RiderPersonalInformation />)} />
+          <Route path='/rider/settings/vehicle' element={protectRider(<RiderVehicleDetails />)} />
+          <Route path='/rider/settings/documents' element={protectRider(<RiderKYCDocuments />)} />
+          <Route path='/rider/settings/payout' element={protectRider(<RiderPayoutDetails />)} />
 
          
          

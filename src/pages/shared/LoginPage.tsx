@@ -39,15 +39,19 @@ export const LoginPage: React.FC = () => {
     return 'customer';
   };
 
-  const getLandingPath = (role: UserRole) => {
+  const getLandingPath = (role : string) => {
 
     switch (role) {
       case 'vendor':
         return '/vendor/dashboard';
       case 'rider':
         return '/rider/dashboard';
+      case 'rider-admin':
+        return '/rider/dashboard';
+      case 'vendor-admin':
+        return '/vendor/dashboard';
       default:
-        return '/customer/';
+        return '/customer/';clea
     }
   };
 

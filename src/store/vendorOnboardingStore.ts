@@ -28,6 +28,7 @@ interface VendorOnboardingStore {
   addStore: (store: VendorStoreDraft) => void;
   updateStore: (id: string, store: VendorStoreDraft) => void;
   removeStore: (id: string) => void;
+  setStoreSetup: (setup: 'one' | 'multiple') => void;
   reset: () => void;
 }
 
@@ -99,6 +100,7 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
           },
         })),
       removeStore: (id) => set((state) => ({ draft: { ...state.draft, stores: state.draft.stores.filter((store) => store.id !== id) } })),
+      setStoreSetup: (setup) => set((state) => ({ draft: { ...state.draft, storeSetup: setup } })),
       reset: () => set({ draft: createEmptyVendorOnboardingDraft(), attachments: { individualDocuments: {}, organizationDocuments: {}, avatar: null, organizationLogo: null } }),
     }),
     {
