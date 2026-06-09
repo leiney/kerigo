@@ -21,3 +21,11 @@ export const HEADERS = {
 }; 
 
 
+export  function returnImageUrl(id?: string) {
+  if (id) {
+    return `${BASE_URL}/resources/download/${id}?tenant-id=${TENANT_ID}`;
+  }
+  return '/logo.png'; // Default image if id is not provided
+}
+
+

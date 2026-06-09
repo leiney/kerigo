@@ -11,6 +11,7 @@ import {
   Leaf,
   Home
 } from 'lucide-react';
+
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserProfile, UserRole } from '../../types';
@@ -31,7 +32,7 @@ export const LoginPage: React.FC = () => {
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
 
   const resolveRole = (roleValue: unknown): UserRole => {
-    const validRoles: UserRole[] = ['customer', 'vendor', 'rider'];
+    const validRoles: UserRole[] = ['customer', 'vendor', 'rider', 'rider-admin'];
 
     if (typeof roleValue === 'string' && validRoles.includes(roleValue as UserRole)) {
       return roleValue as UserRole;
@@ -70,18 +71,47 @@ export const LoginPage: React.FC = () => {
           fullName: response.fullName || "",
           email: response.email,
           phoneNo: response.phoneNo || "",
-          userType: response.userType,
+          userType: userType,
           username: response.username || "",
         };
+        
+
 
         login({ token: response?.token || '', user });
 
+
+        const extraData = (response as any).extraData || (response as any).user?.extraData || (response as any).otherData || (response as any).user?.otherData;
+        const lat = extraData?.location?.lat || extraData?.location?.latitude;
+
+        if (!lat) {
+          navigate('/vendor/location-picker', {
+            state: {
+              returnTo: from ?? getLandingPath(user.userType),
+              fromLogin: true,
+              user,
+            },
+            replace: true,
+          });
+          return;
+        }
 
         const destination = from ?? getLandingPath(user.userType);
         navigate(destination, { replace: true });
       })
       .catch((error) => {
-        setErrorMessage(error instanceof Error ? error.message : 'Login failed. Please try again.');
+        console.error('Login error:', error);
+        let errorMsg = 'Login failed. Please try again.';
+        if (error && typeof error === 'object') {
+          if ('response' in error && error.response && typeof error.response === 'object') {
+            const data = (error.response as any).data;
+            if (data) {
+              errorMsg = data.message || data.error || data.detail || errorMsg;
+            }
+          } else if (error instanceof Error) {
+            errorMsg = error.message;
+          }
+        }
+        setErrorMessage(errorMsg);
       })
       .finally(() => {
         setIsLoading(false);
@@ -190,13 +220,28 @@ export const LoginPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="p-3.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed">
+            {errorMessage}
+          </div>
+        )}
+
         {/* Login Button */}
         <Button 
           type="submit" 
-          className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20"
-          icon={<ArrowRight className="w-5 h-5" />}
+          disabled={isLoading}
+          className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
+          icon={isLoading ? (
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <ArrowRight className="w-5 h-5" />
+          )}
         >
-          Login
+          {isLoading ? 'Logging in...' : 'Login'}
         </Button>
       </motion.form>
 

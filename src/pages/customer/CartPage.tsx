@@ -250,7 +250,7 @@ export const CartPage: React.FC = () => {
               </div>
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={() => navigate('/customer/my-location')}
+                onClick={() => navigate('/vendor/location-picker', { state: { returnTo: '/cart' } })}
                 className="p-2 text-foreground/40 hover:text-foreground transition-colors"
               >
                 <ChevronRight className="w-5 h-5" />

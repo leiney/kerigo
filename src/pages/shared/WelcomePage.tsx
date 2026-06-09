@@ -6,26 +6,42 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
-import { sharedApi } from '../../../lib/api';
+import { sharedApi, VendorsApi } from '../../../lib/api';
 import type { VendorSummary } from '../../../lib/types';
+import { returnImageUrl } from '../../../config';
 
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
   const [vendors, setVendors] = useState<VendorSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadWelcomeData = async () => {
       try {
-        const data = await sharedApi.getWelcomeData();
+        setIsLoading(true);
+        const vendorsData = await VendorsApi.getVendors();
+        const mappedVendors = (vendorsData || []).map((v: any) => ({
+          id: v.id,
+          slug: v.id,
+          name: v.vendorName || v.name || 'Vendor',
+          category: 'Local Vendor',
+          time: v.distanceText || v.durationText || '25-30 min',
+          logoUrl: returnImageUrl(v.logoURL || v.logoUrl),
+        }));
 
         if (isMounted) {
-          setVendors(data.vendors);
+          setVendors(mappedVendors);
         }
-      } catch {
+      } catch (err) {
+        console.error('Failed to load vendors:', err);
         if (isMounted) {
           setVendors([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
     };
@@ -95,7 +111,15 @@ export const WelcomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-5 gap-3 sm:gap-4">
-            {vendors.map((vendor, index) => (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="flex flex-col items-center animate-pulse">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/50 border border-border rounded-2xl flex items-center justify-center shadow-sm" />
+                  <div className="w-12 h-3 bg-secondary/60 rounded-md mt-3 mb-1" />
+                  <div className="w-8 h-2.5 bg-secondary/40 rounded-md" />
+                </div>
+              ))
+            ) : vendors.map((vendor, index) => (
               <motion.div
                 key={vendor.id}
                 initial={{ opacity: 0, scale: 0.9 }}

@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@stackloop/ui';
 import {
   ArrowLeft, Heart, MoreHorizontal, Search, SlidersHorizontal,
-  Plus, ShoppingCart, Home, ShoppingBag, User, ChevronRight
+  Plus, ShoppingCart, Home, ShoppingBag, User, ChevronRight, AlertCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
-import { customerApi } from '../../../lib/api';
+import { VendorsApi } from '../../../lib/api';
 import type { VendorStoreData, VendorMenuItem } from '../../../lib/types';
+import { returnImageUrl } from '../../../config';
 
 export const VendorStorePage: React.FC = () => {
   const navigate = useNavigate();
+  const { name: vendorId } = useParams<{ name: string }>();
   const [activeCategory, setActiveCategory] = useState('Buckets');
   const [searchQuery, setSearchQuery] = useState('');
   const [storeData, setStoreData] = useState<VendorStoreData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const cartItems = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
   const cartCount = selectCartCount(cartItems);
@@ -25,11 +29,74 @@ export const VendorStorePage: React.FC = () => {
     let isMounted = true;
 
     const loadStoreData = async () => {
-      const data = await customerApi.getStoreData();
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      if (isMounted) {
-        setStoreData(data);
-        setActiveCategory(data.categories[0]?.name ?? 'Buckets');
+        let activeId = vendorId;
+        if (!activeId) {
+          const vendors = await VendorsApi.getVendors();
+          if (vendors && vendors.length > 0) {
+            activeId = vendors[0].id;
+          }
+        }
+
+        if (!activeId) {
+          throw new Error('No vendor ID provided');
+        }
+
+        const details = await VendorsApi.getVendorsDetails(activeId);
+
+        if (!details || !details.id) {
+          throw new Error('Vendor store not found');
+        }
+
+        const mappedData: VendorStoreData = {
+          vendor: {
+            id: details.id,
+            name: details.vendorName || 'Vendor',
+            category: details.categories?.[0]?.name || 'Local Store',
+            time: details.durationText && details.durationText !== '-' ? details.durationText : (details.distanceText && details.distanceText !== '0.0 km' ? details.distanceText : '25-30 min'),
+            isOpen: details.available !== undefined ? details.available : (details.online || false),
+            rating: details.rating || 4.5,
+            reviews: details.reviewCount ? `${details.reviewCount}` : '10+',
+            logoUrl: returnImageUrl(details.logoURL || details.logoUrl),
+          },
+          categories: (details.categories || []).map((cat: any) => ({
+            name: cat.name,
+            imageUrl: returnImageUrl(cat.imageURL || cat.image || cat.logoURL),
+          })),
+          menuItems: (details.products || []).map((p: any) => {
+            const firstVariant = p.variants?.[0] || {};
+            const imageId = firstVariant.images?.[0];
+            return {
+              id: p.productID || p.id,
+              name: p.name,
+              description: p.description || '',
+              price: firstVariant.price || 0,
+              imageUrl: returnImageUrl(imageId),
+              category: p.category?.[0]?.name || p.tags?.[0] || 'Uncategorized',
+            };
+          }),
+        };
+
+        if (isMounted) {
+          setStoreData(mappedData);
+          if (mappedData.categories.length > 0) {
+            setActiveCategory(mappedData.categories[0].name);
+          } else {
+            setActiveCategory('');
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to load store data:', err);
+        if (isMounted) {
+          setError(err.message || 'Failed to load vendor details');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -38,24 +105,56 @@ export const VendorStorePage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [vendorId]);
 
   const vendor = storeData?.vendor;
   const categories = storeData?.categories ?? [];
   const menuItems = storeData?.menuItems ?? [];
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredMenuItems = normalizedQuery
-    ? menuItems.filter((item) =>
-        [item.name, item.description, vendor?.category ?? ''].some((value) =>
-          value.toLowerCase().includes(normalizedQuery)
-        )
-      )
-    : menuItems;
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (normalizedQuery) {
+      return [item.name, item.description, vendor?.category ?? ''].some((value) =>
+        value.toLowerCase().includes(normalizedQuery)
+      );
+    }
+    return !activeCategory || item.category === activeCategory;
+  });
 
   const recommendedItems = normalizedQuery
     ? (filteredMenuItems.length > 0 ? filteredMenuItems : menuItems).slice(0, 3)
     : [];
+
+  if (isLoading) {
+    return (
+      <div className="h-dvh flex flex-col items-center justify-center bg-white text-foreground">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-foreground/60">Loading store details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !storeData) {
+    return (
+      <div className="h-dvh flex flex-col items-center justify-center bg-white text-foreground px-6 text-center">
+        <div className="flex flex-col items-center max-w-sm">
+          <div className="w-16 h-16 bg-error/10 text-error rounded-full flex items-center justify-center mb-4">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Store Unavailable</h2>
+          <p className="text-sm text-foreground/60 mb-6">{error || 'Unable to retrieve store details. Please check your connection or try again later.'}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-sm shadow-md"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">

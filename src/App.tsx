@@ -59,7 +59,6 @@ import { PrivacySecurity } from './pages/customer/PrivacySecurity';
 import { ChangePassword } from './pages/customer/ChangePassword';
 import { LoginActivity } from './pages/customer/LoginActivity';
 import { TwoFactorAuth } from './pages/customer/TwoFactorAuth';
-import { MyLocation } from './pages/customer/MyLocation';
 import OrderDetailsPage from './pages/customer/OrderDetailsPage';
 import { TrackOrder } from './pages/customer/TrackOrder';
 import { Capacitor } from '@capacitor/core';
@@ -84,6 +83,25 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   return <>{children}</>;
 };
 
+const CustomerOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isInitialized, user } = useAuth();
+
+  if (!isInitialized) {
+    return null;
+  }
+
+  if (isAuthenticated && user) {
+    if (user.userType === 'vendor') {
+      return <Navigate to="/vendor/dashboard" replace />;
+    }
+    if (user.userType === 'rider' || user.userType === 'rider-admin') {
+      return <Navigate to="/rider/dashboard" replace />;
+    }
+  }
+
+  return <>{children}</>;
+};
+
 const UnauthorizedPage = () => {
   const navigate = useNavigate();
   return (
@@ -102,9 +120,9 @@ const UnauthorizedPage = () => {
 
 export default function App() {
   const location = useLocation();
-  const protect = (children: React.ReactNode) => <ProtectedRoute>{children}</ProtectedRoute>;
+  const protect = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['customer']}>{children}</ProtectedRoute>;
   const protectVendor = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['vendor']}>{children}</ProtectedRoute>;
-  const protectRider = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['rider']}>{children}</ProtectedRoute>;
+  const protectRider = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['rider', 'rider-admin']}>{children}</ProtectedRoute>;
 
 
    useEffect(() => {
@@ -122,23 +140,21 @@ export default function App() {
   return (
     <ToastProvider position="bottom-center">
       <Routes>
-          <Route path="/" element={<WelcomePage />} />
+          <Route path="/" element={<CustomerOnlyRoute><WelcomePage /></CustomerOnlyRoute>} />
 
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/verify-identity" element={<VerifyIdentityPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/otp" element={<OTPPage />} />
+          <Route path="/login" element={<CustomerOnlyRoute><LoginPage /></CustomerOnlyRoute>} />
+          <Route path="/verify-identity" element={<CustomerOnlyRoute><VerifyIdentityPage /></CustomerOnlyRoute>} />
+          <Route path="/register" element={<CustomerOnlyRoute><RegisterPage /></CustomerOnlyRoute>} />
+          <Route path="/otp" element={<CustomerOnlyRoute><OTPPage /></CustomerOnlyRoute>} />
           <Route path="/customer/" element={protect(<CustomerHomePage />)} />
           <Route path="/customer/orders" element={protect(<OrdersPage />)} />
           <Route path="/customer/orders/:orderId" element={protect(<OrderDetailsPage />)} />
           <Route path="/order/:orderId" element={protect(<OrderDetailsPage />)} />
           <Route path="/customer/track-order" element={protect(<TrackOrder />)} />
-          <Route path="/customer/my-location" element={protect(<MyLocation />)} />
-          <Route path="/customer/location" element={<MyLocation />} />
           <Route path="/customer/profile" element={protect(<AccountSettings />)} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/vendor-store" element={<VendorStorePage />} />
-          <Route path="/customer/vendor/:name" element={<VendorStorePage />} />
+          <Route path="/cart" element={<CustomerOnlyRoute><CartPage /></CustomerOnlyRoute>} />
+          <Route path="/vendor-store" element={<CustomerOnlyRoute><VendorStorePage /></CustomerOnlyRoute>} />
+          <Route path="/customer/vendor/:name" element={<CustomerOnlyRoute><VendorStorePage /></CustomerOnlyRoute>} />
 
           <Route path="/settings" element={protect(<Navigate to="/customer/profile" replace />)} />
           <Route path="/settings/personal" element={protect(<PersonalInformation />)} />
@@ -171,7 +187,7 @@ export default function App() {
 
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          <Route path="/vendor-landing" element={<VendorLandingPage />} />
+          <Route path="/vendor-landing" element={<CustomerOnlyRoute><VendorLandingPage /></CustomerOnlyRoute>} />
           <Route path="/vendor/onboarding" element={<VendorOnboarding />} />
           <Route path="/vendor/products/add-store" element={protectVendor(<AddStoreDashboardPage />)} />
           <Route path="/vendor/location-picker" element={<StoreLocationPicker />} />
@@ -192,7 +208,7 @@ export default function App() {
           <Route path='/vendor/settings/payout' element={protectVendor(<VendorPayoutDetails />)} />
 
 
-          <Route path="/rider-landing" element={<RiderLandingPage />} />
+          <Route path="/rider-landing" element={<CustomerOnlyRoute><RiderLandingPage /></CustomerOnlyRoute>} />
           <Route path="/rider/onboarding" element={<RiderOnboarding />} />
           <Route path="/rider/dashboard" element={protectRider(<RiderDashboard />)} />
           <Route path="/rider/mark-as-delivered" element={protectRider(<MarkAsDeliveredPage />)} />

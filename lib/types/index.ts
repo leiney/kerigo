@@ -20,7 +20,7 @@ export interface AuthUser {
   email: string;
   phoneNumber: string;
   roles: string[];
-  userType: 'customer' | 'vendor' | 'rider';
+  userType: 'customer' | 'vendor' | 'rider' | 'rider-admin';
   avatarUrl?: string;
   isVerified?: boolean;
 }
@@ -31,7 +31,7 @@ export interface LoginUser {
   email: string;
   phoneNumber: string;
   role: string;
-  userType: 'customer' | 'vendor' | 'rider';
+  userType: 'customer' | 'vendor' | 'rider' | 'rider-admin';
   avatarUrl?: string;
   token?: string;
   phoneNo?: string;
@@ -116,7 +116,7 @@ export interface CategoryCreateResponse {
 }
 
 export interface VendorMenuItem {
-  id: number;
+  id: string | number;
   name: string;
   description: string;
   price: number;

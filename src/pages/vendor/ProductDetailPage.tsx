@@ -17,7 +17,7 @@ import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'motion/react';
 import { productApi } from '@/lib/api';
 import { ProductPayload } from '@/lib/types';
-import { BASE_URL, TENANT_ID } from '@/config';
+import { BASE_URL, returnImageUrl, TENANT_ID } from '@/config';
 
 export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -72,7 +72,7 @@ export const ProductDetailPage: React.FC = () => {
   // Gather unique images across all variants
   const images = (product.variants || []).reduce<string[]>((acc, variant) => {
     (variant.images || []).forEach((imgId) => {
-      const url = `${BASE_URL}/resources/download/${imgId.toString()}?tenant-id=${TENANT_ID}`;
+      const url = returnImageUrl(imgId.toString());
       if (!acc.includes(url)) {
         acc.push(url);
       }
@@ -227,9 +227,7 @@ export const ProductDetailPage: React.FC = () => {
                 const variantName = variant.attributes && variant.attributes.length > 0
                   ? variant.attributes.map(attr => attr.value).join(' / ')
                   : variant.sku;
-                const variantImgUrl = variant.images && variant.images[0]
-                  ? `${BASE_URL}/resources/download/${variant.images[0].toString()}?tenant-id=${TENANT_ID}`
-                  : '/logo.png';
+                const variantImgUrl = returnImageUrl(variant.images && variant.images[0] ? variant.images[0].toString() : undefined);
                 return (
                   <motion.div
                     key={variant.variantID || variant.sku}

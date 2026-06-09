@@ -35,6 +35,7 @@ import type {
   VerificationMethod,
   WalletSummary,
   Store,
+  LocationDetails,
 } from './types';
 
 type PasswordPayload = {
@@ -97,6 +98,11 @@ export const authApi = {
   enableTwoFactor: async (otpCode: string): Promise<{ message: string; backupCodes: string[] }> => apiPost('/auth/2fa/enable/', { otpCode }),
   disableTwoFactor: async (payload: { otpCode?: string; recoveryCode?: string }): Promise<{ message: string }> => apiPost('/auth/2fa/disable/', payload),
   regenerateRecoveryCodes: async (otpCode: string): Promise<{ backupCodes: string[] }> => apiPost('/auth/2fa/recovery-codes/regenerate/', { otpCode }),
+  
+  updateLocation: async (location: LocationDetails): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/update-location/', location);
+    return response.data;
+  },
 };
 
 export const customerApi = {
@@ -176,11 +182,11 @@ export const productApi = {
     return response.data;
   },
   getProducts: async (params?: Record<string, unknown>): Promise<ProductPayload[]> => {
-    const response = await axiosInstance.get<ProductPayload[]>('/products', { params });
+    const response = await axiosInstance.get<ProductPayload[]>('/products/vendor', { params });
     return response.data;
   },
   getStores: async (): Promise<Store[]> => {
-    const response = await axiosInstance.get<Store[]>('/product-stores/');
+    const response = await axiosInstance.get<Store[]>('/product-stores/vendor');
     return response.data;
   },
   getProduct: async (id: string): Promise<ProductPayload> => {
@@ -198,16 +204,28 @@ export const productApi = {
 
 export const categoryApi = {
   getCategories: async (): Promise<CategoryItem[]> => {
-    const response = await axiosInstance.get<CategoryItem[]>('/categories/');
+    const response = await axiosInstance.get<CategoryItem[]>('/categories/vendor');
     return response.data;
   },
 
   createCategory: async (payload: CategoryCreatePayload | FormData): Promise<CategoryCreateResponse> => {
     const formData = payload instanceof FormData ? payload : buildFlattenedFormData(payload as unknown as Record<string, unknown>);
-    const response = await axiosInstance.post<CategoryCreateResponse>('/categories/', formData);
+    const response = await axiosInstance.post<CategoryCreateResponse>('/categories/extended/', formData);
     return response.data;
   },
 };
+
+export const VendorsApi = {
+  getVendors : async () =>{
+    const response = await axiosInstance.get('/vendors/nearby');
+    return response.data;
+  },
+
+  getVendorsDetails : async (vendorID: string) =>{
+    const response = await axiosInstance.get(`/vendors/${vendorID}`);
+    return response.data;
+  }
+}
 
 export const storeApi = {
   createStore: async (payload: Store): Promise<Store> => {

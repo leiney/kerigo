@@ -1,5 +1,6 @@
+import { LocationDetails } from "@/lib/types";
 
-export type UserRole = 'customer' | 'vendor' | 'rider';
+export type UserRole = 'customer' | 'vendor' | 'rider' | 'rider-admin';
 
 export interface UserProfile {
   id: string;
@@ -11,6 +12,9 @@ export interface UserProfile {
   token?: string;
   phoneNo?: string;
   username?: string;
+  otherData?:{
+    location?: LocationDetails;
+  }
   [key: string]: unknown;
 }
 

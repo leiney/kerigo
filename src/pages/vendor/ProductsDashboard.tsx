@@ -28,7 +28,7 @@ import { Button, Badge, Input, BottomSheet, Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProductPayload, Store } from '@/lib/types';
-import { BASE_URL, TENANT_ID } from '@/config';
+import { BASE_URL, returnImageUrl, TENANT_ID } from '@/config';
 import { productApi } from '@/lib/api';
 
 // --- Mock Data ---
@@ -643,7 +643,7 @@ export const ProductsDashboard: React.FC = () => {
             >
               {/* Product Image */}
               <div className="w-11 h-11 border border-gray-200 p-1  rounded-none bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
-                <img src={`${product.variants[0].images && product?.variants[0]?.images[0]  ? `${BASE_URL}/resources/download/${product.variants[0].images[0].toString()}?tenant-id=${TENANT_ID}` : '/logo.png'}`} alt={product.name} className="w-full h-full object-cover" />
+                <img src={`${returnImageUrl(product.variants[0].images && product?.variants[0]?.images[0] ? product.variants[0].images[0].toString() : undefined)}`} alt={product.name} className="w-full h-full object-cover" />
               </div>
 
               {/* Product Info */}
