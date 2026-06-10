@@ -100,7 +100,7 @@ export const authApi = {
   regenerateRecoveryCodes: async (otpCode: string): Promise<{ backupCodes: string[] }> => apiPost('/auth/2fa/recovery-codes/regenerate/', { otpCode }),
   
   updateLocation: async (location: LocationDetails): Promise<{ message: string }> => {
-    const response = await axiosInstance.post('/update-location/', location);
+    const response = await axiosInstance.patch('/update-location', location);
     return response.data;
   },
 };

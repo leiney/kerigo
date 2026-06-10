@@ -36,6 +36,7 @@ const readStoredAuth = (): StoredAuth => {
         avatar: parsed.avatar ?? parsed.avatarUrl,
         avatarUrl: parsed.avatarUrl ?? parsed.avatar,
         token: parsed.token ?? undefined,
+        extraData: parsed.extraData,
       } as UserProfile;
     } catch {
       user = null;
@@ -66,6 +67,7 @@ const readStoredUser = (): UserProfile | null => {
       userType: parsed.userType ?? parsed.userType,
       avatar: parsed.avatar ?? parsed.avatarUrl,
       avatarUrl: parsed.avatarUrl ?? parsed.avatar,
+      extraData: parsed.extraData || parsed.otherInfo || parsed.otherData,
     } as UserProfile;
   } catch {
     return null;
@@ -80,6 +82,7 @@ type AuthContextValue = {
   login: (payload: { token: string; user: UserProfile }) => void;
   logout: () => void;
   getStoredUser: () => UserProfile | null;
+  updateUser: (user: UserProfile) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -106,6 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useAuthStore.getState().setUser(nextUser);
   };
 
+  const updateUser = (updatedUser: UserProfile) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    useAuthStore.getState().setUser(updatedUser);
+  };
+
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -127,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         getStoredUser,
+        updateUser,
       }}
     >
       {children}

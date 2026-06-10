@@ -80,6 +80,14 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
     return <Navigate to="/unauthorized" replace />;
   }
 
+  const userAny = user as any;
+  const needsLocation = !!user;
+  const hasLocation = userAny?.extraData?.location?.latitude || userAny?.location?.latitude || userAny?.locationDetails?.latitude || userAny?.otherInfo?.location?.latitude;
+
+  if (needsLocation && !hasLocation) {
+    return <Navigate to="/vendor/location-picker" state={{ returnTo: location.pathname }} replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -91,11 +99,20 @@ const CustomerOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (isAuthenticated && user) {
-    if (user.userType === 'vendor') {
-      return <Navigate to="/vendor/dashboard" replace />;
-    }
-    if (user.userType === 'rider' || user.userType === 'rider-admin') {
-      return <Navigate to="/rider/dashboard" replace />;
+    const userAny = user as any;
+    const hasLocation = userAny?.extraData?.location?.latitude || userAny?.location?.latitude || userAny?.locationDetails?.latitude || userAny?.otherInfo?.location?.latitude;
+    
+    if (!hasLocation) {
+      if (user.userType === 'vendor' || user.userType === 'rider' || user.userType === 'rider-admin') {
+        return <Navigate to="/vendor/location-picker" replace />;
+      }
+    } else {
+      if (user.userType === 'vendor') {
+        return <Navigate to="/vendor/dashboard" replace />;
+      }
+      if (user.userType === 'rider' || user.userType === 'rider-admin') {
+        return <Navigate to="/rider/dashboard" replace />;
+      }
     }
   }
 
@@ -190,7 +207,9 @@ export default function App() {
           <Route path="/vendor-landing" element={<CustomerOnlyRoute><VendorLandingPage /></CustomerOnlyRoute>} />
           <Route path="/vendor/onboarding" element={<VendorOnboarding />} />
           <Route path="/vendor/products/add-store" element={protectVendor(<AddStoreDashboardPage />)} />
+
           <Route path="/vendor/location-picker" element={<StoreLocationPicker />} />
+          
           <Route path='/vendor/dashboard' element={protectVendor(<VendorDashboard />)} />
           <Route path='/vendor/mark-as-ready-assign-rider' element={protectVendor(<MarkAsReadyAssignRider />)} />
           <Route path='/vendor/orders' element={protectVendor(<VendorDashboard />)} />

@@ -66,6 +66,9 @@ export const LoginPage: React.FC = () => {
     authApi.login(formData.email, formData.password)
       .then((response) => {
         const userType = resolveRole(response.userType);
+        const extraData = (response as any).extraData;
+        const lat = extraData?.location?.latitude;
+
         const user: UserProfile = {
           id: response.id,
           fullName: response.fullName || "",
@@ -73,28 +76,26 @@ export const LoginPage: React.FC = () => {
           phoneNo: response.phoneNo || "",
           userType: userType,
           username: response.username || "",
+          extraData: extraData,
         };
         
-
-
         login({ token: response?.token || '', user });
-
-
-        const extraData = (response as any).extraData || (response as any).user?.extraData || (response as any).otherData || (response as any).user?.otherData;
-        const lat = extraData?.location?.lat || extraData?.location?.latitude;
-
-        if (!lat) {
+        
+        if (!extraData || !lat) {
+          console.log('Login successful after session storage:', { user, response });
           navigate('/vendor/location-picker', {
             state: {
               returnTo: from ?? getLandingPath(user.userType),
               fromLogin: true,
               user,
+              title: 'Set Your Location',
+              subtitle: 'Use GPS to capture your location',
             },
-            replace: true,
           });
           return;
         }
 
+        
         const destination = from ?? getLandingPath(user.userType);
         navigate(destination, { replace: true });
       })

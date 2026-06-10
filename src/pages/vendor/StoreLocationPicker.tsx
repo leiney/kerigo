@@ -22,6 +22,7 @@ import type { LocationDetails } from '../../../lib/types';
 import { authApi } from '../../../lib/api';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { useAuth } from '../../context/AuthContext';
 
 
 // @ts-ignore
@@ -38,6 +39,8 @@ type PickerState = {
   locationDetails?: LocationDetails;
   fromLogin?: boolean;
   user?: any;
+  title?: string;
+  subtitle?: string;
 };
 
 const defaultLocationData: LocationDetails = {
@@ -61,7 +64,6 @@ function FitMapView({ center }: { center: [number, number] }) {
   return null;
 }
 
-// i will migrate to Google Geocoding API soon, as Nominatim like i found out is very inaccurate for administrative boundaries.
 const reverseGeocode = async (latitude: number, longitude: number): Promise<Partial<LocationDetails>> => {
   try {
     const response = await fetch(
@@ -141,8 +143,11 @@ const reverseGeocode = async (latitude: number, longitude: number): Promise<Part
 export const StoreLocationPicker: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { updateUser, isAuthenticated, user } = useAuth();
   const state = (location.state as PickerState | null) ?? {};
   const returnTo = state.returnTo ?? '/vendor/store-details';
+  const title = state.title ?? 'Pick Location';
+  const subtitle = state.subtitle ?? 'Use GPS to capture the location';
   const [locationData, setLocationData] = useState<LocationDetails>(state.locationDetails ?? defaultLocationData);
   const [editableLocation, setEditableLocation] = useState<LocationDetails>(state.locationDetails ?? defaultLocationData);
   const [isCaptured, setIsCaptured] = useState(Boolean(state.locationDetails));
@@ -163,7 +168,6 @@ export const StoreLocationPicker: React.FC = () => {
 
   useEffect(() => {
     handleRefresh();
-    //  capture on mount so the user sees a location immediately.
   }, []);
 
   const handleRefresh = async () => {
@@ -175,7 +179,6 @@ export const StoreLocationPicker: React.FC = () => {
       let lng: number;
 
       if (Capacitor.isNativePlatform()) {
-        // Native Geolocation
         let perm = await Geolocation.checkPermissions();
         if (perm.location !== 'granted') {
           perm = await Geolocation.requestPermissions();
@@ -234,9 +237,31 @@ export const StoreLocationPicker: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    if (state.fromLogin) {
+    if (isAuthenticated && user) {
       try {
         await authApi.updateLocation(editableLocation);
+        const updatedUser = {
+          ...user,
+          extraData: {
+            location: editableLocation,
+          },
+        };
+        updateUser(updatedUser);
+      } catch (err) {
+        console.error('Failed to update location:', err);
+      }
+    } else if (state.fromLogin) {
+      try {
+        await authApi.updateLocation(editableLocation);
+        if (state.user) {
+          const updatedUser = {
+            ...state.user,
+            extraData: {
+              location: editableLocation,
+            },
+          };
+          updateUser(updatedUser);
+        }
       } catch (err) {
         console.error('Failed to update location:', err);
       }
@@ -265,8 +290,8 @@ export const StoreLocationPicker: React.FC = () => {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-foreground leading-tight">Pick Location</h1>
-          <p className="text-xs text-foreground/50 mt-0.5">Use GPS to capture the store location</p>
+          <h1 className="text-lg font-bold text-foreground leading-tight">{title}</h1>
+          <p className="text-xs text-foreground/50 mt-0.5">{subtitle}</p>
         </div>
       </header>
 
@@ -453,7 +478,7 @@ export const StoreLocationPicker: React.FC = () => {
         >
           <div>
             <h3 className="font-bold text-sm text-foreground">Edit Location Details</h3>
-            <p className="text-xs text-foreground/50 mt-0.5">Adjust the address details before returning to the store form.</p>
+            <p className="text-xs text-foreground/50 mt-0.5">Adjust the address details before returning.</p>
           </div>
 
           <div className="space-y-3">
