@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, BottomSheet } from '@stackloop/ui';
 import { motion } from 'motion/react';
+import PullToRefresh from '../../components/PullToRefresh';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { categoryApi } from '../../../lib/api';
 import type { CategoryItem } from '../../../lib/types';
@@ -55,7 +56,8 @@ export const ManageCategoriesPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-6">
+    <PullToRefresh onRefresh={async () => { await categoriesQuery.refetch(); }}>
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-6">
       {/* --- Header --- */}
       <header className="px-4 pt-6 pb-4 flex items-start justify-between sticky top-0 bg-background z-40">
         <div className="flex-1">
@@ -98,38 +100,56 @@ export const ManageCategoriesPage: React.FC = () => {
 
       {/* --- Categories List --- */}
       <div className="px-4 space-y-3">
-        {!isLoading && filteredCategories.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-foreground/50">
-            No categories found.
-          </div>
-        )}
-        {filteredCategories.map((category, idx) => (
-          <motion.div
-            key={category.categoryID}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.03 }}
-            className="bg-white rounded-lg p-3 border border-border/50 flex items-center gap-3"
-          >
-            <img 
-              src={returnImageUrl(category.image)} 
-              alt={category.name}
-              className="w-12 h-12 rounded-sm object-cover bg-gray-100 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-sm text-foreground">{category.name}</h3>
-              <p className="text-[11px] text-foreground/50 mt-0.5 line-clamp-2">{category.description}</p>
-              <div className="mt-1 flex items-center gap-2 text-[10px] text-foreground/40">
-                <span>Order #{category.displayOrder}</span>
-                <span>•</span>
-                <span className={category.status === 'active' ? 'text-primary' : 'text-warning'}>
-                  {category.status}
-                </span>
+        {isLoading ? (
+          <div className="space-y-3 animate-pulse">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-lg p-3 border border-border/50 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-sm bg-secondary/60 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="h-4 w-1/3 bg-secondary/70 rounded-md mb-2" />
+                  <div className="h-3 w-2/3 bg-secondary/60 rounded-md" />
+                  <div className="mt-2 h-3 w-1/4 bg-secondary/50 rounded-md" />
+                </div>
+                <div className="w-4 h-4 rounded-md bg-secondary/60" />
               </div>
-            </div>
-            <Trash2 onClick={(event)=> { event.stopPropagation(); openDeleteCategorySheet(category); }} className="w-4 h-4 text-red-400 shrink-0" />
-          </motion.div>
-        ))}
+            ))}
+          </div>
+        ) : (
+          <>
+            {!isLoading && filteredCategories.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border bg-white px-4 py-8 text-center text-sm text-foreground/50">
+                No categories found.
+              </div>
+            )}
+            {filteredCategories.map((category, idx) => (
+              <motion.div
+                key={category.categoryID}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.03 }}
+                className="bg-white rounded-lg p-3 border border-border/50 flex items-center gap-3"
+              >
+                <img 
+                  src={returnImageUrl(category.image)} 
+                  alt={category.name}
+                  className="w-12 h-12 rounded-sm object-cover bg-gray-100 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-sm text-foreground">{category.name}</h3>
+                  <p className="text-[11px] text-foreground/50 mt-0.5 line-clamp-2">{category.description}</p>
+                  <div className="mt-1 flex items-center gap-2 text-[10px] text-foreground/40">
+                    <span>Order #{category.displayOrder}</span>
+                    <span>•</span>
+                    <span className={category.status === 'active' ? 'text-primary' : 'text-warning'}>
+                      {category.status}
+                    </span>
+                  </div>
+                </div>
+                <Trash2 onClick={(event)=> { event.stopPropagation(); openDeleteCategorySheet(category); }} className="w-4 h-4 text-red-400 shrink-0" />
+              </motion.div>
+            ))}
+          </>
+        )}
       </div>
 
       {/* --- Info Banner --- */}
@@ -203,6 +223,7 @@ export const ManageCategoriesPage: React.FC = () => {
           </div>
         </div>
       </BottomSheet>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };

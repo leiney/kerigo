@@ -7,6 +7,7 @@ import {
   Plus, ShoppingCart, Home, ShoppingBag, User, ChevronRight, AlertCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import PullToRefresh from '../../components/PullToRefresh';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
 import { VendorsApi } from '../../../lib/api';
@@ -144,17 +145,18 @@ export const VendorStorePage: React.FC = () => {
               <div key={index} className="h-10 min-w-[5rem] rounded-full bg-secondary" />
             ))}
           </div>
-          <div className="grid gap-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="rounded-3xl border border-border/70 bg-secondary/70 p-4 space-y-4">
-                <div className="h-40 rounded-[1.5rem] bg-secondary" />
-                <div className="h-4 w-1/2 rounded-full bg-secondary/80" />
-                <div className="flex items-center justify-between gap-3">
-                  <div className="space-y-2 flex-1">
-                    <div className="h-3 w-3/4 rounded-full bg-secondary/80" />
-                    <div className="h-3 w-1/2 rounded-full bg-secondary/80" />
-                  </div>
-                  <div className="h-8 w-20 rounded-full bg-secondary/80" />
+          <div className="space-y-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="flex gap-4 items-center bg-white rounded-2xl p-3 border border-border/50">
+                <div className="w-22 h-22 rounded-2xl bg-secondary/60" />
+                <div className="flex-1 min-w-0">
+                  <div className="h-4 w-3/4 bg-secondary/70 rounded-md mb-2" />
+                  <div className="h-3 w-1/2 bg-secondary/60 rounded-md mb-2" />
+                  <div className="h-4 w-20 bg-secondary/50 rounded-md" />
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="h-5 w-16 bg-secondary/60 rounded-md" />
+                  <div className="h-8 w-8 bg-secondary/60 rounded-full" />
                 </div>
               </div>
             ))}
@@ -185,7 +187,8 @@ export const VendorStorePage: React.FC = () => {
   }
 
   return (
-    <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
+    <PullToRefresh onRefresh={async () => { await vendorsQuery.refetch(); await vendorDetailsQuery.refetch(); }}>
+      <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
       
       {/* --- FIXED: Sticky Vendor Header --- */}
       <div className="sticky top-0 z-40 bg-white border-b border-border px-5 pt-4 pb-3">
@@ -453,6 +456,7 @@ export const VendorStorePage: React.FC = () => {
       {/* --- Bottom Navigation --- */}
       <BottomNav cartCount={cartCount} />
 
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };

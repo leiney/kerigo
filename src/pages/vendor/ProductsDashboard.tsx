@@ -27,6 +27,7 @@ import {
 import { Button, Badge, Input, BottomSheet, Toggle } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import { motion, AnimatePresence } from 'motion/react';
+import PullToRefresh from '../../components/PullToRefresh';
 import { ProductPayload, Store } from '@/lib/types';
 import { BASE_URL, returnImageUrl, TENANT_ID } from '@/config';
 import { productApi } from '@/lib/api';
@@ -383,7 +384,8 @@ export const ProductsDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-20">
+    <PullToRefresh onRefresh={async () => { await productsQuery.refetch(); await storesQuery.refetch(); }}>
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-20">
       {/* --- Header --- */}
       <header className="bg-background px-4 pt-4 pb-2 flex items-center justify-between sticky top-0 z-40 border-b border-border/40">
         <div className="flex items-center gap-3">
@@ -576,56 +578,78 @@ export const ProductsDashboard: React.FC = () => {
         </div>
 
         {/* Product List */}
-        <div className="space-y-2">
-          {products.map((product, index) => (
-            <motion.div
-              key={product.productID}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer border border-border/50 "
-              onClick={() => navigate(`/vendor/product/${product.productID}`)}
-            >
-              {/* Product Image */}
-              <div className="w-11 h-11 border border-gray-200 p-1  rounded-none bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
-                <img src={`${returnImageUrl(product.variants[0].images && product?.variants[0]?.images[0] ? product.variants[0].images[0].toString() : undefined)}`} alt={product.name} className="w-full h-full object-cover" />
-              </div>
-
-              {/* Product Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <h3 className="font-semibold text-[13px] text-foreground truncate">{product.name}</h3>
+        {isFetching ? (
+          <div className="space-y-3 animate-pulse">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-md p-2.5 flex items-center gap-2.5 border border-border/50">
+                <div className="w-11 h-11 rounded-md bg-secondary/60 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="h-4 w-3/4 bg-secondary/70 rounded-md mb-2" />
+                  <div className="h-3 w-1/2 bg-secondary/60 rounded-md" />
                 </div>
-                <p className="text-[10px] text-foreground/50">{product.category[0] && product.category[0].name}</p>
-                <p className="text-[12px] font-bold text-primary mt-0.5">
-                  KES {product.variants[0].price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="h-5 w-14 bg-secondary/60 rounded-full" />
+                  <div className="h-3 w-12 bg-secondary/50 rounded-md" />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="w-7 h-7 rounded-md bg-secondary/60" />
+                  <div className="w-7 h-7 rounded-md bg-secondary/60" />
+                </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {products.map((product, index) => (
+              <motion.div
+                key={product.productID}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-md p-2.5 flex items-center gap-2.5 cursor-pointer border border-border/50 "
+                onClick={() => navigate(`/vendor/product/${product.productID}`)}
+              >
+                {/* Product Image */}
+                <div className="w-11 h-11 border border-gray-200 p-1  rounded-none bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
+                  <img src={`${returnImageUrl(product.variants[0].images && product?.variants[0]?.images[0] ? product.variants[0].images[0].toString() : undefined)}`} alt={product.name} className="w-full h-full object-cover" />
+                </div>
 
-              {/* Status & Stock */}
-              <div className="flex flex-col items-end gap-0.5 shrink-0">
-                {getStatusBadge(product.active ? "Active" : "Inactive")}
-                <span className={`text-[10px] font-medium ${product.variants[0].stock === 0 ? 'text-red-500' : 'text-foreground/60'}`}>
-                  Stock: {product.variants[0].stock}
-                </span>
-              </div>
+                {/* Product Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <h3 className="font-semibold text-[13px] text-foreground truncate">{product.name}</h3>
+                  </div>
+                  <p className="text-[10px] text-foreground/50">{product.category[0] && product.category[0].name}</p>
+                  <p className="text-[12px] font-bold text-primary mt-0.5">
+                    KES {product.variants[0].price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-1 shrink-0">
-                <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); /* edit action */ }}>
-                  <Pencil className="w-3 h-3 text-foreground/50" />
-                </button>
-                
-                {/* Dropdown for more options including Delete */}
-                <div className="relative">
-                  <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); openDelete(product); }}>
-                    <MoreVertical className="w-3 h-3 text-foreground/50" />
+                {/* Status & Stock */}
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  {getStatusBadge(product.active ? "Active" : "Inactive")}
+                  <span className={`text-[10px] font-medium ${product.variants[0].stock === 0 ? 'text-red-500' : 'text-foreground/60'}`}>
+                    Stock: {product.variants[0].stock}
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); /* edit action */ }}>
+                    <Pencil className="w-3 h-3 text-foreground/50" />
                   </button>
+                  
+                  {/* Dropdown for more options including Delete */}
+                  <div className="relative">
+                    <button className="w-7 h-7 rounded-md border border-border flex items-center justify-center hover:bg-gray-50" onClick={(e) => { e.stopPropagation(); openDelete(product); }}>
+                      <MoreVertical className="w-3 h-3 text-foreground/50" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Pagination */}
         <div className="flex items-center justify-center gap-1">
@@ -682,7 +706,9 @@ export const ProductsDashboard: React.FC = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
-    </div>
+
+      </div>
+    </PullToRefresh>
   );
 };
 

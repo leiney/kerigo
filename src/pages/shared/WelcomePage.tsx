@@ -5,6 +5,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import PullToRefresh from '../../components/PullToRefresh';
 import BottomNav from '../../components/BottomNav';
 import { VendorsApi } from '../../../lib/api';
 import type { VendorSummary } from '../../../lib/types';
@@ -33,7 +34,8 @@ export const WelcomePage: React.FC = () => {
   const vendors = vendorsQuery.data ?? [];
 
   return (
-    <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-24">
+    <PullToRefresh onRefresh={async () => { await vendorsQuery.refetch(); }}>
+      <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-24">
       {/* Header / Hero Section */}
       <div className="px-5 pt-6 pb-8">
         {/* Logo & Notification Bell */}
@@ -178,6 +180,7 @@ export const WelcomePage: React.FC = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };
