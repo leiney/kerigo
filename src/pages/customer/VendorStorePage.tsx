@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@stackloop/ui';
 import {
   ArrowLeft, Heart, MoreHorizontal, Search, SlidersHorizontal,
@@ -9,7 +10,7 @@ import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
 import { VendorsApi } from '../../../lib/api';
-import type { VendorStoreData, VendorMenuItem } from '../../../lib/types';
+import type { VendorStoreData, VendorMenuItem, LocationDetails } from '../../../lib/types';
 import { returnImageUrl } from '../../../config';
 
 export const VendorStorePage: React.FC = () => {
@@ -17,95 +18,91 @@ export const VendorStorePage: React.FC = () => {
   const { name: vendorId } = useParams<{ name: string }>();
   const [activeCategory, setActiveCategory] = useState('Buckets');
   const [searchQuery, setSearchQuery] = useState('');
-  const [storeData, setStoreData] = useState<VendorStoreData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [vendorLocation, setVendorLocation] = useState<Pick<LocationDetails, 'latitude' | 'longitude' | 'address' | 'city' | 'country' | 'postalCode'> | null>(null);
   const cartItems = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
   const cartCount = selectCartCount(cartItems);
   const cartTotal = selectCartTotal(cartItems);
 
-  useEffect(() => {
-    let isMounted = true;
+  const vendorsQuery = useQuery<any[]>({
+    queryKey: ['vendors'],
+    queryFn: VendorsApi.getVendors,
+  });
 
-    const loadStoreData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  const activeVendorId = useMemo(() => {
+    if (vendorId) return vendorId;
+    return vendorsQuery.data?.[0]?.vendorID ?? vendorsQuery.data?.[0]?.id;
+  }, [vendorId, vendorsQuery.data]);
 
-        let activeId = vendorId;
-        if (!activeId) {
-          const vendors = await VendorsApi.getVendors();
-          if (vendors && vendors.length > 0) {
-            activeId = vendors[0].id;
-          }
-        }
-
-        if (!activeId) {
-          throw new Error('No vendor ID provided');
-        }
-
-        const details = await VendorsApi.getVendorsDetails(activeId);
-
-        if (!details || !details.id) {
-          throw new Error('Vendor store not found');
-        }
-
-        const mappedData: VendorStoreData = {
-          vendor: {
-            id: details.id,
-            name: details.vendorName || 'Vendor',
-            category: details.categories?.[0]?.name || 'Local Store',
-            time: details.durationText && details.durationText !== '-' ? details.durationText : (details.distanceText && details.distanceText !== '0.0 km' ? details.distanceText : '25-30 min'),
-            isOpen: details.available !== undefined ? details.available : (details.online || false),
-            rating: details.rating || 4.5,
-            reviews: details.reviewCount ? `${details.reviewCount}` : '10+',
-            logoUrl: returnImageUrl(details.logoURL || details.logoUrl),
-          },
-          categories: (details.categories || []).map((cat: any) => ({
-            name: cat.name,
-            imageUrl: returnImageUrl(cat.imageURL || cat.image || cat.logoURL),
-          })),
-          menuItems: (details.products || []).map((p: any) => {
-            const firstVariant = p.variants?.[0] || {};
-            const imageId = firstVariant.images?.[0];
-            return {
-              id: p.productID || p.id,
-              name: p.name,
-              description: p.description || '',
-              price: firstVariant.price || 0,
-              imageUrl: returnImageUrl(imageId),
-              category: p.category?.[0]?.name || p.tags?.[0] || 'Uncategorized',
-            };
-          }),
-        };
-
-        if (isMounted) {
-          setStoreData(mappedData);
-          if (mappedData.categories.length > 0) {
-            setActiveCategory(mappedData.categories[0].name);
-          } else {
-            setActiveCategory('');
-          }
-        }
-      } catch (err: any) {
-        console.error('Failed to load store data:', err);
-        if (isMounted) {
-          setError(err.message || 'Failed to load vendor details');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+  const vendorDetailsQuery = useQuery<any>({
+    queryKey: ['vendorDetails', activeVendorId],
+    queryFn: async () => {
+      if (!activeVendorId) {
+        throw new Error('No vendor ID provided');
       }
-    };
+      return VendorsApi.getVendorsDetails(activeVendorId);
+    },
+    enabled: !!activeVendorId,
+  });
 
-    loadStoreData();
+  const isLoading = vendorsQuery.isLoading || vendorDetailsQuery.isLoading;
+  const error = vendorDetailsQuery.error || vendorsQuery.error;
+  const errorMessage = error ? (error instanceof Error ? error.message : String(error)) : null;
 
-    return () => {
-      isMounted = false;
+  const storeData = useMemo<VendorStoreData | null>(() => {
+    const details = vendorDetailsQuery.data;
+    if (!details) return null;
+
+    const detailsVendorID = details?.vendorID ?? details?.id ?? (details as any)?.vendorId ?? activeVendorId;
+    return {
+      vendor: {
+        id: detailsVendorID,
+        name: details.vendorName || 'Vendor',
+        category: details.categories?.[0]?.name || 'Local Store',
+        time: details.durationText && details.durationText !== '-' ? details.durationText : (details.distanceText && details.distanceText !== '0.0 km' ? details.distanceText : '25-30 min'),
+        isOpen: details.available !== undefined ? details.available : (details.online || false),
+        rating: details.rating || 4.5,
+        reviews: details.reviewCount ? `${details.reviewCount}` : '10+',
+        logoUrl: returnImageUrl(details.logoURL || details.logoUrl),
+      },
+      categories: (details.categories || []).map((cat: any) => ({
+        name: cat.name,
+        imageUrl: returnImageUrl(cat.imageURL || cat.image || cat.logoURL),
+      })),
+      menuItems: (details.products || []).map((p: any) => {
+        const firstVariant = p.variants?.[0] || {};
+        const imageId = firstVariant.images?.[0];
+        return {
+          id: p.productID || p.id,
+          productID: p.productID || p.id,
+          variantID: firstVariant.variantID ?? firstVariant.sku ?? undefined,
+          name: p.name,
+          description: p.description || '',
+          price: firstVariant.price || 0,
+          imageUrl: returnImageUrl(imageId),
+          category: p.category?.[0]?.name || p.tags?.[0] || 'Uncategorized',
+        };
+      }),
     };
-  }, [vendorId]);
+  }, [vendorDetailsQuery.data, activeVendorId]);
+
+  useEffect(() => {
+    if (!storeData) return;
+    if (storeData.categories.length > 0 && activeCategory === 'Buckets') {
+      setActiveCategory(storeData.categories[0].name);
+    }
+    if (storeData.vendor && vendorDetailsQuery.data?.location) {
+      const location = vendorDetailsQuery.data.location;
+      setVendorLocation({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: location.address || '',
+        city: location.city || '',
+        country: location.country || '',
+        postalCode: location.postalCode || location.postcode || '',
+      });
+    }
+  }, [storeData, activeCategory, vendorDetailsQuery.data]);
 
   const vendor = storeData?.vendor;
   const categories = storeData?.categories ?? [];
@@ -127,11 +124,42 @@ export const VendorStorePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-dvh flex flex-col items-center justify-center bg-white text-foreground">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-foreground/60">Loading store details...</p>
+      <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
+        <div className="px-5 pt-6 pb-4 animate-pulse space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-10 w-28 rounded-full bg-secondary" />
+            <div className="h-10 w-10 rounded-full bg-secondary" />
+          </div>
+          <div className="space-y-3">
+            <div className="h-7 w-3/4 rounded-full bg-secondary" />
+            <div className="h-4 w-1/2 rounded-full bg-secondary/80" />
+          </div>
+          <div className="h-32 rounded-[2rem] bg-secondary/70" />
         </div>
+
+        <main className="flex-1 overflow-y-auto px-5 pb-24 space-y-5 animate-pulse">
+          <div className="h-12 rounded-2xl bg-secondary" />
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="h-10 min-w-[5rem] rounded-full bg-secondary" />
+            ))}
+          </div>
+          <div className="grid gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="rounded-3xl border border-border/70 bg-secondary/70 p-4 space-y-4">
+                <div className="h-40 rounded-[1.5rem] bg-secondary" />
+                <div className="h-4 w-1/2 rounded-full bg-secondary/80" />
+                <div className="flex items-center justify-between gap-3">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-3 w-3/4 rounded-full bg-secondary/80" />
+                    <div className="h-3 w-1/2 rounded-full bg-secondary/80" />
+                  </div>
+                  <div className="h-8 w-20 rounded-full bg-secondary/80" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -144,7 +172,7 @@ export const VendorStorePage: React.FC = () => {
             <AlertCircle className="w-8 h-8" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">Store Unavailable</h2>
-          <p className="text-sm text-foreground/60 mb-6">{error || 'Unable to retrieve store details. Please check your connection or try again later.'}</p>
+          <p className="text-sm text-foreground/60 mb-6">{errorMessage || 'Unable to retrieve store details. Please check your connection or try again later.'}</p>
           <button
             onClick={() => navigate(-1)}
             className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-sm shadow-md"
@@ -252,7 +280,18 @@ export const VendorStorePage: React.FC = () => {
                   key={item.id}
                   type="button"
                   onClick={() => {
-                    addItem({ id: item.id, name: item.name, store: vendor?.name ?? 'Vendor', price: item.price, image: item.imageUrl });
+                    addItem({
+                      id: String(item.id),
+                      name: item.name,
+                      store: vendor?.name ?? 'Vendor',
+                      price: item.price,
+                      image: item.imageUrl,
+                      productID: String(item.productID ?? item.id),
+                      variantID: item.variantID ? String(item.variantID) : undefined,
+                      vendorId: vendor?.id,
+                      vendorName: vendor?.name,
+                      pickupLocation: vendorLocation ?? undefined,
+                    });
                     setSearchQuery(item.name);
                   }}
                   className="w-full flex items-center gap-3 rounded-xl border border-border/60 px-3 py-2 text-left hover:bg-primary/5 transition-colors"
@@ -347,7 +386,18 @@ export const VendorStorePage: React.FC = () => {
 
                       <motion.button 
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => addItem({ id: item.id, name: item.name, store: vendor?.name ?? 'Vendor', price: item.price, image: item.imageUrl })}
+                        onClick={() => addItem({
+                        id: String(item.id),
+                        name: item.name,
+                        store: vendor?.name ?? 'Vendor',
+                        price: item.price,
+                        image: item.imageUrl,
+                        productID: String(item.productID ?? item.id),
+                        variantID: item.variantID ? String(item.variantID) : undefined,
+                        vendorId: vendor?.id,
+                        vendorName: vendor?.name,
+                        pickupLocation: vendorLocation ?? undefined,
+                      })}
                         className="h-8 w-8 shrink-0 self-center bg-primary text-white rounded-full flex items-center justify-center shadow-md shadow-primary/20 active:bg-primary/90 transition-colors"
                       >
                         <Plus className="h-5 w-5" />

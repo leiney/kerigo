@@ -1,45 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Plus, 
   Search, 
-  ChevronRight, 
-  Info, 
+  Info,
+  Trash2, 
 } from 'lucide-react';
-import { Button, Input } from '@stackloop/ui';
+import { Button, Input, BottomSheet } from '@stackloop/ui';
 import { motion } from 'motion/react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { categoryApi } from '../../../lib/api';
 import type { CategoryItem } from '../../../lib/types';
+import { returnImageUrl } from '@/config';
 
 export const ManageCategoriesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteSheet, setShowDeleteSheet] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const queryClient = useQueryClient();
 
-    const loadCategories = async () => {
-      try {
-        const items = await categoryApi.getCategories();
-        if (isMounted) {
-          setCategories(items);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
+  const categoriesQuery = useQuery<CategoryItem[]>({
+    queryKey: ['vendorCategories'],
+    queryFn: categoryApi.getCategories,
+  });
 
-    void loadCategories();
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (categoryID: string) => categoryApi.deleteCategory(categoryID),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendorCategories'] });
+      setShowDeleteSheet(false);
+      setSelectedCategory(null);
+    },
+  });
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const isLoading = categoriesQuery.isLoading;
+  const categories = categoriesQuery.data ?? [];
+  const isDeleting = deleteCategoryMutation.status === 'pending';
+
+  const handleDeleteCategory = async (categoryID: string) => {
+    deleteCategoryMutation.mutate(categoryID);
+  };
+
+  const openDeleteCategorySheet = (category: CategoryItem) => {
+    setSelectedCategory(category);
+    setShowDeleteSheet(true);
+  };
 
   const filteredCategories = categories.filter((category) => 
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -101,12 +109,12 @@ export const ManageCategoriesPage: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03 }}
-            className="bg-white rounded-xl p-3 border border-border/50 shadow-sm flex items-center gap-3"
+            className="bg-white rounded-lg p-3 border border-border/50 flex items-center gap-3"
           >
             <img 
-              src={category.imageUrl} 
+              src={returnImageUrl(category.image)} 
               alt={category.name}
-              className="w-12 h-12 rounded-lg object-cover bg-gray-100 shrink-0"
+              className="w-12 h-12 rounded-sm object-cover bg-gray-100 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-sm text-foreground">{category.name}</h3>
@@ -119,7 +127,7 @@ export const ManageCategoriesPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-foreground/30 shrink-0" />
+            <Trash2 onClick={(event)=> { event.stopPropagation(); openDeleteCategorySheet(category); }} className="w-4 h-4 text-red-400 shrink-0" />
           </motion.div>
         ))}
       </div>
@@ -135,6 +143,66 @@ export const ManageCategoriesPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      <BottomSheet
+        isOpen={showDeleteSheet}
+        onClose={() => {
+          setShowDeleteSheet(false);
+          setSelectedCategory(null);
+        }}
+        animate={false}
+        title="Remove Category?"
+        className="z-100"
+        showCloseButton={false}
+      >
+        <div className="pb-8 space-y-6">
+          <div className="text-center space-y-1">
+            <div className="w-12 h-12 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Trash2 className="w-6 h-6 text-error" />
+            </div>
+            <p className="text-sm text-foreground/60">
+              This action cannot be undone. The category will be permanently deleted.
+            </p>
+          </div>
+
+          {selectedCategory && (
+            <div className="bg-secondary border border-border rounded-xl p-3 flex items-center gap-3">
+              <div className="w-14 h-14 bg-white rounded-lg overflow-hidden shrink-0 border border-border">
+                <img
+                  src={returnImageUrl(selectedCategory.image)}
+                  alt={selectedCategory.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-sm text-foreground truncate">{selectedCategory.name}</h4>
+                <p className="text-xs text-foreground/50 line-clamp-2">{selectedCategory.description}</p>
+                <div className="flex items-center gap-2 mt-2 text-[11px] text-foreground/50">
+                  <span>Order #{selectedCategory.displayOrder}</span>
+                  <span>•</span>
+                  <span className={selectedCategory.status === 'active' ? 'text-primary' : 'text-warning'}>
+                    {selectedCategory.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 space-y-3">
+            <Button
+              className="w-full bg-error text-white font-bold py-3.5 rounded-xl shadow-lg shadow-error/20 gap-2"
+              onClick={() => selectedCategory && handleDeleteCategory(selectedCategory.categoryID)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="w-4 h-4" />
+              {isDeleting ? 'Deleting...' : 'Delete Category'}
+            </Button>
+            <Button variant="outline" className="w-full border-error/20 text-error font-semibold py-3 rounded-xl" onClick={() => setShowDeleteSheet(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 };

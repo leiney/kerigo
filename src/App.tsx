@@ -41,6 +41,7 @@ import { RiderPayoutDetails } from './pages/rider/settings/RiderPayoutDetails';
 
 import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/shared/LoginPage';
+import { PhoneLoginPage } from './pages/shared/PhoneLoginPage';
 import { VerifyIdentityPage } from './pages/shared/VerifyIdentityPage';
 import { OTPPage } from './pages/shared/OTPPage';
 import { RegisterPage } from './pages/customer/RegisterPage';
@@ -160,6 +161,7 @@ export default function App() {
           <Route path="/" element={<CustomerOnlyRoute><WelcomePage /></CustomerOnlyRoute>} />
 
           <Route path="/login" element={<CustomerOnlyRoute><LoginPage /></CustomerOnlyRoute>} />
+          <Route path="/phone-login" element={<CustomerOnlyRoute><PhoneLoginPage /></CustomerOnlyRoute>} />
           <Route path="/verify-identity" element={<CustomerOnlyRoute><VerifyIdentityPage /></CustomerOnlyRoute>} />
           <Route path="/register" element={<CustomerOnlyRoute><RegisterPage /></CustomerOnlyRoute>} />
           <Route path="/otp" element={<CustomerOnlyRoute><OTPPage /></CustomerOnlyRoute>} />

@@ -1,33 +1,240 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@stackloop/ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Button, BottomSheet, Input } from '@stackloop/ui';
 import {
   ArrowLeft, Trash2, Minus, Plus, ShoppingBag, Truck, Percent, MapPin, ChevronRight, Home, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
+import { useAuth } from '../../context/AuthContext';
+import { customerApi } from '../../../lib/api';
+import type { LocationDetails } from '../../../lib/types';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isAuthenticated, getStoredUser } = useAuth();
+
   const cartItems = useCartStore((state) => state.items);
+  const pickupLocation = useCartStore((state) => state.pickupLocation);
   const increaseItem = useCartStore((state) => state.increaseItem);
   const decreaseItem = useCartStore((state) => state.decreaseItem);
   const removeItem = useCartStore((state) => state.removeItem);
   const clearCart = useCartStore((state) => state.clearCart);
+
   const [orderNotes, setOrderNotes] = useState('');
+  const [checkoutFullName, setCheckoutFullName] = useState('');
+  const [checkoutPhoneNo, setCheckoutPhoneNo] = useState('');
+  const [showCheckoutDetailsSheet, setShowCheckoutDetailsSheet] = useState(false);
+  const [contactNameError, setContactNameError] = useState('');
+  const [contactPhoneError, setContactPhoneError] = useState('');
+  const [dropoffLocation, setDropoffLocation] = useState<LocationDetails | null>(null);
+  const [shippingInfo, setShippingInfo] = useState<{
+    vehicleType: string;
+    distanceKm: number;
+    estimatedTime: string;
+    deliveryFee: number;
+    serviceCharge: number;
+    charges: number;
+  } | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  const deliveryFee = 150;
-  const serviceFee = 50;
-  const freeDeliveryThreshold = 500;
   const subtotal = selectCartTotal(cartItems);
-  const total = subtotal + deliveryFee + serviceFee;
-  const amountToFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
-  const deliveryProgress = Math.min(100, (subtotal / freeDeliveryThreshold) * 100);
-
   const cartCount = selectCartCount(cartItems);
+  const currentFullName = checkoutFullName || (isAuthenticated ? (user?.fullName ?? (user as any)?.name ?? '') : '');
+  const currentPhoneNo = checkoutPhoneNo || (isAuthenticated ? (user?.phoneNo ?? (user as any)?.phone ?? '') : '');
+  const missingContactInfo = !currentFullName.trim() || !currentPhoneNo.trim();
 
-  if (cartItems.length === 0) {
+  const dropoffLocationError = !dropoffLocation ? 'Delivery location is required.' : '';
+  const deliveryFee = shippingInfo?.deliveryFee ?? 0;
+  const serviceFee = shippingInfo?.serviceCharge ?? 0;
+  const total = subtotal + (shippingInfo?.charges ?? 0);
+
+  const getLocationFromUser = (userData: typeof user): LocationDetails | null => {
+    if (!userData) return null;
+    const rawLocation =
+      (userData as any).extraData?.location ||
+      (userData as any).location ||
+      (userData as any).locationDetails ||
+      (userData as any).otherData?.location ||
+      null;
+
+    if (!rawLocation || typeof rawLocation.latitude !== 'number' || typeof rawLocation.longitude !== 'number') {
+      return null;
+    }
+
+    return {
+      latitude: rawLocation.latitude,
+      longitude: rawLocation.longitude,
+      address: rawLocation.address ?? rawLocation.location ?? '',
+      city: rawLocation.city ?? '',
+      country: rawLocation.country ?? '',
+      postalCode: rawLocation.postalCode ?? rawLocation.postcode ?? '',
+    };
+  };
+
+  useEffect(() => {
+    const state = location.state as { locationDetails?: LocationDetails } | null;
+    if (state?.locationDetails) {
+      setDropoffLocation(state.locationDetails);
+      try {
+        localStorage.setItem('checkout-dropoff-location', JSON.stringify(state.locationDetails));
+      } catch {
+        // nitaignore ignore localStorage errors
+      }
+      return;
+    }
+
+    const profileUser = isAuthenticated ? user ?? getStoredUser() : null;
+    const profileLocation = profileUser ? getLocationFromUser(profileUser) : null;
+
+    if (profileLocation) {
+      setDropoffLocation(profileLocation);
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem('checkout-dropoff-location');
+      if (stored) {
+        const parsed = JSON.parse(stored) as LocationDetails;
+        if (parsed?.latitude && parsed?.longitude) {
+          setDropoffLocation(parsed);
+        }
+      }
+    } catch {
+      //nitaignore ignore invalid storage
+    }
+  }, [location.state, isAuthenticated, user, getStoredUser]);
+
+  const calculateShipping = async () => {
+    if (!pickupLocation || !dropoffLocation) {
+      setShippingInfo(null);
+      return;
+    }
+
+    setShippingLoading(true);
+    setShippingError(null);
+
+    try {
+      const response = await customerApi.calculateShippingRate({
+        pickupLocation: {
+          latitude: pickupLocation.latitude,
+          longitude: pickupLocation.longitude,
+        },
+        dropoffLocation: {
+          latitude: dropoffLocation.latitude,
+          longitude: dropoffLocation.longitude,
+        },
+        vehicleType: 'motorbike',
+      });
+
+      setShippingInfo(response);
+    } catch (err: any) {
+      setShippingError(err?.message ?? 'Unable to calculate shipping rates.');
+      setShippingInfo(null);
+    } finally {
+      setShippingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    calculateShipping();
+  }, [pickupLocation?.latitude, pickupLocation?.longitude, dropoffLocation?.latitude, dropoffLocation?.longitude]);
+
+  const getDeliveryDuration = (estimatedTime: string | undefined) => {
+    if (!estimatedTime) {
+      return { deliveryDurationType: 'minutes', deliveryDurationLength: 0 };
+    }
+
+    const match = estimatedTime.match(/(\d+)\s*(min|mins|minute|minutes|hr|hour|hours)/i);
+    if (!match) {
+      return { deliveryDurationType: 'minutes', deliveryDurationLength: Number(estimatedTime) || 0 };
+    }
+
+    const value = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    return {
+      deliveryDurationType: unit.startsWith('hour') || unit.startsWith('hr') ? 'hours' : 'minutes',
+      deliveryDurationLength: value,
+    };
+  };
+
+  const isCheckoutEnabled = !!subtotal && !!dropoffLocation && !!pickupLocation && !!shippingInfo && !checkoutLoading;
+
+  const handleCheckout = async () => {
+    setHasAttemptedCheckout(true);
+
+    if (!dropoffLocation) {
+      return;
+    }
+
+    if (missingContactInfo) {
+      setShowCheckoutDetailsSheet(true);
+      return;
+    }
+
+    if (!pickupLocation || !shippingInfo) {
+      return;
+    }
+
+    setCheckoutLoading(true);
+
+    const { deliveryDurationType, deliveryDurationLength } = getDeliveryDuration(shippingInfo.estimatedTime);
+
+    const payload = {
+      fullName: currentFullName,
+      phoneNo: currentPhoneNo,
+      order: {
+        orderNo: '',
+        customer: isAuthenticated ? user?.id ?? '' : '',
+        orderDate: new Date().toISOString(),
+        tax: 0,
+        subTotal: subtotal,
+        total: subtotal + shippingInfo.charges,
+        shippingCharges: shippingInfo.charges,
+        orderItems: cartItems.map((item) => ({
+          productID: item.productID ?? item.id,
+          variantID: item.variantID ?? item.productID ?? item.id,
+          quantity: item.quantity,
+          taxes: [],
+          itemTax: 0,
+        })),
+        paymentStatus: 'pending',
+        paymentMethod: 'mpesa',
+        deliveryDurationType,
+        deliveryDurationLength,
+        orderStatus: 'new',
+        extraData: {
+          orderNotes,
+          paymentInfo: {
+            phoneNo: currentPhoneNo,
+            receiptNo: '',
+            accountRefference: '',
+          },
+        },
+        isArchived: false,
+      },
+    };
+
+    try {
+      await customerApi.submitSignupOrder(payload);
+      clearCart();
+      setOrderNotes('');
+      setShippingInfo(null);
+      window.alert('Order placed successfully.');
+      navigate('/customer/');
+    } catch (err: any) {
+      window.alert(err?.message ?? 'Unable to submit order. Please try again.');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  if (!cartItems.length) {
     return (
       <div className="h-dvh overflow-hidden flex flex-col bg-white text-foreground font-sans antialiased">
         <div className="shrink-0 px-5 pt-6 pb-4">
@@ -51,7 +258,7 @@ export const CartPage: React.FC = () => {
             </div>
             <h2 className="text-lg font-bold text-foreground">Your cart is empty</h2>
             <p className="text-sm text-foreground/60 mt-2">Go back to a store and add items to continue.</p>
-            <Button className="mt-5 w-full h-12 rounded-2xl font-bold" onClick={() => navigate('/vendor-store')}>
+            <Button className="mt-5 w-full h-12 rounded-2xl font-bold" onClick={() => navigate('/')}>
               Continue Shopping
             </Button>
           </div>
@@ -153,37 +360,6 @@ export const CartPage: React.FC = () => {
             </AnimatePresence>
           </div>
 
-          {amountToFreeDelivery > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-primary/5 border border-primary/10 rounded-2xl p-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
-                  <ShoppingBag className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">
-                    Add KES {amountToFreeDelivery.toLocaleString()} more
-                  </p>
-                  <p className="text-xs text-foreground/60 mt-0.5">to get free delivery!</p>
-                </div>
-                <span className="text-xs font-semibold text-primary">
-                  KES {amountToFreeDelivery.toLocaleString()} to go
-                </span>
-              </div>
-              <div className="mt-3 h-2 bg-white rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${deliveryProgress}%` }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                  className="h-full bg-primary rounded-full"
-                />
-              </div>
-            </motion.div>
-          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -191,78 +367,122 @@ export const CartPage: React.FC = () => {
             transition={{ delay: 0.3 }}
             className="bg-white border border-border rounded-2xl p-4"
           >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="w-4 h-4 text-primary" />
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5 text-primary" />
                   </div>
-                  <span className="text-sm text-foreground/70">Subtotal</span>
+                  <div className="min-w-0">
+                    <p className="text-xs text-primary font-semibold mb-0.5">Delivery location</p>
+                    <p className="text-sm font-bold text-foreground truncate">
+                      {dropoffLocation
+                        ? dropoffLocation.address || `${dropoffLocation.city || ''}${dropoffLocation.city && dropoffLocation.country ? ', ' : ''}${dropoffLocation.country || ''}`
+                        : 'No delivery location selected'}
+                    </p>
+                    <p className="text-xs text-foreground/60 mt-1 truncate">
+                      {dropoffLocation
+                        ? [dropoffLocation.city, dropoffLocation.country].filter(Boolean).join(', ')
+                        : 'Select a dropoff location before checkout.'}
+                    </p>
+                  </div>
                 </div>
-                <span className="font-semibold text-foreground">KES {subtotal.toLocaleString()}</span>
+
+                {dropoffLocation ? (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/vendor/location-picker', { state: { returnTo: '/cart', locationDetails: dropoffLocation } })}
+                    className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/15 transition-colors"
+                    aria-label="Change delivery location"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </motion.button>
+                ) : null}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
-                    <Truck className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="text-sm text-foreground/70">Delivery Fee</span>
-                </div>
-                <span className="font-semibold text-foreground">KES {deliveryFee.toLocaleString()}</span>
-              </div>
+              {!dropoffLocation ? (
+                <Button
+                  variant="outline"
+                  className="w-full border-border hover:bg-secondary text-foreground font-bold py-3.5 text-sm gap-2"
+                  onClick={() => navigate('/vendor/location-picker', { state: { returnTo: '/cart', locationDetails: dropoffLocation } })}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                  Pick Delivery Location
+                </Button>
+              ) : null}
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
-                    <Percent className="w-4 h-4 text-primary" />
-                  </div>
-                  <span className="text-sm text-foreground/70">Service Fee</span>
-                </div>
-                <span className="font-semibold text-foreground">KES {serviceFee.toLocaleString()}</span>
-              </div>
-
-              <div className="border-t border-border pt-3 mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-foreground">Total</span>
-                  <span className="text-lg font-bold text-primary">KES {total.toLocaleString()}</span>
-                </div>
-              </div>
+              {hasAttemptedCheckout && !dropoffLocation ? (
+                <p className="text-xs text-error">{dropoffLocationError}</p>
+              ) : null}
             </div>
           </motion.div>
+
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white border border-border rounded-2xl p-4"
+            className="bg-white border border-border rounded-2xl p-4 space-y-4"
           >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                  <Truck className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-sm text-foreground/70">Delivery Fee</span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-primary font-semibold mb-0.5">Deliver to</p>
-                <h4 className="text-sm font-bold text-foreground">Westlands, Nairobi</h4>
-                <p className="text-xs text-foreground/60 mt-1">
-                  Estimated delivery time <span className="text-primary font-medium">~25 mins</span>
-                </p>
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={() => navigate('/vendor/location-picker', { state: { returnTo: '/cart' } })}
-                className="p-2 text-foreground/40 hover:text-foreground transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </motion.button>
+              <span className="font-semibold text-foreground">KES {deliveryFee.toLocaleString()}</span>
             </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                  <Percent className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-sm text-foreground/70">Service Fee</span>
+              </div>
+              <span className="font-semibold text-foreground">KES {serviceFee.toLocaleString()}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-foreground/70">Distance</span>
+              <span className="text-sm font-semibold text-foreground">{shippingInfo ? `${shippingInfo.distanceKm.toFixed(1)} km` : '-'}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-foreground/70">ETA</span>
+              <span className="text-sm font-semibold text-foreground">{shippingInfo?.estimatedTime ?? '-'}</span>
+            </div>
+
+            <div className="border-t border-border pt-3 mt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-base font-bold text-foreground">Total</span>
+                <span className="text-lg font-bold text-primary">KES {total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {shippingLoading && (
+              <p className="text-xs text-foreground/60">Calculating delivery charges...</p>
+            )}
+
+            {!shippingLoading && !shippingInfo && pickupLocation && dropoffLocation && (
+              <p className="text-xs text-foreground/60">Unable to retrieve delivery charges at this time.</p>
+            )}
+
+            {shippingError && (
+              <p className="text-xs text-error">{shippingError}</p>
+            )}
+
+            {!pickupLocation && (
+              <p className="text-xs text-error">Pickup location is missing. Add items from a vendor first.</p>
+            )}
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
-            className="bg-white border border-border rounded-2xl p-4"
+            className=""
           >
             <label htmlFor="order-notes" className="block text-sm font-semibold text-foreground mb-2">
               Order notes
@@ -280,6 +500,79 @@ export const CartPage: React.FC = () => {
             </p>
           </motion.div>
 
+          <BottomSheet
+            isOpen={showCheckoutDetailsSheet}
+            onClose={() => {
+              setShowCheckoutDetailsSheet(false);
+              setContactNameError('');
+              setContactPhoneError('');
+            }}
+            animate={false}
+            title="Confirm your details"
+            className="z-100"
+            showCloseButton={false}
+          >
+            <div className="space-y-4 pb-6">
+              <p className="text-sm text-foreground/60">
+                Please enter your full name and phone number before checkout.
+              </p>
+              <Input
+                label="Full Name"
+                placeholder="Enter your full name"
+                value={checkoutFullName}
+                onChange={(value) => {
+                  setCheckoutFullName(String(value));
+                  setContactNameError('');
+                }}
+                error={contactNameError}
+              />
+              <Input
+                label="Phone Number"
+                placeholder="Enter phone number"
+                type="tel"
+                inputMode="tel"
+                value={checkoutPhoneNo}
+                onChange={(value) => {
+                  setCheckoutPhoneNo(String(value));
+                  setContactPhoneError('');
+                }}
+                error={contactPhoneError}
+              />
+              <div className="space-y-3 pt-2">
+                <Button
+                  className="w-full bg-primary text-white font-bold py-3 rounded-2xl"
+                  onClick={() => {
+                    const name = checkoutFullName.trim();
+                    const phone = checkoutPhoneNo.trim();
+                    let invalid = false;
+                    if (!name) {
+                      setContactNameError('Full name is required.');
+                      invalid = true;
+                    }
+                    if (!phone) {
+                      setContactPhoneError('Phone number is required.');
+                      invalid = true;
+                    }
+                    if (invalid) {
+                      return;
+                    }
+                    setShowCheckoutDetailsSheet(false);
+                    void handleCheckout();
+                  }}
+                >
+                  Proceed to Checkout
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full border-border text-foreground font-semibold py-3 rounded-2xl"
+                  onClick={() => setShowCheckoutDetailsSheet(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </BottomSheet>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -287,7 +580,9 @@ export const CartPage: React.FC = () => {
             className="pt-1"
           >
             <Button
-              onClick={() => navigate('/customer/', { state: { orderNotes } })}
+              onClick={handleCheckout}
+              loading={checkoutLoading}
+              disabled={!isCheckoutEnabled}
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
             >
               Checkout • KES {total.toLocaleString()}

@@ -77,6 +77,11 @@ export const authApi = {
     return response.data;
   },
 
+  phoneLogin: async (phone: string, password: string): Promise<UserProfile> => {
+    const response = await axiosInstance.post<UserProfile>('/phone-login/', { phoneNo: phone, password });
+    return response.data;
+  },
+
   getProfile: async () : Promise<UserProfile> => {
     const response = await axiosInstance.get<UserProfile>('/me/');
     return response.data;
@@ -131,9 +136,30 @@ export const customerApi = {
   getPersonalInformation: async (): Promise<CustomerSettingsData['personalInformation']> => apiGet('/customer/personal-information/'),
   updatePersonalInformation: async (payload: Partial<CustomerSettingsData['personalInformation']>): Promise<CustomerSettingsData['personalInformation']> => apiPatch('/customer/personal-information/', payload),
   getAccountSettings: async (): Promise<AccountSettingsData> => apiGet('/customer/account-settings/'),
-  // Customer selected location APIs
+  
+  
   getLocation: async (): Promise<Record<string, any>> => apiGet('/customer/location/'),
   saveLocation: async (payload: Record<string, unknown>): Promise<Record<string, any>> => apiPost('/customer/location/', payload),
+  
+  calculateShippingRate: async (payload: {
+    pickupLocation: { latitude: number; longitude: number };
+    dropoffLocation: { latitude: number; longitude: number };
+    vehicleType: 'motorbike';
+  }): Promise<{ vehicleType: string; distanceKm: number; estimatedTime: string; deliveryFee: number; serviceCharge: number; charges: number }> => {
+    const response = await axiosInstance.post<{
+      vehicleType: string;
+      distanceKm: number;
+      estimatedTime: string;
+      deliveryFee: number;
+      serviceCharge: number;
+      charges: number;
+    }>('/shipping-rates/calculate', payload);
+    return response.data;
+  },
+  submitSignupOrder: async (payload: Record<string, unknown>): Promise<Record<string, unknown>> =>
+    apiPost('/signup-orders', payload),
+  
+  
   getHelpTopics: async (): Promise<SupportTopic[]> => apiGet('/customer/help/topics/'),
   getHelpOptions: async (): Promise<SupportOption[]> => apiGet('/customer/help/options/'),
   createSupportTicket: async (payload: Record<string, unknown>): Promise<{ message: string; ticketId: string }> => apiPost('/customer/help/tickets/', payload),
@@ -193,6 +219,12 @@ export const productApi = {
     const response = await axiosInstance.get<ProductPayload>(`/products/${id}`);
     return response.data;
   },
+
+  deleteProduct: async (id: string) => {
+    const response = await axiosInstance.delete(`/products/${id}`);
+    return response.data;
+  },
+
 };
 
 
@@ -206,6 +238,11 @@ export const categoryApi = {
   getCategories: async (): Promise<CategoryItem[]> => {
     const response = await axiosInstance.get<CategoryItem[]>('/categories/vendor');
     return response.data;
+  },
+
+  deleteCategory : async (categoryID :string) => {
+    const response = await axiosInstance.delete(`/categories/${categoryID}`)
+    return response.data
   },
 
   createCategory: async (payload: CategoryCreatePayload | FormData): Promise<CategoryCreateResponse> => {

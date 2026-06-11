@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -6,52 +6,31 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
-import { sharedApi, VendorsApi } from '../../../lib/api';
+import { VendorsApi } from '../../../lib/api';
 import type { VendorSummary } from '../../../lib/types';
 import { returnImageUrl } from '../../../config';
+import { useQuery } from '@tanstack/react-query';
 
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [vendors, setVendors] = useState<VendorSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
+  const vendorsQuery = useQuery<VendorSummary[]>({
+    queryKey: ['vendors'],
+    queryFn: async () => {
+      const vendorsData = await VendorsApi.getVendors();
+      return (vendorsData || []).map((v: any) => ({
+        id: v.id,
+        slug: v.id,
+        name: v.vendorName || v.name || 'Vendor',
+        category: 'Local Vendor',
+        time: v.distanceText || v.durationText || '25-30 min',
+        logoUrl: returnImageUrl(v.logoURL || v.logoUrl),
+      }));
+    },
+  });
 
-    const loadWelcomeData = async () => {
-      try {
-        setIsLoading(true);
-        const vendorsData = await VendorsApi.getVendors();
-        const mappedVendors = (vendorsData || []).map((v: any) => ({
-          id: v.id,
-          slug: v.id,
-          name: v.vendorName || v.name || 'Vendor',
-          category: 'Local Vendor',
-          time: v.distanceText || v.durationText || '25-30 min',
-          logoUrl: returnImageUrl(v.logoURL || v.logoUrl),
-        }));
-
-        if (isMounted) {
-          setVendors(mappedVendors);
-        }
-      } catch (err) {
-        console.error('Failed to load vendors:', err);
-        if (isMounted) {
-          setVendors([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadWelcomeData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const isLoading = vendorsQuery.isLoading;
+  const vendors = vendorsQuery.data ?? [];
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-24">
@@ -87,6 +66,7 @@ export const WelcomePage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="shrink-0 w-32 h-32 sm:w-36 sm:h-36"
           >
+
             <img
               src="/shopping-bag.png"
               alt="Delivery illustration"
@@ -133,7 +113,7 @@ export const WelcomePage: React.FC = () => {
                   <img
                     src={vendor.logoUrl}
                     alt={vendor.name}
-                    className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-sm"
+                    className="w-full h-full object-contain rounded-sm"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/default-vendor-logo.png';
                     }}

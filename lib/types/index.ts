@@ -89,6 +89,7 @@ export interface VendorSummary {
 export interface VendorCategory {
   name: string;
   imageUrl: string;
+  image?: string;
 }
 
 export type CategoryStatus = 'active' | 'inactive';
@@ -96,6 +97,7 @@ export type CategoryStatus = 'active' | 'inactive';
 export interface CategoryItem {
   categoryID: string;
   imageUrl: string;
+  image?:string;
   name: string;
   description: string;
   status: CategoryStatus;
@@ -117,6 +119,8 @@ export interface CategoryCreateResponse {
 
 export interface VendorMenuItem {
   id: string | number;
+  productID?: string | number;
+  variantID?: string | number;
   name: string;
   description: string;
   price: number;

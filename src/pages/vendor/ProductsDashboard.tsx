@@ -30,64 +30,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ProductPayload, Store } from '@/lib/types';
 import { BASE_URL, returnImageUrl, TENANT_ID } from '@/config';
 import { productApi } from '@/lib/api';
-
-// --- Mock Data ---
-const products = [
-  {
-    id: '1',
-    name: 'Burger Combo',
-    category: 'Fast Food',
-    price: 520.0,
-    status: 'Active',
-    stock: 18,
-    image: '/burgers.jpeg'
-  },
-  {
-    id: '2',
-    name: 'Zinger Burger',
-    category: 'Fast Food',
-    price: 450.0,
-    status: 'Active',
-    stock: 24,
-    image: '/Zinger Burger.jpeg'
-  },
-  {
-    id: '3',
-    name: 'Chicken In Meal',
-    category: 'Meals',
-    price: 680.0,
-    status: 'Active',
-    stock: 12,
-    image: '/chicken-in.jpg'
-  },
-  {
-    id: '4',
-    name: 'Streetwise Combo',
-    category: 'Meals',
-    price: 390.0,
-    status: 'Active',
-    stock: 30,
-    image: '/Streetwise 2.jpeg'
-  },
-  {
-    id: '5',
-    name: 'Pizza Slice Box',
-    category: 'Pizza',
-    price: 720.0,
-    status: 'Inactive',
-    stock: 0,
-    image: '/pizzain.png'
-  },
-  {
-    id: '6',
-    name: 'Mixed Snacks',
-    category: 'Snacks',
-    price: 210.0,
-    status: 'Out of Stock',
-    stock: 0,
-    image: '/snacks.jpeg'
-  }
-];
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // --- Filter Bottom Sheet Component ---
 const FilterBottomSheet = ({ isOpen, onClose }: any) => {
@@ -288,7 +231,7 @@ const DuplicateBottomSheet = ({ isOpen, onClose, product }: any) => {
 };
 
 // --- Delete Bottom Sheet Component ---
-const DeleteBottomSheet = ({ isOpen, onClose, product }: any) => {
+const DeleteBottomSheet = ({ isOpen, onClose, product, onDelete, isDeleting }: any) => {
   if (!product) return null;
 
   const firstVariant = product.variants?.[0];
@@ -331,8 +274,12 @@ const DeleteBottomSheet = ({ isOpen, onClose, product }: any) => {
 
         {/* Footer */}
         <div className="pt-2 space-y-3">
-          <Button className="w-full bg-error text-white font-bold py-3.5 rounded-xl shadow-lg shadow-error/20 gap-2">
-            <Trash2 className="w-4 h-4" /> Delete Product
+          <Button
+            className="w-full bg-error text-white font-bold py-3.5 rounded-xl shadow-lg shadow-error/20 gap-2"
+            onClick={onDelete}
+            disabled={isDeleting}
+          >
+            <Trash2 className="w-4 h-4" /> {isDeleting ? 'Deleting...' : 'Delete Product'}
           </Button>
           <Button variant="outline" className="w-full border-error/20 text-error font-semibold py-3 rounded-xl" onClick={onClose}>
             Cancel
@@ -354,15 +301,43 @@ export const ProductsDashboard: React.FC = () => {
   const [showDuplicateSheet, setShowDuplicateSheet] = useState(false);
   const [showDeleteSheet, setShowDeleteSheet] = useState(false);
 
-  const [products, setProducts] = useState<ProductPayload[]>([]);
-  
-  // Selected Product for actions
+  const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   // Store selection state
-  const [stores, setStores] = useState<Store[]>([]);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+
+  const productsQuery = useQuery<ProductPayload[]>({
+    queryKey: ['vendorProducts'],
+    queryFn: () => productApi.getProducts({ page: 1, size: 20 }),
+  });
+
+  const storesQuery = useQuery<Store[]>({
+    queryKey: ['vendorStores'],
+    queryFn: () => productApi.getStores(),
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: (productId: string) => productApi.deleteProduct(productId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendorProducts'] });
+      setShowDeleteSheet(false);
+      setSelectedProduct(null);
+    },
+  });
+
+  const stores = storesQuery.data ?? [];
+  const products = productsQuery.data ?? [];
+  const isFetching = storesQuery.isLoading || productsQuery.isLoading;
+  const fetchError = storesQuery.error || productsQuery.error;
+  const deleteLoading = deleteProductMutation.status === 'pending';
+
+  useEffect(() => {
+    if (stores.length > 0 && !selectedStore) {
+      setSelectedStore(stores[0]);
+    }
+  }, [stores, selectedStore]);
 
   const openDuplicate = (product: any) => {
     setSelectedProduct(product);
@@ -381,36 +356,6 @@ export const ProductsDashboard: React.FC = () => {
     { id: 'out-of-stock', label: 'Out of Stock', count: 14 }
   ];
 
-  useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const storesData = await productApi.getStores();
-        setStores(storesData);
-        if (storesData.length > 0) {
-          setSelectedStore(storesData[0]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch stores:', error);
-      }
-    };
-    fetchStores();
-  }, []);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const params = {
-          page: 1,
-          size: 3,
-        };
-        const productsdata = await productApi.getProducts(params);
-        setProducts(productsdata);
-      } catch (error) {
-        console.error('Failed to fetch products:', error);
-      }
-    };
-    fetchProducts();
-  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -727,7 +672,13 @@ export const ProductsDashboard: React.FC = () => {
       {/* --- Bottom Sheets --- */}
       <FilterBottomSheet isOpen={showFilterSheet} onClose={() => setShowFilterSheet(false)} />
       <DuplicateBottomSheet isOpen={showDuplicateSheet} onClose={() => setShowDuplicateSheet(false)} product={selectedProduct} />
-      <DeleteBottomSheet isOpen={showDeleteSheet} onClose={() => setShowDeleteSheet(false)} product={selectedProduct} />
+      <DeleteBottomSheet
+        isOpen={showDeleteSheet}
+        onClose={() => setShowDeleteSheet(false)}
+        product={selectedProduct}
+        onDelete={() => deleteProductMutation.mutate(String(selectedProduct?.productID ?? selectedProduct?.id))}
+        isDeleting={deleteLoading}
+      />
 
       {/* Bottom Navigation */}
       <BottomNav />

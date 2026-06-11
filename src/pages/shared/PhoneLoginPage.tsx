@@ -1,33 +1,29 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Input } from '@stackloop/ui';
-import { 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  ShieldCheck, 
-  Mail, 
+import {
+  ArrowRight,
+  ShieldCheck,
+  Phone,
   Lock,
+  Mail,
   Leaf,
   Home,
-  Phone,
 } from 'lucide-react';
-
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserProfile, UserRole } from '../../types';
 import { authApi } from '../../../lib/api';
 
-export const LoginPage: React.FC = () => {
+export const PhoneLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    phone: '',
+    password: '',
   });
 
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
@@ -42,8 +38,7 @@ export const LoginPage: React.FC = () => {
     return 'customer';
   };
 
-  const getLandingPath = (role : string) => {
-
+  const getLandingPath = (role: string) => {
     switch (role) {
       case 'vendor':
         return '/vendor/dashboard';
@@ -58,13 +53,13 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     setIsLoading(true);
     setErrorMessage('');
 
-    authApi.login(formData.email, formData.password)
+    authApi.phoneLogin(formData.phone, formData.password)
       .then((response) => {
         const userType = resolveRole(response.userType);
         const extraData = (response as any).extraData;
@@ -72,18 +67,17 @@ export const LoginPage: React.FC = () => {
 
         const user: UserProfile = {
           id: response.id,
-          fullName: response.fullName || "",
+          fullName: response.fullName || '',
           email: response.email,
-          phoneNo: response.phoneNo || "",
+          phoneNo: response.phoneNo || '',
           userType: userType,
-          username: response.username || "",
+          username: response.username || '',
           extraData: extraData,
         };
-        
+
         login({ token: response?.token || '', user });
-        
+
         if (!extraData || !lat) {
-          console.log('Login successful after session storage:', { user, response });
           navigate('/vendor/location-picker', {
             state: {
               returnTo: from ?? getLandingPath(user.userType),
@@ -96,12 +90,11 @@ export const LoginPage: React.FC = () => {
           return;
         }
 
-        
         const destination = from ?? getLandingPath(user.userType);
         navigate(destination, { replace: true });
       })
       .catch((error) => {
-        console.error('Login error:', error);
+        console.error('Phone login error:', error);
         let errorMsg = 'Login failed. Please try again.';
         if (error && typeof error === 'object') {
           if ('response' in error && error.response && typeof error.response === 'object') {
@@ -122,8 +115,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased px-5 pb-10 relative overflow-hidden">
-      
-      {/* Decorative Leaves Background */}
       <div className="absolute top-20 right-0 w-32 h-32 opacity-20 pointer-events-none">
         <Leaf className="w-full h-full text-primary rotate-12" />
       </div>
@@ -134,13 +125,8 @@ export const LoginPage: React.FC = () => {
         <Leaf className="w-full h-full text-primary rotate-45" />
       </div>
 
-      {/* Header / Logo */}
       <div className="pt-8 pb-4 flex justify-between items-center relative z-10">
-        <img 
-          src="kerigo.png" 
-          alt="KeriGo Logo" 
-          className="h-12 sm:h-14 object-contain" 
-        />
+        <img src="kerigo.png" alt="KeriGo Logo" className="h-12 sm:h-14 object-contain" />
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -151,10 +137,8 @@ export const LoginPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Hero Section */}
       <section className="flex flex-nowrap items-center gap-4 mb-6">
-        {/* Text Content */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="flex-1 min-w-0"
@@ -163,47 +147,41 @@ export const LoginPage: React.FC = () => {
             Welcome!
           </h2>
           <p className="text-xs sm:text-sm text-foreground/60 font-medium leading-relaxed">
-            Login to continue ordering your favorites with ease.
+            Login with your phone number to continue ordering your favorites.
           </p>
         </motion.div>
 
-        {/* Shopping Bag Illustration */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
           className="shrink-0 w-32 h-32 sm:w-36 sm:h-36"
         >
-          <img 
-            src="shopping-bag.png" 
-            alt="Shopping bag" 
-            className="w-full h-full object-contain drop-shadow-lg" 
-          />
+          <img src="shopping-bag.png" alt="Shopping bag" className="w-full h-full object-contain drop-shadow-lg" />
         </motion.div>
       </section>
 
-      {/* Login Form */}
-      <motion.form 
+      <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        onSubmit={handleLogin} 
+        onSubmit={handlePhoneLogin}
         className="space-y-4 relative z-10"
       >
-        {/* Email or Phone Input */}
+        <div className="pb-3">
+            <Input
+            type="tel"
+            label="Phone number"
+            placeholder="Enter your phone number"
+            value={formData.phone}
+            onChange={(value) => setFormData({ ...formData, phone: String(value) })}
+            leftIcon={<Phone className="w-5 h-5 text-foreground/40" />}
+            className="rounded-2xl h-14"
+            />
+        </div>
+
         <Input
-          type="email"
-          label="Email address"
-          placeholder="Enter your email"
-          value={formData.email}
-          onChange={(value) => setFormData({ ...formData, email: String(value) })}
-          leftIcon={<Mail className="w-5 h-5 text-foreground/40" />}
-          className="rounded-2xl h-14"
-        />
-        
-        {/* Password Input */}
-        <Input
-          type={showPassword ? "text" : "password"}
+          type="password"
           label="Password"
           placeholder="Enter password"
           value={formData.password}
@@ -212,26 +190,23 @@ export const LoginPage: React.FC = () => {
           className="rounded-2xl h-14"
         />
 
-        {/* Forgot Password Link */}
         <div className="flex justify-end">
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="text-sm text-primary font-bold hover:text-primary/80 transition-colors"
           >
             Forgot password?
           </button>
         </div>
 
-        {/* Error Message */}
         {errorMessage && (
           <div className="p-3.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed">
             {errorMessage}
           </div>
         )}
 
-        {/* Login Button */}
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={isLoading}
           className="w-full h-14 rounded-2xl text-lg font-bold flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
           icon={isLoading ? (
@@ -247,7 +222,6 @@ export const LoginPage: React.FC = () => {
         </Button>
       </motion.form>
 
-      {/* OR Divider */}
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
@@ -259,25 +233,23 @@ export const LoginPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Google Sign In Button */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Button 
+        <Button
           type="button"
-          variant="outline" 
-          onClick={() => navigate('/phone-login')}
+          variant="outline"
+          onClick={() => navigate('/login')}
           className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary"
         >
-          <Phone className="h-5 w-5 text-foreground/80" />
-          <span className="font-bold text-foreground/80">Login with Phone</span>
+          <Mail className="h-5 w-5 text-foreground/80" />
+          <span className="font-bold text-foreground/80">Login with Email</span>
         </Button>
       </motion.div>
 
-      {/* Security Message */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
@@ -285,14 +257,13 @@ export const LoginPage: React.FC = () => {
       >
         <ShieldCheck className="h-4 w-4 text-primary" />
         Your data is safe and secure with us.
-      </motion.div>      
-      {/* Bottom Decorative Leaves */}
+      </motion.div>
+
       <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none overflow-hidden">
         <div className="absolute bottom-4 left-8 w-6 h-6 bg-primary/20 rounded-full blur-xl" />
         <div className="absolute bottom-8 right-12 w-8 h-8 bg-primary/15 rounded-full blur-xl" />
         <div className="absolute bottom-2 left-1/3 w-4 h-4 bg-primary/30 rounded-full blur-lg" />
       </div>
-
     </div>
   );
 };
