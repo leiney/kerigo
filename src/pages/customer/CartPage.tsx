@@ -500,79 +500,6 @@ export const CartPage: React.FC = () => {
             </p>
           </motion.div>
 
-          <BottomSheet
-            isOpen={showCheckoutDetailsSheet}
-            onClose={() => {
-              setShowCheckoutDetailsSheet(false);
-              setContactNameError('');
-              setContactPhoneError('');
-            }}
-            animate={false}
-            title="Confirm your details"
-            className="z-100"
-            showCloseButton={false}
-          >
-            <div className="space-y-4 pb-6">
-              <p className="text-sm text-foreground/60">
-                Please enter your full name and phone number before checkout.
-              </p>
-              <Input
-                label="Full Name"
-                placeholder="Enter your full name"
-                value={checkoutFullName}
-                onChange={(value) => {
-                  setCheckoutFullName(String(value));
-                  setContactNameError('');
-                }}
-                error={contactNameError}
-              />
-              <Input
-                label="Phone Number"
-                placeholder="Enter phone number"
-                type="tel"
-                inputMode="tel"
-                value={checkoutPhoneNo}
-                onChange={(value) => {
-                  setCheckoutPhoneNo(String(value));
-                  setContactPhoneError('');
-                }}
-                error={contactPhoneError}
-              />
-              <div className="space-y-3 pt-2">
-                <Button
-                  className="w-full bg-primary text-white font-bold py-3 rounded-2xl"
-                  onClick={() => {
-                    const name = checkoutFullName.trim();
-                    const phone = checkoutPhoneNo.trim();
-                    let invalid = false;
-                    if (!name) {
-                      setContactNameError('Full name is required.');
-                      invalid = true;
-                    }
-                    if (!phone) {
-                      setContactPhoneError('Phone number is required.');
-                      invalid = true;
-                    }
-                    if (invalid) {
-                      return;
-                    }
-                    setShowCheckoutDetailsSheet(false);
-                    void handleCheckout();
-                  }}
-                >
-                  Proceed to Checkout
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-border text-foreground font-semibold py-3 rounded-2xl"
-                  onClick={() => setShowCheckoutDetailsSheet(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </BottomSheet>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -590,6 +517,82 @@ export const CartPage: React.FC = () => {
           </motion.div>
         </div>
       </main>
+
+
+
+      <BottomSheet
+        isOpen={showCheckoutDetailsSheet}
+        onClose={() => {
+          setShowCheckoutDetailsSheet(false);
+          setContactNameError('');
+          setContactPhoneError('');
+        }}
+        animate={false}
+        title="Confirm your details"
+        className="z-100 bottom-0"
+        showCloseButton={false}
+      >
+        <div className="space-y-4 pb-6">
+          <p className="text-sm text-foreground/60">
+            Please enter your full name and phone number before checkout.
+          </p>
+          <Input
+            label="Full Name"
+            placeholder="Enter your full name"
+            value={checkoutFullName}
+            onChange={(value) => {
+              setCheckoutFullName(String(value));
+              setContactNameError('');
+            }}
+            error={contactNameError}
+          />
+          <Input
+            label="Phone Number"
+            placeholder="Enter phone number"
+            type="tel"
+            inputMode="tel"
+            value={checkoutPhoneNo}
+            onChange={(value) => {
+              setCheckoutPhoneNo(String(value));
+              setContactPhoneError('');
+            }}
+            error={contactPhoneError}
+          />
+          <div className="space-y-3 pt-2">
+            <Button
+              className="w-full bg-primary text-white font-bold py-3 rounded-2xl"
+              onClick={() => {
+                const name = checkoutFullName.trim();
+                const phone = checkoutPhoneNo.trim();
+                let invalid = false;
+                if (!name) {
+                  setContactNameError('Full name is required.');
+                  invalid = true;
+                }
+                if (!phone) {
+                  setContactPhoneError('Phone number is required.');
+                  invalid = true;
+                }
+                if (invalid) {
+                  return;
+                }
+                setShowCheckoutDetailsSheet(false);
+                void handleCheckout();
+              }}
+            >
+              Proceed to Checkout
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-border text-foreground font-semibold py-3 rounded-2xl"
+              onClick={() => setShowCheckoutDetailsSheet(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+
 
       {/* --- Bottom Navigation --- */}
       <BottomNav cartCount={cartCount} />
