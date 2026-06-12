@@ -156,8 +156,6 @@ export const customerApi = {
     }>('/shipping-rates/calculate', payload);
     return response.data;
   },
-  submitSignupOrder: async (payload: Record<string, unknown>): Promise<Record<string, unknown>> =>
-    apiPost('/signup-orders', payload),
   
   
   getHelpTopics: async (): Promise<SupportTopic[]> => apiGet('/customer/help/topics/'),
@@ -219,6 +217,10 @@ export const productApi = {
     const response = await axiosInstance.get<ProductPayload>(`/products/${id}`);
     return response.data;
   },
+
+  submitSignupOrder: async (payload: Record<string, unknown>) =>
+    axiosInstance.post('/signup-on-order', payload),
+  
 
   deleteProduct: async (id: string) => {
     const response = await axiosInstance.delete(`/products/${id}`);

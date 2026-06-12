@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
 import { useAuth } from '../../context/AuthContext';
-import { customerApi } from '../../../lib/api';
+import { customerApi, productApi } from '../../../lib/api';
 import type { LocationDetails } from '../../../lib/types';
 
 export const CartPage: React.FC = () => {
@@ -183,7 +183,7 @@ export const CartPage: React.FC = () => {
 
     setCheckoutLoading(true);
 
-    const { deliveryDurationType, deliveryDurationLength } = getDeliveryDuration(shippingInfo.estimatedTime);
+    
 
     const payload = {
       fullName: currentFullName,
@@ -205,8 +205,6 @@ export const CartPage: React.FC = () => {
         })),
         paymentStatus: 'pending',
         paymentMethod: 'mpesa',
-        deliveryDurationType,
-        deliveryDurationLength,
         orderStatus: 'new',
         extraData: {
           orderNotes,
@@ -216,12 +214,11 @@ export const CartPage: React.FC = () => {
             accountRefference: '',
           },
         },
-        isArchived: false,
       },
     };
 
     try {
-      await customerApi.submitSignupOrder(payload);
+      await productApi.submitSignupOrder(payload);
       clearCart();
       setOrderNotes('');
       setShippingInfo(null);
