@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { selectCartCount, useCartStore } from '../../store/cartStore';
 import { customerApi, productApi } from '../../../lib/api';
 import { returnImageUrl } from '../../../config';
+import { mockData } from '../../../lib/mockData';
 import type { CustomerHomeData, OrderStep } from '../../../lib/types';
 
 export const CustomerHomePage: React.FC = () => {
@@ -88,6 +89,39 @@ export const CustomerHomePage: React.FC = () => {
     });
   };
 
+  const formatRelativeDate = (value: string | undefined): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    
+    const now = new Date();
+    
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+    const startOf7DaysAgo = new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const startOf14DaysAgo = new Date(startOfToday.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const timeStr = date.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).toLowerCase();
+
+    if (date >= startOfToday) {
+      return `Today, ${timeStr}`;
+    } else if (date >= startOfYesterday) {
+      return `Yesterday, ${timeStr}`;
+    } else if (date >= startOf7DaysAgo) {
+      const diffDays = Math.floor((startOfToday.getTime() - date.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+      return `${diffDays} days ago, ${timeStr}`;
+    } else if (date >= startOf14DaysAgo) {
+      return `Last Week, ${timeStr}`;
+    } else {
+      const weeks = Math.floor((startOfToday.getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+      return `${weeks} Weeks Ago, ${timeStr}`;
+    }
+  };
+
   const getPastOrderImageUrl = (order: any): string => {
     if (!order?.imageURL) return '/logo.png';
     return returnImageUrl(order.imageURL);
@@ -102,15 +136,14 @@ export const CustomerHomePage: React.FC = () => {
   };
   const getPastOrderStatusClasses = (status: string): string => {
     const normalized = status.toLowerCase();
-    if (normalized === 'new') return 'bg-emerald-100 text-emerald-700';
+    if (normalized === 'new') return 'bg-primary/10 text-primary';
     if (normalized === 'delivered') return 'bg-primary/10 text-primary';
     if (['confirmed', 'preparing', 'on the way'].includes(normalized)) return 'bg-yellow-100 text-yellow-700';
     return 'bg-gray-100 text-gray-600';
   };
   const getPastOrderPrice = (order: any): number => Number(order.amount ?? 0);
   const getPastOrderDate = (order: any): string => {
-    if (!order?.orderDate) return '';
-    return `${formatDate(order.orderDate)} ${formatTime(order.orderDate)}`.trim();
+    return formatRelativeDate(order?.orderDate ?? order?.date);
   };
   const getPastOrderId = (order: any): string => order.orderID ?? '';
 
@@ -224,8 +257,8 @@ export const CustomerHomePage: React.FC = () => {
           {/* Order Info & Illustration */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex-1 min-w-0">
-              <p className="max-w-25 truncate text-xs text-foreground/70 font-medium">Order #{latestOrder?.orderNo ?? latestOrder?.orderID ?? 'KR1024'}</p>
-              <p className="text-[11px] text-foreground/50 mt-0.5">{`${formatDate(latestOrder?.orderDate)} ${formatTime(latestOrder?.orderDate)}`.trim()} • {(latestOrder?.orderItems?.length ?? 0)} items</p>
+              <p className="max-w-16 truncate text-[10px] text-foreground/70 font-medium">Order #{latestOrder?.orderNo ?? latestOrder?.orderID ?? 'KR1024'}</p>
+              <p className="text-[10px] text-foreground/50 mt-0.5">{formatRelativeDate(latestOrder?.orderDate ?? latestOrder?.date)} • {(latestOrder?.orderItems?.length ?? latestOrder?.itemCount ?? 0)} items</p>
               <h3 className="text-xl font-bold text-foreground mt-1.5">KES {(latestOrder?.total ?? latestOrder?.amount ?? 0).toLocaleString() ?? '--'}</h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[11px] text-foreground/50">Paid via {latestOrder?.paymentMethod ? latestOrder.paymentMethod.toUpperCase() : '—'}</span>
@@ -359,14 +392,14 @@ export const CustomerHomePage: React.FC = () => {
 
                 {/* Details */}
                 <div className="min-w-0">
-                  <p className="max-w-25 truncate font-bold text-xs text-foreground">{getPastOrderDisplayNumber(order)}</p>
+                  <p className="max-w-16 truncate font-bold text-[10px] text-foreground">{getPastOrderDisplayNumber(order)}</p>
                   <p className="text-[11px] text-foreground/60 truncate">{getPastOrderLabel(order)}</p>
                   <p className="text-[10px] text-foreground/40 mt-0.5">{getPastOrderDate(order)}</p>
                 </div>
 
                 {/* Price & Status */}
                 <div className="text-right flex-1 ">
-                    <p className="font-bold text-xs text-foreground">KES {getPastOrderPrice(order).toLocaleString()}</p>
+                    <p className="font-bold text-[10px] text-foreground">KES {getPastOrderPrice(order).toLocaleString()}</p>
                   <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${getPastOrderStatusClasses(getPastOrderStatus(order))}`}>
                     {getPastOrderStatus(order)}
                   </span>
@@ -380,7 +413,6 @@ export const CustomerHomePage: React.FC = () => {
                 >
                   <RotateCw className="w-3 h-3" /> Reorder
                 </Button>
-                <ChevronRight className="w-3 h-3" />
               </motion.div>
             ))}
           </div>

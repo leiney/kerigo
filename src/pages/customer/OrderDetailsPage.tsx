@@ -15,6 +15,7 @@ import {
 import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'framer-motion';
 import { productApi } from '../../../lib/api';
+import { returnImageUrl } from '../../../config';
 
 type OrderDetailData = any;
 
@@ -27,11 +28,74 @@ const OrderDetailsPage: React.FC = () => {
     let isMounted = true;
 
     const loadOrderDetails = async () => {
-      const data = await productApi.getOrderDetails(orderId ?? 'KR1024');
-      console.log('OrderDetails raw response:', data);
+      try {
+        const data = await productApi.getOrderDetails(orderId ?? 'KR1024');
+        console.log('OrderDetails raw response:', data);
 
-      if (isMounted) {
-        setOrderDetails(data);
+        const orderItemsList = data.orderItems || [];
+        const itemsWithDetails = await Promise.all(
+          orderItemsList.map(async (item: any) => {
+            try {
+              const product = await productApi.getProductById(item.productID);
+              const variant = (product.variants || []).find(
+                (v: any) => v.variantID === item.variantID
+              );
+              const imageId = variant?.images?.[0];
+              const imageUrl = returnImageUrl(imageId);
+
+              return {
+                id: item.variantID || item.productID,
+                productID: item.productID,
+                variantID: item.variantID,
+                quantity: item.quantity,
+                name: product.name || 'Product',
+                description: product.description || '',
+                price: variant?.price ?? item.price ?? 0,
+                imageUrl: imageUrl,
+              };
+            } catch (err) {
+              console.error('Error fetching product details for', item.productID, err);
+              return {
+                id: item.variantID || item.productID,
+                productID: item.productID,
+                variantID: item.variantID,
+                quantity: item.quantity,
+                name: 'Product',
+                description: '',
+                price: item.price ?? 0,
+                imageUrl: '/logo.png',
+              };
+            }
+          })
+        );
+
+        const normalized = {
+          ...data,
+          reference: data.orderNo ?? data.reference ?? data.orderID ?? '',
+          storeName: data.storeName ?? 'Kerigo Store',
+          storeCategory: data.storeCategory ?? 'Groceries',
+          status: data.orderStatus ?? data.status ?? 'New',
+          estimatedDelivery: data.estimatedDelivery ?? (data.deliveryDurationLength ? `${data.deliveryDurationLength} ${data.deliveryDurationType}` : '2 days'),
+          deliveryTime: data.deliveryTime ?? '',
+          address: data.address ?? 'No address provided',
+          addressNote: data.addressNote ?? '',
+          rider: data.rider ?? null,
+          items: itemsWithDetails,
+          summary: data.summary ?? {
+            subtotal: data.subTotal ?? 0,
+            deliveryFee: data.shippingCharges ?? 0,
+            platformFee: 0,
+            total: data.total ?? 0,
+          },
+          paymentMethod: data.paymentMethod ?? 'M-Pesa',
+          placedAt: data.placedAt ?? (data.orderDate ? new Date(data.orderDate).toLocaleString() : ''),
+        };
+
+        if (isMounted) {
+          setOrderDetails(normalized);
+        }
+      } catch (err) {
+        console.error('Failed to load order details', err);
       }
     };
 
@@ -125,33 +189,35 @@ const OrderDetailsPage: React.FC = () => {
         </motion.div>
 
         {/* --- Rider Card --- */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl p-3 border border-border/50 shadow-sm flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2.5">
-            <img src={orderDetails.rider.avatarUrl} alt="Rider" className="w-10 h-10 rounded-full border border-white shadow-sm bg-gray-100 object-cover" />
-            <div>
-              <p className="font-bold text-sm">{orderDetails.rider.name}</p>
-              <p className="text-[11px] text-foreground/50">{orderDetails.rider.role}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="text-yellow-500 text-[10px]">★</span>
-                <span className="text-[11px] font-bold">{orderDetails.rider.rating}</span>
-                <span className="text-[10px] text-foreground/40">({orderDetails.rider.reviews} reviews)</span>
+        {orderDetails.rider && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl p-3 border border-border/50 shadow-sm flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2.5">
+              <img src={orderDetails.rider.avatarUrl} alt="Rider" className="w-10 h-10 rounded-full border border-white shadow-sm bg-gray-100 object-cover" />
+              <div>
+                <p className="font-bold text-sm">{orderDetails.rider.name}</p>
+                <p className="text-[11px] text-foreground/50">{orderDetails.rider.role}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-yellow-500 text-[10px]">★</span>
+                  <span className="text-[11px] font-bold">{orderDetails.rider.rating}</span>
+                  <span className="text-[10px] text-foreground/40">({orderDetails.rider.reviews} reviews)</span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-lg gap-1.5 text-[11px] font-semibold">
-              <Phone className="w-3.5 h-3.5" /> Call
-            </Button>
-            <Button variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-lg gap-1.5 text-[11px] font-semibold">
-              <MessageSquare className="w-3.5 h-3.5" /> Message
-            </Button>
-          </div>
-        </motion.div>
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-lg gap-1.5 text-[11px] font-semibold">
+                <Phone className="w-3.5 h-3.5" /> Call
+              </Button>
+              <Button variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-lg gap-1.5 text-[11px] font-semibold">
+                <MessageSquare className="w-3.5 h-3.5" /> Message
+              </Button>
+            </div>
+          </motion.div>
+        )}
 
         {/* --- Order Items --- */}
         <motion.div 
@@ -176,7 +242,7 @@ const OrderDetailsPage: React.FC = () => {
                     <span className="bg-primary/10 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded">{item.quantity}x</span>
                     <p className="text-xs font-bold">{item.name}</p>
                   </div>
-                  <p className="text-[11px] text-foreground/50">{item.description}</p>
+                  <p className="text-[11px] text-foreground/50 line-clamp-1">{item.description && item.description.length > 50 ? `${item.description.slice(0, 50)}...` : item.description}</p>
                 </div>
                 <p className="text-xs font-bold">KES {item.price.toLocaleString()}</p>
               </div>

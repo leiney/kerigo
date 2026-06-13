@@ -218,6 +218,10 @@ export const productApi = {
     const response = await axiosInstance.get<ProductPayload>(`/products/${id}`);
     return response.data;
   },
+  getProductById: async (id: string): Promise<any> => {
+    const response = await axiosInstance.get(`/products/${id}`);
+    return response.data;
+  },
 
   submitSignupOrder: async (payload: Record<string, unknown>) =>{
     const response = await axiosInstance.post('/signup-on-order', payload);
@@ -237,7 +241,7 @@ export const productApi = {
     const response = await axiosInstance.get('/orders/past');
     return response.data;
   },
-  getOrderDetails: async (orderID: string): Promise<OrderDetailData> => {
+  getOrderDetails: async (orderID: string) => {
     const response = await axiosInstance.get(`/orders/${orderID}`);
     return response.data;
   },
