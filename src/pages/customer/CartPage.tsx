@@ -10,6 +10,7 @@ import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cart
 import { useAuth } from '../../context/AuthContext';
 import { customerApi, productApi } from '../../../lib/api';
 import type { LocationDetails } from '../../../lib/types';
+import { UserProfile } from '@/src/types';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export const CartPage: React.FC = () => {
     serviceCharge: number;
     charges: number;
   } | null>(null);
+  const { login } = useAuth();
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
@@ -145,25 +147,8 @@ export const CartPage: React.FC = () => {
     calculateShipping();
   }, [pickupLocation?.latitude, pickupLocation?.longitude, dropoffLocation?.latitude, dropoffLocation?.longitude]);
 
-  const getDeliveryDuration = (estimatedTime: string | undefined) => {
-    if (!estimatedTime) {
-      return { deliveryDurationType: 'minutes', deliveryDurationLength: 0 };
-    }
-
-    const match = estimatedTime.match(/(\d+)\s*(min|mins|minute|minutes|hr|hour|hours)/i);
-    if (!match) {
-      return { deliveryDurationType: 'minutes', deliveryDurationLength: Number(estimatedTime) || 0 };
-    }
-
-    const value = Number(match[1]);
-    const unit = match[2].toLowerCase();
-    return {
-      deliveryDurationType: unit.startsWith('hour') || unit.startsWith('hr') ? 'hours' : 'minutes',
-      deliveryDurationLength: value,
-    };
-  };
-
-  const isCheckoutEnabled = !!subtotal && !!dropoffLocation && !!pickupLocation && !!shippingInfo && !checkoutLoading;
+  
+  const isCheckoutEnabled = !!subtotal && !!dropoffLocation && !!pickupLocation && !checkoutLoading;
 
   const handleCheckout = async () => {
     setHasAttemptedCheckout(true);
@@ -188,11 +173,15 @@ export const CartPage: React.FC = () => {
     const payload = {
       fullName: currentFullName,
       phoneNo: currentPhoneNo,
+      location: dropoffLocation,
+      channel: 'sms',
       order: {
         orderNo: '',
-        customer: isAuthenticated ? user?.id ?? '' : '',
+        customer: {
+          name: currentFullName,
+        },
         orderDate: new Date().toISOString(),
-        tax: 0,
+        tax: 0,        
         subTotal: subtotal,
         total: subtotal + shippingInfo.charges,
         shippingCharges: shippingInfo.charges,
@@ -211,21 +200,36 @@ export const CartPage: React.FC = () => {
           paymentInfo: {
             phoneNo: currentPhoneNo,
             receiptNo: '',
-            accountRefference: '',
+            accountReference: '',
           },
         },
       },
     };
 
     try {
-      await productApi.submitSignupOrder(payload);
+      const response = await productApi.submitSignupOrder(payload);
+
+
+      const user: UserProfile = {
+        id: response.user.id,
+        fullName: response.user.fullName || "",
+        email: response.user.email,
+        phoneNo: response.user.phoneNo || "",
+        userType: "customer",
+        username: response.user.username || "",
+        extraData: response.user.extraData || {},
+      };
+              
+      login({ token: response?.user.token || '', user });            
+      
+      alert('Order submitted successfully! ');
+
       clearCart();
       setOrderNotes('');
       setShippingInfo(null);
-      window.alert('Order placed successfully.');
       navigate('/customer/');
     } catch (err: any) {
-      window.alert(err?.message ?? 'Unable to submit order. Please try again.');
+      console.error('Checkout error:', err);
     } finally {
       setCheckoutLoading(false);
     }

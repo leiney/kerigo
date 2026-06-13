@@ -14,8 +14,9 @@ import {
 } from 'lucide-react';
 import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'framer-motion';
-import { customerApi } from '../../../lib/api';
-import type { OrderDetailData } from '../../../lib/types';
+import { productApi } from '../../../lib/api';
+
+type OrderDetailData = any;
 
 const OrderDetailsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,7 +27,8 @@ const OrderDetailsPage: React.FC = () => {
     let isMounted = true;
 
     const loadOrderDetails = async () => {
-      const data = await customerApi.getOrderDetails(orderId ?? 'KR1024');
+      const data = await productApi.getOrderDetails(orderId ?? 'KR1024');
+      console.log('OrderDetails raw response:', data);
 
       if (isMounted) {
         setOrderDetails(data);

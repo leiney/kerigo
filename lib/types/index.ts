@@ -173,6 +173,46 @@ export interface OrderSummary {
   };
 }
 
+export interface OrderDetailItem {
+  productID: string;
+  variantID: string;
+  quantity: number;
+  taxes: any[];
+  itemTax: number;
+}
+
+export interface OrderDetailData {
+  orderID: string;
+  orderNo: string;
+  customer: string;
+  orderDate: string;
+  tax: number;
+  subTotal: number;
+  total: number;
+  shippingCharges: number;
+  orderItems: OrderDetailItem[];
+  paymentStatus: string;
+  paymentMethod: string;
+  deliveryDurationType: string;
+  deliveryDurationLength: number;
+  orderStatus: string;
+  extraData: {
+    orderNotes: string;
+    paymentInfo: {
+      phoneNo: string;
+      receiptNo: string;
+      accountReference: string;
+    };
+    ownerID: string | null;
+    tracking: Array<{
+      status: string;
+      message: string;
+      timestamp: string;
+    }>;
+  };
+  isArchived: string;
+}
+
 export interface OrderHistoryItem {
   id: string;
   items: string;

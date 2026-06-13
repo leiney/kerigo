@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Bell,
   ShoppingBag,
@@ -16,34 +17,144 @@ import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../store/authStore';
 import { selectCartCount, useCartStore } from '../../store/cartStore';
-import { customerApi } from '../../../lib/api';
-import type { CustomerHomeData } from '../../../lib/types';
+import { customerApi, productApi } from '../../../lib/api';
+import { returnImageUrl } from '../../../config';
+import type { CustomerHomeData, OrderStep } from '../../../lib/types';
 
 export const CustomerHomePage: React.FC = () => {
   const navigate = useNavigate();
   const cartItems = useCartStore((state) => state.items);
   const cartCount = selectCartCount(cartItems);
-  const [homeData, setHomeData] = useState<CustomerHomeData | null>(null);
   const user = useAuthStore((state) => state.user);
   const avatarUrl = user?.avatar ?? '/placeholder-avatar.webp';
 
-  useEffect(() => {
-    let isMounted = true;
+  const homeDataQuery = useQuery<CustomerHomeData>({
+    queryKey: ['customerHomeData'],
+    queryFn: async () => {
+      const response = await customerApi.getHomeData();
+      return response;
+    },
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+  });
 
-    const loadHomeData = async () => {
-      const data = await customerApi.getHomeData();
+  const latestOrderQuery = useQuery<any>({
+    queryKey: ['customerLatestOrder'],
+    queryFn: async () => {
+      const response = await productApi.getLatestOrder();
+      console.log('Latest Order:', response);
+      return response;
+    },
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+  });
 
-      if (isMounted) {
-        setHomeData(data);
-      }
+  const pastOrdersQuery = useQuery<any>({
+    queryKey: ['customerPastOrders'],
+    queryFn: async () => {
+      const response = await productApi.getPastOrder();
+      console.log('Past Orders:', response);
+      return response;
+    },
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+  });
+
+  const normalizePastOrders = (raw: any): any[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    return [];
+  };
+
+  const formatTime = (value: string | undefined): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const formatDate = (value: string | undefined): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const getPastOrderImageUrl = (order: any): string => {
+    if (!order?.imageURL) return '/logo.png';
+    return returnImageUrl(order.imageURL);
+  };
+
+  const getPastOrderDisplayNumber = (order: any): string => order.orderNo ?? order.orderID ?? '';
+  const getPastOrderRouteId = (order: any): string => order.orderID ?? '';
+  const getPastOrderLabel = (order: any): string => order.productName ?? '';
+  const getPastOrderStatus = (order: any): string => {
+    const status = order.orderStatus ?? 'Unknown';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
+  const getPastOrderStatusClasses = (status: string): string => {
+    const normalized = status.toLowerCase();
+    if (normalized === 'new') return 'bg-emerald-100 text-emerald-700';
+    if (normalized === 'delivered') return 'bg-primary/10 text-primary';
+    if (['confirmed', 'preparing', 'on the way'].includes(normalized)) return 'bg-yellow-100 text-yellow-700';
+    return 'bg-gray-100 text-gray-600';
+  };
+  const getPastOrderPrice = (order: any): number => Number(order.amount ?? 0);
+  const getPastOrderDate = (order: any): string => {
+    if (!order?.orderDate) return '';
+    return `${formatDate(order.orderDate)} ${formatTime(order.orderDate)}`.trim();
+  };
+  const getPastOrderId = (order: any): string => order.orderID ?? '';
+
+  const formatEstimateDelivery = (order: any): string => {
+    if (!order?.deliveryDurationType || order?.deliveryDurationLength === undefined) return '';
+    return `${order.deliveryDurationLength} ${order.deliveryDurationType}`;
+  };
+
+  const mapStatusToStepKey = (status: string): string => {
+    const normalized = status.trim().toLowerCase();
+    if (normalized === 'new' || normalized === 'pending') return 'confirmed';
+    if (normalized === 'confirmed') return 'confirmed';
+    if (normalized.includes('prepare')) return 'preparing';
+    if (normalized.includes('way') || normalized.includes('on the way') || normalized.includes('ongoing')) return 'on the way';
+    if (normalized.includes('deliver')) return 'delivered';
+    return 'confirmed';
+  };
+
+  const buildFallbackOrderSteps = (order: any): OrderStep[] => {
+    const currentStep = mapStatusToStepKey(order?.status ?? order?.orderStatus ?? 'confirmed');
+    const stepKeys = ['confirmed', 'preparing', 'on the way', 'delivered'];
+    const displayLabels: Record<string, string> = {
+      confirmed: 'Confirmed',
+      preparing: 'Preparing',
+      'on the way': 'On the way',
+      delivered: 'Delivered',
     };
+    const currentIndex = stepKeys.indexOf(currentStep);
 
-    loadHomeData();
+    return stepKeys.map((key, index) => ({
+      label: displayLabels[key],
+      completed: index < currentIndex,
+      active: index === currentIndex,
+      time: '',
+    }));
+  };
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const homeData = homeDataQuery.data ?? null;
+  const latestOrder = latestOrderQuery.data ?? homeData?.latestOrder;
+  const pastOrders = normalizePastOrders(pastOrdersQuery.data);
+  const latestOrderSteps: OrderStep[] =
+    Array.isArray(latestOrder?.steps) && latestOrder.steps.length
+      ? latestOrder.steps
+      : buildFallbackOrderSteps(latestOrder);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
@@ -99,7 +210,7 @@ export const CustomerHomePage: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-base text-foreground">Latest Order</h2>
               <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                {homeData?.latestOrder.status}
+                {latestOrder?.status ?? latestOrder?.orderStatus ?? 'New'}
               </span>
             </div>
             <button
@@ -113,17 +224,14 @@ export const CustomerHomePage: React.FC = () => {
           {/* Order Info & Illustration */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-foreground/70 font-medium">Order #{homeData?.latestOrder.id}</p>
-              <p className="text-[11px] text-foreground/50 mt-0.5">{homeData?.latestOrder.date} • {homeData?.latestOrder.itemCount} items</p>
-              <h3 className="text-xl font-bold text-foreground mt-1.5">KES {homeData?.latestOrder.total.toLocaleString()}</h3>
+              <p className="max-w-25 truncate text-xs text-foreground/70 font-medium">Order #{latestOrder?.orderNo ?? latestOrder?.orderID ?? 'KR1024'}</p>
+              <p className="text-[11px] text-foreground/50 mt-0.5">{`${formatDate(latestOrder?.orderDate)} ${formatTime(latestOrder?.orderDate)}`.trim()} • {(latestOrder?.orderItems?.length ?? 0)} items</p>
+              <h3 className="text-xl font-bold text-foreground mt-1.5">KES {(latestOrder?.total ?? latestOrder?.amount ?? 0).toLocaleString() ?? '--'}</h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[11px] text-foreground/50">Paid via {homeData?.latestOrder.paymentMethod}</span>
-                <Badge variant="success" className="bg-gray-100 text-gray-600 hover:bg-gray-200 border-0 text-[9px] py-0 px-1.5">
-                  M-PESA
-                </Badge>
+                <span className="text-[11px] text-foreground/50">Paid via {latestOrder?.paymentMethod ? latestOrder.paymentMethod.toUpperCase() : '—'}</span>
               </div>
               <button
-                onClick={() => navigate(`/customer/orders/${encodeURIComponent(homeData?.latestOrder.id ?? 'KR1024')}`)}
+                onClick={() => navigate(`/customer/orders/${encodeURIComponent(latestOrder?.orderID ?? 'KR1024')}`)}
                 className="text-primary text-xs font-semibold mt-2.5 flex items-center gap-1"
               >
                 View order details <ChevronRight className="w-3.5 h-3.5" />
@@ -148,7 +256,7 @@ export const CustomerHomePage: React.FC = () => {
           {/* Active progress */}
           <div className="absolute top-5 left-[10%] w-[50%] h-0.5 bg-primary rounded-full" />
 
-          {homeData?.latestOrder.steps.map((step, index) => (
+          {latestOrderSteps.map((step, index) => (
             <div
               key={index}
               className="relative z-10 flex flex-1 flex-col items-center"
@@ -196,8 +304,8 @@ export const CustomerHomePage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] text-foreground/50 font-medium">Deliver to</p>
-                <p className="text-xs font-bold text-foreground leading-tight">{homeData?.latestOrder.address}</p>
-                <p className="text-[9px] text-foreground/40">{homeData?.latestOrder.addressNote}</p>
+                <p className="text-xs font-bold text-foreground leading-tight">{latestOrder?.address ?? ''}</p>
+                <p className="text-[9px] text-foreground/40">{latestOrder?.addressNote ?? ''}</p>
               </div>
             </div>
             
@@ -207,7 +315,7 @@ export const CustomerHomePage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] text-foreground/50 font-medium">Est. delivery</p>
-                <p className="text-xs font-bold text-primary">{homeData?.latestOrder.eta}</p>
+                <p className="text-xs font-bold text-primary">{formatEstimateDelivery(latestOrder)}</p>
               </div>
             </div>
 
@@ -217,7 +325,7 @@ export const CustomerHomePage: React.FC = () => {
               </div>
               <div>
                 <p className="text-[9px] text-foreground/50 font-medium">Payment</p>
-                <p className="text-xs font-bold text-foreground">{homeData?.latestOrder.paymentMethod}</p>
+                <p className="text-xs font-bold text-foreground">{latestOrder?.paymentMethod ?? ''}</p>
               </div>
             </div>
           </div>
@@ -233,36 +341,34 @@ export const CustomerHomePage: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-lg border border-border/50 overflow-hidden divide-y divide-border/50">
-            {homeData?.pastOrders.map((order, idx) => (
+            {pastOrders.map((order, idx) => (
               <motion.div
-                key={order.id}
+                key={getPastOrderRouteId(order) || getPastOrderDisplayNumber(order)}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + idx * 0.1 }}
-                onClick={() => navigate(`/customer/orders/${encodeURIComponent(order.id)}`)}
+                onClick={() => navigate(`/customer/orders/${encodeURIComponent(getPastOrderRouteId(order))}`)}
                 role="button"
                 tabIndex={0}
                 className="p-3.5 flex items-center gap-3 cursor-pointer active:bg-secondary/40 transition-colors"
               >
                 {/* Image */}
                 <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                  <img src={order.imageUrl} alt={order.items} className="w-full h-full object-cover" />
+                    <img src={getPastOrderImageUrl(order)} alt={getPastOrderLabel(order)} className="w-full h-full object-cover" />
                 </div>
 
                 {/* Details */}
                 <div className="min-w-0">
-                  <p className="font-bold text-xs text-foreground">{order.id}</p>
-                  <p className="text-[11px] text-foreground/60 truncate">{order.items}</p>
-                  <p className="text-[10px] text-foreground/40 mt-0.5">{order.date}</p>
+                  <p className="max-w-25 truncate font-bold text-xs text-foreground">{getPastOrderDisplayNumber(order)}</p>
+                  <p className="text-[11px] text-foreground/60 truncate">{getPastOrderLabel(order)}</p>
+                  <p className="text-[10px] text-foreground/40 mt-0.5">{getPastOrderDate(order)}</p>
                 </div>
 
                 {/* Price & Status */}
                 <div className="text-right flex-1 ">
-                  <p className="font-bold text-xs text-foreground">KES {order.price.toLocaleString()}</p>
-                  <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${
-                    order.status === 'Delivered' ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-600'
-                  }`}>
-                    {order.status}
+                    <p className="font-bold text-xs text-foreground">KES {getPastOrderPrice(order).toLocaleString()}</p>
+                  <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${getPastOrderStatusClasses(getPastOrderStatus(order))}`}>
+                    {getPastOrderStatus(order)}
                   </span>
                 </div>
 
@@ -290,7 +396,7 @@ export const CustomerHomePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-3 px-3">
-            {homeData?.recommendations.map((item, idx) => (
+            {mockData.customer.home.recommendations.map((item, idx) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, scale: 0.95 }}

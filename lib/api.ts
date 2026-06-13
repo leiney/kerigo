@@ -110,6 +110,7 @@ export const authApi = {
   },
 };
 
+
 export const customerApi = {
   getHomeData: async (): Promise<CustomerHomeData> => apiGet('/customer/home/'),
   getStoreData: async (): Promise<VendorStoreData> => apiGet('/customer/store/'),
@@ -218,12 +219,26 @@ export const productApi = {
     return response.data;
   },
 
-  submitSignupOrder: async (payload: Record<string, unknown>) =>
-    axiosInstance.post('/signup-on-order', payload),
-  
+  submitSignupOrder: async (payload: Record<string, unknown>) =>{
+    const response = await axiosInstance.post('/signup-on-order', payload);
+    return response.data;
+  }, 
 
   deleteProduct: async (id: string) => {
     const response = await axiosInstance.delete(`/products/${id}`);
+    return response.data;
+  },
+
+  getLatestOrder: async () =>{
+    const response = await axiosInstance.get('/orders/latest');
+    return response.data;
+  },
+  getPastOrder: async () =>{
+    const response = await axiosInstance.get('/orders/past');
+    return response.data;
+  },
+  getOrderDetails: async (orderID: string): Promise<OrderDetailData> => {
+    const response = await axiosInstance.get(`/orders/${orderID}`);
     return response.data;
   },
 
