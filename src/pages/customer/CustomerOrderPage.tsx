@@ -21,23 +21,17 @@ import { customerApi, productApi } from '../../../lib/api';
 import { returnImageUrl } from '../../../config';
 import { mockData } from '../../../lib/mockData';
 import type { CustomerHomeData, OrderStep } from '../../../lib/types';
+import PullToRefresh from '../../components/PullToRefresh';
 
 export const CustomerHomePage: React.FC = () => {
   const navigate = useNavigate();
   const cartItems = useCartStore((state) => state.items);
   const cartCount = selectCartCount(cartItems);
   const user = useAuthStore((state) => state.user);
-  const avatarUrl = user?.avatar ?? '/placeholder-avatar.webp';
-
-  const homeDataQuery = useQuery<CustomerHomeData>({
-    queryKey: ['customerHomeData'],
-    queryFn: async () => {
-      const response = await customerApi.getHomeData();
-      return response;
-    },
-    staleTime: 1000 * 60,
-    refetchOnWindowFocus: false,
-  });
+  const avatarUrl = user?.avatarUrl ?? user?.avatar ?? '/placeholder-avatar.webp';
+  const greetingName = user?.fullName
+    ? user.fullName.split(' ')[0]
+    : (user?.username ?? 'User');
 
   const latestOrderQuery = useQuery<any>({
     queryKey: ['customerLatestOrder'],
@@ -145,7 +139,6 @@ export const CustomerHomePage: React.FC = () => {
   const getPastOrderDate = (order: any): string => {
     return formatRelativeDate(order?.orderDate ?? order?.date);
   };
-  const getPastOrderId = (order: any): string => order.orderID ?? '';
 
   const formatEstimateDelivery = (order: any): string => {
     if (!order?.deliveryDurationType || order?.deliveryDurationLength === undefined) return '';
@@ -181,22 +174,28 @@ export const CustomerHomePage: React.FC = () => {
     }));
   };
 
-  const homeData = homeDataQuery.data ?? null;
-  const latestOrder = latestOrderQuery.data ?? homeData?.latestOrder;
+  const latestOrder = latestOrderQuery.data;
   const pastOrders = normalizePastOrders(pastOrdersQuery.data);
   const latestOrderSteps: OrderStep[] =
     Array.isArray(latestOrder?.steps) && latestOrder.steps.length
       ? latestOrder.steps
       : buildFallbackOrderSteps(latestOrder);
+  const handleRefresh = async () => {
+    await Promise.all([
+      latestOrderQuery.refetch(),
+      pastOrdersQuery.refetch(),
+    ]);
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
       {/* --- Header --- */}
       <header className="px-4 pt-5 pb-3 flex items-start justify-between sticky top-0 bg-background z-40">
         <div className="flex items-center gap-3">
           <img
             src={avatarUrl}
-            alt={homeData?.greetingName ?? 'Profile'}
+            alt={greetingName}
             className="w-10 h-10 rounded-full object-cover border border-border shadow-sm bg-white"
           />
           <div>
@@ -205,7 +204,7 @@ export const CustomerHomePage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-xl font-bold text-foreground"
           >
-            Hello, {homeData?.greetingName ?? 'Leiney'}
+            Hello, {greetingName}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}
@@ -224,7 +223,7 @@ export const CustomerHomePage: React.FC = () => {
         >
           <Bell className="w-4 h-4 text-foreground" />
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white">
-            {homeData?.unreadNotifications ?? 2}
+            {2}
           </span>
         </motion.button>
       </header>
@@ -233,136 +232,169 @@ export const CustomerHomePage: React.FC = () => {
       <div className="px-3 space-y-3.5">
         
         {/* --- Latest Order Card --- */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl p-4 shadow-xs border border-border/50"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="font-bold text-base text-foreground">Latest Order</h2>
-              <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                {latestOrder?.status ?? latestOrder?.orderStatus ?? 'New'}
-              </span>
+        {latestOrderQuery.isLoading ? (
+          <div className="bg-white rounded-2xl p-4 shadow-xs border border-border/50 animate-pulse">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-5 w-28 bg-gray-200 rounded-md" />
+              <div className="h-4 w-16 bg-gray-200 rounded-full" />
             </div>
-            <button
-              onClick={() => navigate('/customer/orders')}
-              className="text-primary text-xs font-semibold flex items-center gap-1 hover:underline"
-            >
-              View all orders <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-start justify-between gap-3 mb-6">
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-24 bg-gray-200 rounded-md" />
+                <div className="h-3 w-40 bg-gray-200 rounded-md" />
+                <div className="h-6 w-32 bg-gray-200 rounded-md mt-2" />
+              </div>
+              <div className="w-20 h-20 bg-gray-200 rounded-xl shrink-0" />
+            </div>
+            <div className="flex justify-between mb-6 px-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center space-y-2 flex-1">
+                  <div className="w-8 h-8 rounded-full bg-gray-200" />
+                  <div className="h-2 w-12 bg-gray-200 rounded-md" />
+                </div>
+              ))}
+            </div>
+            <div className="pt-3 border-t border-border/50 grid grid-cols-3 gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="h-2 w-10 bg-gray-200 rounded-md" />
+                  <div className="h-3 w-16 bg-gray-200 rounded-md" />
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Order Info & Illustration */}
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <p className="max-w-16 truncate text-[10px] text-foreground/70 font-medium">Order #{latestOrder?.orderNo ?? latestOrder?.orderID ?? 'KR1024'}</p>
-              <p className="text-[10px] text-foreground/50 mt-0.5">{formatRelativeDate(latestOrder?.orderDate ?? latestOrder?.date)} • {(latestOrder?.orderItems?.length ?? latestOrder?.itemCount ?? 0)} items</p>
-              <h3 className="text-xl font-bold text-foreground mt-1.5">KES {(latestOrder?.total ?? latestOrder?.amount ?? 0).toLocaleString() ?? '--'}</h3>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[11px] text-foreground/50">Paid via {latestOrder?.paymentMethod ? latestOrder.paymentMethod.toUpperCase() : '—'}</span>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl p-4 shadow-xs border border-border/50"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-base text-foreground">Latest Order</h2>
+                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                  {latestOrder?.status ?? latestOrder?.orderStatus ?? 'New'}
+                </span>
               </div>
               <button
-                onClick={() => navigate(`/customer/orders/${encodeURIComponent(latestOrder?.orderID ?? 'KR1024')}`)}
-                className="text-primary text-xs font-semibold mt-2.5 flex items-center gap-1"
+                onClick={() => navigate('/customer/orders')}
+                className="text-primary text-xs font-semibold flex items-center gap-1 hover:underline"
               >
-                View order details <ChevronRight className="w-3.5 h-3.5" />
+                View all orders <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            
-            <div className="w-24 h-24 shrink-0 relative">
-              <img
-                src="/shopping-bag.png"
-                alt="Groceries"
-                className="w-full h-full object-contain drop-shadow-sm"
-              />
-            </div>
-          </div>
 
-                  {/* Stepper */}
-        <div className="relative flex items-start justify-between mb-4 px-1 pt-1">
-
-          {/* Background line */}
-          <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-border rounded-full" />
-
-          {/* Active progress */}
-          <div className="absolute top-5 left-[10%] w-[50%] h-0.5 bg-primary rounded-full" />
-
-          {latestOrderSteps.map((step, index) => (
-            <div
-              key={index}
-              className="relative z-10 flex flex-1 flex-col items-center"
-            >
-              <div
-                className={`flex items-center justify-center rounded-full border-2 ${
-                  step.completed
-                    ? 'w-8 h-8 bg-primary border-primary text-white'
-                    : step.active
-                      ? 'w-8 h-8 bg-white border-primary text-primary'
-                      : 'w-8 h-8 bg-white border-gray-200 text-gray-300'
-                }`}
-              >
-                {step.completed ? (
-                  <Check className="w-3.5 h-3.5" />
-                ) : (
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                )}
+            {/* Order Info & Illustration */}
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="max-w-16 truncate text-[10px] text-foreground/70 font-medium">Order #{latestOrder?.orderNo ?? latestOrder?.orderID ?? 'KR1024'}</p>
+                <p className="text-[10px] text-foreground/50 mt-0.5">{formatRelativeDate(latestOrder?.orderDate ?? latestOrder?.date)} • {(latestOrder?.orderItems?.length ?? latestOrder?.itemCount ?? 0)} items</p>
+                <h3 className="text-xl font-bold text-foreground mt-1.5">KES {(latestOrder?.total ?? latestOrder?.amount ?? 0).toLocaleString() ?? '--'}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[11px] text-foreground/50">Paid via {latestOrder?.paymentMethod ? latestOrder.paymentMethod.toUpperCase() : '—'}</span>
+                </div>
+                <button
+                  onClick={() => navigate(`/customer/orders/${encodeURIComponent(latestOrder?.orderID ?? 'KR1024')}`)}
+                  className="text-primary text-xs font-semibold mt-2.5 flex items-center gap-1"
+                >
+                  View order details <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-
-              <span
-                className={`text-[10px] font-medium mt-1.5 ${
-                  step.active || step.completed
-                    ? 'text-primary'
-                    : 'text-gray-400'
-                }`}
-              >
-                {step.label}
-              </span>
-
-              {step.time && (
-                <span className="text-[9px] text-gray-400 mt-0.5">
-                  {step.time}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-
-          {/* Footer Details */}
-          <div className="pt-3 border-t border-border/50 grid grid-cols-3 gap-1.5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
-                <MapPin className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <div>
-                <p className="text-[9px] text-foreground/50 font-medium">Deliver to</p>
-                <p className="text-xs font-bold text-foreground leading-tight">{latestOrder?.address ?? ''}</p>
-                <p className="text-[9px] text-foreground/40">{latestOrder?.addressNote ?? ''}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2 border-x border-border px-2">
-              <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <div>
-                <p className="text-[9px] text-foreground/50 font-medium">Est. delivery</p>
-                <p className="text-xs font-bold text-primary">{formatEstimateDelivery(latestOrder)}</p>
+              
+              <div className="w-24 h-24 shrink-0 relative">
+                <img
+                  src="/shopping-bag.png"
+                  alt="Groceries"
+                  className="w-full h-full object-contain drop-shadow-sm"
+                />
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
-                <Wallet className="w-3.5 h-3.5 text-primary" />
+            {/* Stepper */}
+            <div className="relative flex items-start justify-between mb-4 px-1 pt-1">
+
+              {/* Background line */}
+              <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-border rounded-full" />
+
+              {/* Active progress */}
+              <div className="absolute top-5 left-[10%] w-[50%] h-0.5 bg-primary rounded-full" />
+
+              {latestOrderSteps.map((step, index) => (
+                <div
+                  key={index}
+                  className="relative z-10 flex flex-1 flex-col items-center"
+                >
+                  <div
+                    className={`flex items-center justify-center rounded-full border-2 ${
+                      step.completed
+                        ? 'w-8 h-8 bg-primary border-primary text-white'
+                        : step.active
+                          ? 'w-8 h-8 bg-white border-primary text-primary'
+                          : 'w-8 h-8 bg-white border-gray-200 text-gray-300'
+                    }`}
+                  >
+                    {step.completed ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+
+                  <span
+                    className={`text-[10px] font-medium mt-1.5 ${
+                      step.active || step.completed
+                        ? 'text-primary'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+
+                  {step.time && (
+                    <span className="text-[9px] text-gray-400 mt-0.5">
+                      {step.time}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Footer Details */}
+            <div className="pt-3 border-t border-border/50 grid grid-cols-3 gap-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[9px] text-foreground/50 font-medium">Deliver to</p>
+                  <p className="text-xs font-bold text-foreground leading-tight">{latestOrder?.address ?? ''}</p>
+                  <p className="text-[9px] text-foreground/40">{latestOrder?.addressNote ?? ''}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[9px] text-foreground/50 font-medium">Payment</p>
-                <p className="text-xs font-bold text-foreground">{latestOrder?.paymentMethod ?? ''}</p>
+              
+              <div className="flex items-center gap-2 border-x border-border px-2">
+                <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[9px] text-foreground/50 font-medium">Est. delivery</p>
+                  <p className="text-xs font-bold text-primary">{formatEstimateDelivery(latestOrder)}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                  <Wallet className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[9px] text-foreground/50 font-medium">Payment</p>
+                  <p className="text-xs font-bold text-foreground">{latestOrder?.paymentMethod ?? ''}</p>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* --- Past Orders --- */}
         <section className='bg-white rounded-2xl shadow-sm border border-border/50 p-3.5'>
@@ -374,47 +406,66 @@ export const CustomerHomePage: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-lg border border-border/50 overflow-hidden divide-y divide-border/50">
-            {pastOrders.map((order, idx) => (
-              <motion.div
-                key={getPastOrderRouteId(order) || getPastOrderDisplayNumber(order)}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + idx * 0.1 }}
-                onClick={() => navigate(`/customer/orders/${encodeURIComponent(getPastOrderRouteId(order))}`)}
-                role="button"
-                tabIndex={0}
-                className="p-3.5 flex items-center gap-3 cursor-pointer active:bg-secondary/40 transition-colors"
-              >
-                {/* Image */}
-                <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                    <img src={getPastOrderImageUrl(order)} alt={getPastOrderLabel(order)} className="w-full h-full object-cover" />
-                </div>
-
-                {/* Details */}
-                <div className="min-w-0">
-                  <p className="max-w-16 truncate font-bold text-[10px] text-foreground">{getPastOrderDisplayNumber(order)}</p>
-                  <p className="text-[11px] text-foreground/60 truncate">{getPastOrderLabel(order)}</p>
-                  <p className="text-[10px] text-foreground/40 mt-0.5">{getPastOrderDate(order)}</p>
-                </div>
-
-                {/* Price & Status */}
-                <div className="text-right flex-1 ">
-                    <p className="font-bold text-[10px] text-foreground">KES {getPastOrderPrice(order).toLocaleString()}</p>
-                  <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${getPastOrderStatusClasses(getPastOrderStatus(order))}`}>
-                    {getPastOrderStatus(order)}
-                  </span>
-                </div>
-
-                {/* Reorder Button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-primary text-[10px] font-semibold h-7 px-2.5 border-primary/20 hover:bg-primary/5 gap-1 shrink-0"
+            {pastOrdersQuery.isLoading ? (
+              <div className="divide-y divide-border/50 animate-pulse">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-3.5 flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-gray-200 shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded-md" />
+                      <div className="h-3.5 w-24 bg-gray-200 rounded-md" />
+                      <div className="h-2.5 w-20 bg-gray-200 rounded-md" />
+                    </div>
+                    <div className="text-right space-y-1.5 flex-1">
+                      <div className="h-3.5 w-16 bg-gray-200 rounded-md ml-auto" />
+                      <div className="h-4 w-12 bg-gray-200 rounded-full ml-auto" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              pastOrders.map((order, idx) => (
+                <motion.div
+                  key={getPastOrderRouteId(order) || getPastOrderDisplayNumber(order)}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + idx * 0.1 }}
+                  onClick={() => navigate(`/customer/orders/${encodeURIComponent(getPastOrderRouteId(order))}`)}
+                  role="button"
+                  tabIndex={0}
+                  className="p-3.5 flex items-center gap-3 cursor-pointer active:bg-secondary/40 transition-colors"
                 >
-                  <RotateCw className="w-3 h-3" /> Reorder
-                </Button>
-              </motion.div>
-            ))}
+                  {/* Image */}
+                  <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                      <img src={getPastOrderImageUrl(order)} alt={getPastOrderLabel(order)} className="w-full h-full object-cover" />
+                  </div>
+
+                  {/* Details */}
+                  <div className="min-w-0">
+                    <p className="max-w-16 truncate font-bold text-[10px] text-foreground">{getPastOrderDisplayNumber(order)}</p>
+                    <p className="text-[11px] text-foreground/60 truncate">{getPastOrderLabel(order)}</p>
+                    <p className="text-[10px] text-foreground/40 mt-0.5">{getPastOrderDate(order)}</p>
+                  </div>
+
+                  {/* Price & Status */}
+                  <div className="text-right flex-1 ">
+                      <p className="font-bold text-[10px] text-foreground">KES {getPastOrderPrice(order).toLocaleString()}</p>
+                    <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${getPastOrderStatusClasses(getPastOrderStatus(order))}`}>
+                      {getPastOrderStatus(order)}
+                    </span>
+                  </div>
+
+                  {/* Reorder Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-primary text-[10px] font-semibold h-7 px-2.5 border-primary/20 hover:bg-primary/5 gap-1 shrink-0"
+                  >
+                    <RotateCw className="w-3 h-3" /> Reorder
+                  </Button>
+                </motion.div>
+              ))
+            )}
           </div>
         </section>
 
@@ -459,5 +510,6 @@ export const CustomerHomePage: React.FC = () => {
       {/* --- Bottom Navigation --- */}
       <BottomNav cartCount={cartCount} />
     </div>
+    </PullToRefresh>
   );
 };

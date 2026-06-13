@@ -16,6 +16,7 @@ import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'framer-motion';
 import { productApi } from '../../../lib/api';
 import { returnImageUrl } from '../../../config';
+import PullToRefresh from '../../components/PullToRefresh';
 
 type OrderDetailData = any;
 
@@ -23,99 +24,144 @@ const OrderDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { orderId } = useParams();
   const [orderDetails, setOrderDetails] = useState<OrderDetailData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchDetails = async (isMounted: boolean) => {
+    try {
+      const data = await productApi.getOrderDetails(orderId ?? 'KR1024');
+      console.log('OrderDetails raw response:', data);
+
+      const orderItemsList = data.orderItems || [];
+      const itemsWithDetails = await Promise.all(
+        orderItemsList.map(async (item: any) => {
+          try {
+            const product = await productApi.getProductById(item.productID);
+            const variant = (product.variants || []).find(
+              (v: any) => v.variantID === item.variantID
+            );
+            const imageId = variant?.images?.[0];
+            const imageUrl = returnImageUrl(imageId);
+
+            return {
+              id: item.variantID || item.productID,
+              productID: item.productID,
+              variantID: item.variantID,
+              quantity: item.quantity,
+              name: product.name || 'Product',
+              description: product.description || '',
+              price: variant?.price ?? item.price ?? 0,
+              imageUrl: imageUrl,
+            };
+          } catch (err) {
+            console.error('Error fetching product details for', item.productID, err);
+            return {
+              id: item.variantID || item.productID,
+              productID: item.productID,
+              variantID: item.variantID,
+              quantity: item.quantity,
+              name: 'Product',
+              description: '',
+              price: item.price ?? 0,
+              imageUrl: '/logo.png',
+            };
+          }
+        })
+      );
+
+      const normalized = {
+        ...data,
+        reference: data.orderNo ?? data.reference ?? data.orderID ?? '',
+        storeName: data.storeName ?? 'Kerigo Store',
+        storeCategory: data.storeCategory ?? 'Groceries',
+        status: data.orderStatus ?? data.status ?? 'New',
+        estimatedDelivery: data.estimatedDelivery ?? (data.deliveryDurationLength ? `${data.deliveryDurationLength} ${data.deliveryDurationType}` : '2 days'),
+        deliveryTime: data.deliveryTime ?? '',
+        address: data.address ?? 'No address provided',
+        addressNote: data.addressNote ?? '',
+        rider: data.rider ?? null,
+        items: itemsWithDetails,
+        summary: data.summary ?? {
+          subtotal: data.subTotal ?? 0,
+          deliveryFee: data.shippingCharges ?? 0,
+          platformFee: 0,
+          total: data.total ?? 0,
+        },
+        paymentMethod: data.paymentMethod ?? 'M-Pesa',
+        placedAt: data.placedAt ?? (data.orderDate ? new Date(data.orderDate).toLocaleString() : ''),
+      };
+
+      if (isMounted) {
+        setOrderDetails(normalized);
+      }
+    } catch (err) {
+      console.error('Failed to load order details', err);
+    } finally {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
-
-    const loadOrderDetails = async () => {
-      try {
-        const data = await productApi.getOrderDetails(orderId ?? 'KR1024');
-        console.log('OrderDetails raw response:', data);
-
-        const orderItemsList = data.orderItems || [];
-        const itemsWithDetails = await Promise.all(
-          orderItemsList.map(async (item: any) => {
-            try {
-              const product = await productApi.getProductById(item.productID);
-              const variant = (product.variants || []).find(
-                (v: any) => v.variantID === item.variantID
-              );
-              const imageId = variant?.images?.[0];
-              const imageUrl = returnImageUrl(imageId);
-
-              return {
-                id: item.variantID || item.productID,
-                productID: item.productID,
-                variantID: item.variantID,
-                quantity: item.quantity,
-                name: product.name || 'Product',
-                description: product.description || '',
-                price: variant?.price ?? item.price ?? 0,
-                imageUrl: imageUrl,
-              };
-            } catch (err) {
-              console.error('Error fetching product details for', item.productID, err);
-              return {
-                id: item.variantID || item.productID,
-                productID: item.productID,
-                variantID: item.variantID,
-                quantity: item.quantity,
-                name: 'Product',
-                description: '',
-                price: item.price ?? 0,
-                imageUrl: '/logo.png',
-              };
-            }
-          })
-        );
-
-        const normalized = {
-          ...data,
-          reference: data.orderNo ?? data.reference ?? data.orderID ?? '',
-          storeName: data.storeName ?? 'Kerigo Store',
-          storeCategory: data.storeCategory ?? 'Groceries',
-          status: data.orderStatus ?? data.status ?? 'New',
-          estimatedDelivery: data.estimatedDelivery ?? (data.deliveryDurationLength ? `${data.deliveryDurationLength} ${data.deliveryDurationType}` : '2 days'),
-          deliveryTime: data.deliveryTime ?? '',
-          address: data.address ?? 'No address provided',
-          addressNote: data.addressNote ?? '',
-          rider: data.rider ?? null,
-          items: itemsWithDetails,
-          summary: data.summary ?? {
-            subtotal: data.subTotal ?? 0,
-            deliveryFee: data.shippingCharges ?? 0,
-            platformFee: 0,
-            total: data.total ?? 0,
-          },
-          paymentMethod: data.paymentMethod ?? 'M-Pesa',
-          placedAt: data.placedAt ?? (data.orderDate ? new Date(data.orderDate).toLocaleString() : ''),
-        };
-
-        if (isMounted) {
-          setOrderDetails(normalized);
-        }
-      } catch (err) {
-        console.error('Failed to load order details', err);
-      }
-    };
-
-    loadOrderDetails();
-
+    setIsLoading(true);
+    fetchDetails(isMounted);
     return () => {
       isMounted = false;
     };
   }, [orderId]);
 
-  if (!orderDetails) {
+  const handleRefresh = async () => {
+    await fetchDetails(true);
+  };
+
+  if (isLoading || !orderDetails) {
     return (
-      <div className="min-h-screen bg-background text-foreground pb-24 font-sans flex items-center justify-center">
-        <p className="text-sm text-foreground/60">Loading order details...</p>
+      <div className="min-h-screen bg-background text-foreground pb-24 font-sans">
+        {/* --- Header --- */}
+        <header className="px-4 pt-5 pb-3 flex items-center justify-between z-40">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="p-1.5 -ml-1.5 rounded-full hover:bg-secondary">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="h-5 w-12 bg-gray-200 rounded animate-pulse" />
+        </header>
+
+        <div className="px-4 space-y-4 mt-2 animate-pulse">
+          {/* Store status card skeleton */}
+          <div className="bg-white rounded-2xl p-4 border border-border/50 h-28" />
+
+          {/* Map/Delivery status card skeleton */}
+          <div className="bg-white rounded-2xl p-4 border border-border/50 h-36" />
+
+          {/* Items card skeleton */}
+          <div className="bg-white rounded-2xl p-4 border border-border/50 space-y-4">
+            <div className="h-4 w-20 bg-gray-200 rounded" />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded bg-gray-200" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 bg-gray-200 rounded" />
+                <div className="h-2.5 w-16 bg-gray-200 rounded" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded bg-gray-200" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-40 bg-gray-200 rounded" />
+                <div className="h-2.5 w-20 bg-gray-200 rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 font-sans">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background text-foreground pb-24 font-sans">
       {/* --- Header --- */}
       <header className="px-4 pt-5 pb-3 flex items-center justify-between sticky top-0 bg-background z-40 border-b border-transparent">
         <div className="flex items-center gap-3">
@@ -304,6 +350,7 @@ const OrderDetailsPage: React.FC = () => {
         </p>
       </div>
     </div>
+    </PullToRefresh>
   );
 };
 
