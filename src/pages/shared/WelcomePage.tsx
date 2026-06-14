@@ -115,7 +115,7 @@ export const WelcomePage: React.FC = () => {
                   <img
                     src={vendor.logoUrl}
                     alt={vendor.name}
-                    className="w-full h-full object-contain rounded-sm"
+                    className="w-full h-full object-fit rounded-sm"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/default-vendor-logo.png';
                     }}

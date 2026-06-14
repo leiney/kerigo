@@ -3,6 +3,24 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { createEmptyVendorOnboardingDraft, type VendorOnboardingDraft, type VendorStoreDraft } from '../lib/vendorOnboarding';
 import type { AccountType, KYCDocument, PayoutMode, OrganizationInfo } from '../../lib/types';
 
+interface PersistedFile {
+  name: string;
+  type: string;
+  base64: string;
+}
+
+const base64ToFile = (persisted: PersistedFile): File => {
+  const arr = persisted.base64.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || persisted.type;
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], persisted.name, { type: mime });
+};
+
 interface VendorOnboardingStore {
   draft: VendorOnboardingDraft;
   attachments: {
@@ -11,6 +29,8 @@ interface VendorOnboardingStore {
     avatar: File | null;
     organizationLogo: File | null;
   };
+  persistedAvatar: PersistedFile | null;
+  persistedLogo: PersistedFile | null;
   setAccountType: (accountType: AccountType) => void;
   setIdentityDetails: (details: Pick<VendorOnboardingDraft, 'fullName' | 'email' | 'phoneNo'>) => void;
   setPassword: (password: string) => void;
@@ -43,7 +63,15 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
     (set) => ({
       draft: createEmptyVendorOnboardingDraft(),
       attachments: { individualDocuments: {}, organizationDocuments: {}, avatar: null, organizationLogo: null },
-      setAccountType: (accountType) => set({ draft: resetForAccountType(accountType), attachments: { individualDocuments: {}, organizationDocuments: {}, avatar: null, organizationLogo: null } }),
+      persistedAvatar: null,
+      persistedLogo: null,
+      setAccountType: (accountType) =>
+        set({
+          draft: resetForAccountType(accountType),
+          attachments: { individualDocuments: {}, organizationDocuments: {}, avatar: null, organizationLogo: null },
+          persistedAvatar: null,
+          persistedLogo: null,
+        }),
       setIdentityDetails: (details) => set((state) => ({ draft: { ...state.draft, ...details } })),
       setPassword: (password) => set((state) => ({ draft: { ...state.draft, password } })),
       setPayoutMode: (mode) =>
@@ -85,11 +113,65 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
       setIndividualDocumentFiles: (documents) => set((state) => ({ attachments: { ...state.attachments, individualDocuments: documents } })),
       setOrganizationInfo: (details) =>
         set((state) => ({ draft: { ...state.draft, organizationInfo: { ...state.draft.organizationInfo, ...details } } })),
-      setAvatarFile: (file) => set((state) => ({ attachments: { ...state.attachments, avatar: file } })),
+      setAvatarFile: (file) => {
+        if (!file) {
+          set((state) => ({
+            attachments: { ...state.attachments, avatar: null },
+            persistedAvatar: null,
+          }));
+          return;
+        }
+
+        set((state) => ({
+          attachments: { ...state.attachments, avatar: file }
+        }));
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          if (base64) {
+            set(() => ({
+              persistedAvatar: {
+                name: file.name,
+                type: file.type,
+                base64,
+              }
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      },
       setIndividualDocuments: (documents) => set((state) => ({ draft: { ...state.draft, individualDocuments: documents } })),
       setOrganizationDocuments: (documents) => set((state) => ({ draft: { ...state.draft, organizationDocuments: documents } })),
       setOrganizationDocumentFiles: (documents) => set((state) => ({ attachments: { ...state.attachments, organizationDocuments: documents } })),
-      setOrganizationLogoFile: (file) => set((state) => ({ attachments: { ...state.attachments, organizationLogo: file } })),
+      setOrganizationLogoFile: (file) => {
+        if (!file) {
+          set((state) => ({
+            attachments: { ...state.attachments, organizationLogo: null },
+            persistedLogo: null,
+          }));
+          return;
+        }
+
+        set((state) => ({
+          attachments: { ...state.attachments, organizationLogo: file }
+        }));
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          if (base64) {
+            set(() => ({
+              persistedLogo: {
+                name: file.name,
+                type: file.type,
+                base64,
+              }
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      },
       setStores: (stores) => set((state) => ({ draft: { ...state.draft, stores } })),
       addStore: (store) => set((state) => ({ draft: { ...state.draft, stores: [...state.draft.stores, store] } })),
       updateStore: (id, store) =>
@@ -101,12 +183,40 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
         })),
       removeStore: (id) => set((state) => ({ draft: { ...state.draft, stores: state.draft.stores.filter((store) => store.id !== id) } })),
       setStoreSetup: (setup) => set((state) => ({ draft: { ...state.draft, storeSetup: setup } })),
-      reset: () => set({ draft: createEmptyVendorOnboardingDraft(), attachments: { individualDocuments: {}, organizationDocuments: {}, avatar: null, organizationLogo: null } }),
+      reset: () =>
+        set({
+          draft: createEmptyVendorOnboardingDraft(),
+          attachments: { individualDocuments: {}, organizationDocuments: {}, avatar: null, organizationLogo: null },
+          persistedAvatar: null,
+          persistedLogo: null,
+        }),
     }),
     {
       name: 'vendor-onboarding-draft',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ draft: state.draft }),
+      partialize: (state) => ({
+        draft: state.draft,
+        persistedAvatar: state.persistedAvatar,
+        persistedLogo: state.persistedLogo,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (state.persistedAvatar) {
+            try {
+              state.attachments.avatar = base64ToFile(state.persistedAvatar);
+            } catch (e) {
+              console.error('Failed to reconstruct avatar from persisted state', e);
+            }
+          }
+          if (state.persistedLogo) {
+            try {
+              state.attachments.organizationLogo = base64ToFile(state.persistedLogo);
+            } catch (e) {
+              console.error('Failed to reconstruct logo from persisted state', e);
+            }
+          }
+        }
+      },
     }
   )
 );

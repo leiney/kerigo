@@ -11,11 +11,12 @@ type CreatePasswordStepProps = {
 };
 
 export const CreatePasswordStep: React.FC<CreatePasswordStepProps> = ({ onNext, onBack }) => {
+  const draft = useVendorOnboardingStore((state) => state.draft);
   const setPassword = useVendorOnboardingStore((state) => state.setPassword);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [formData, setFormData] = useState({
-    password: '',
-    confirmPassword: ''
+    password: draft.password || '',
+    confirmPassword: draft.password || ''
   });
 
   const passwordValidation = getPasswordValidation(formData.password, formData.confirmPassword);

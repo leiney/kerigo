@@ -108,7 +108,6 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
               {!hideFooter && (
                 <div className="pt-6 bg-white mt-auto shrink-0">
                   <Button 
-                    onClick={onContinue}
                     type="submit"
                     disabled={isContinueDisabled}
                     loading={isContinueLoading}
