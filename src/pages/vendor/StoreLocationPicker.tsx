@@ -152,6 +152,7 @@ export const StoreLocationPicker: React.FC = () => {
   const [editableLocation, setEditableLocation] = useState<LocationDetails>(state.locationDetails ?? defaultLocationData);
   const [isCaptured, setIsCaptured] = useState(Boolean(state.locationDetails));
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [requiresLocationPermission, setRequiresLocationPermission] = useState(false);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mapLayer, setMapLayer] = useState<'roadmap' | 'satellite'>('roadmap');
@@ -170,9 +171,33 @@ export const StoreLocationPicker: React.FC = () => {
     handleRefresh();
   }, []);
 
+  const requestLocationAccess = async () => {
+    setErrorMsg(null);
+    setRequiresLocationPermission(false);
+
+    if (!Capacitor.isNativePlatform()) {
+      return handleRefresh();
+    }
+
+    try {
+      const perm = await Geolocation.requestPermissions();
+      if (perm.location === 'granted') {
+        await handleRefresh();
+      } else {
+        setRequiresLocationPermission(true);
+        setErrorMsg('Location permission denied. Allow location access and try again.');
+      }
+    } catch (err: any) {
+      const reason = err?.message || 'Unable to request location permission.';
+      setErrorMsg(reason);
+      setRequiresLocationPermission(true);
+    }
+  };
+
   const handleRefresh = async () => {
     setIsCaptured(false);
     setErrorMsg(null);
+    setRequiresLocationPermission(false);
 
     try {
       let lat: number;
@@ -310,15 +335,27 @@ export const StoreLocationPicker: React.FC = () => {
               <p className="text-xs text-foreground/50 mt-0.5">Refresh if you need to capture again</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            className="text-primary border-primary/30 hover:bg-primary/5 h-9 px-3 text-xs font-semibold gap-1.5"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${!isCaptured ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="text-primary border-primary/30 hover:bg-primary/5 h-9 px-3 text-xs font-semibold gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${!isCaptured ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            {requiresLocationPermission && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={requestLocationAccess}
+                className="text-primary border-primary/30 hover:bg-primary/5 h-9 px-3 text-xs font-semibold"
+              >
+                Enable GPS
+              </Button>
+            )}
+          </div>
         </motion.div>
 
         {errorMsg ? (

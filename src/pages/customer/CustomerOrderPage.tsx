@@ -12,16 +12,27 @@ import {
   ShoppingCart,
   Check
 } from 'lucide-react';
-import { Button, Badge } from '@stackloop/ui';
+import { Button } from '@stackloop/ui';
 import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../store/authStore';
 import { selectCartCount, useCartStore } from '../../store/cartStore';
-import { customerApi, productApi } from '../../../lib/api';
+import {  productApi } from '../../../lib/api';
 import { returnImageUrl } from '../../../config';
 import { mockData } from '../../../lib/mockData';
-import type { CustomerHomeData, OrderStep } from '../../../lib/types';
+import type {  OrderStep } from '../../../lib/types';
 import PullToRefresh from '../../components/PullToRefresh';
+
+
+
+export function reverseAddress(address: string): string {
+    //capitalize each part and trim whitespace
+    return address
+      .split(",")
+      .map(part => part.trim().replace(/\b\w/g, char => char.toUpperCase()))
+      .reverse()
+      .join(", ");
+  }
 
 export const CustomerHomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -54,6 +65,24 @@ export const CustomerHomePage: React.FC = () => {
     staleTime: 1000 * 60,
     refetchOnWindowFocus: false,
   });
+
+
+
+
+  const allOrders = useQuery<any>({
+    queryKey: ['customerAllOrders'],
+    queryFn: async () => {
+      const response = await productApi.getAllOrders();
+      console.log('All Orders:', response);
+      return response;
+    },
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+  });
+
+
+  allOrders.data && console.log('All Orders Data:', allOrders.data);
+
 
   const normalizePastOrders = (raw: any): any[] => {
     if (!raw) return [];
@@ -187,6 +216,8 @@ export const CustomerHomePage: React.FC = () => {
     ]);
   };
 
+  
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24">
@@ -263,6 +294,21 @@ export const CustomerHomePage: React.FC = () => {
               ))}
             </div>
           </div>
+        ) : !latestOrder ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl p-6 text-center border border-border/50 shadow-xs flex flex-col items-center justify-center"
+          >
+            <div className="p-3 bg-primary/5 rounded-full text-primary mb-2.5">
+              <ShoppingBag className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-sm text-foreground">No active orders</h3>
+            <p className="text-xs text-foreground/40 mt-1 max-w-[200px]">
+              You don't have any ongoing deliveries at the moment.
+            </p>
+          </motion.div>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -290,7 +336,10 @@ export const CustomerHomePage: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <p className="max-w-16 truncate text-[10px] text-foreground/70 font-medium">Order #{latestOrder?.orderNo ?? latestOrder?.orderID ?? 'KR1024'}</p>
                 <p className="text-[10px] text-foreground/50 mt-0.5">{formatRelativeDate(latestOrder?.orderDate ?? latestOrder?.date)} • {(latestOrder?.orderItems?.length ?? latestOrder?.itemCount ?? 0)} items</p>
-                <h3 className="text-xl font-bold text-foreground mt-1.5">KES {(latestOrder?.total ?? latestOrder?.amount ?? 0).toLocaleString() ?? '--'}</h3>
+                <h3 className="text-xl font-bold text-foreground mt-1.5">
+                  <span className="text-xl font-bold text-foreground">KES</span>{' '}
+                  <span className="text-xl font-bold text-foreground">{(latestOrder?.total ?? latestOrder?.amount ?? 0).toLocaleString() ?? '--'}</span>
+                </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[11px] text-foreground/50">Paid via {latestOrder?.paymentMethod ? latestOrder.paymentMethod.toUpperCase() : '—'}</span>
                 </div>
@@ -362,34 +411,34 @@ export const CustomerHomePage: React.FC = () => {
 
             {/* Footer Details */}
             <div className="pt-3 border-t border-border/50 grid grid-cols-3 gap-1.5">
-              <div className="flex items-center gap-2">
+              <div className="col-span-1 flex flex-col items-center justify-center gap-2 w-full text-center">
                 <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <div>
+                <div className="w-full">
                   <p className="text-[9px] text-foreground/50 font-medium">Deliver to</p>
-                  <p className="text-xs font-bold text-foreground leading-tight">{latestOrder?.address ?? ''}</p>
-                  <p className="text-[9px] text-foreground/40">{latestOrder?.addressNote ?? ''}</p>
+                  <p className="text-xs font-bold text-foreground max-w-full truncate leading-tight capitalize">{reverseAddress(latestOrder?.extraData.location.address ?? '')}</p>
+                  <p className="text-[9px] text-foreground/40 max-w-full truncate">{latestOrder?.extraData.location.city ?? ''}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 border-x border-border px-2">
+              <div className="col-span-1 flex flex-col items-center justify-center gap-2 w-full text-center border-x border-border px-2">
                 <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
                   <Clock className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <div>
+                <div className="w-full">
                   <p className="text-[9px] text-foreground/50 font-medium">Est. delivery</p>
                   <p className="text-xs font-bold text-primary">{formatEstimateDelivery(latestOrder)}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="col-span-1 flex flex-col items-center justify-center gap-2 w-full text-center">
                 <div className="w-7 h-7 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
                   <Wallet className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <div>
+                <div className="w-full">
                   <p className="text-[9px] text-foreground/50 font-medium">Payment</p>
-                  <p className="text-xs font-bold text-foreground">{latestOrder?.paymentMethod ?? ''}</p>
+                  <p className="text-xs font-bold text-foreground capitalize">{latestOrder?.paymentMethod ?? ''}</p>
                 </div>
               </div>
             </div>
@@ -423,6 +472,16 @@ export const CustomerHomePage: React.FC = () => {
                   </div>
                 ))}
               </div>
+            ) : pastOrders.length === 0 ? (
+              <div className="p-6 text-center flex flex-col items-center justify-center">
+                <div className="p-3 bg-primary/5 rounded-full text-primary mb-2">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-xs text-foreground">No past orders</h4>
+                <p className="text-[11px] text-foreground/45 mt-0.5">
+                  Your order history is empty.
+                </p>
+              </div>
             ) : (
               pastOrders.map((order, idx) => (
                 <motion.div
@@ -449,7 +508,10 @@ export const CustomerHomePage: React.FC = () => {
 
                   {/* Price & Status */}
                   <div className="text-right flex-1 ">
-                      <p className="font-bold text-[10px] text-foreground">KES {getPastOrderPrice(order).toLocaleString()}</p>
+                      <p className="font-bold text-[10px] text-foreground">
+                        <span className="text-[9px] font-semibold text-foreground/60">KES</span>{' '}
+                        <span className="text-[10px] font-bold text-foreground">{getPastOrderPrice(order).toLocaleString()}</span>
+                      </p>
                     <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${getPastOrderStatusClasses(getPastOrderStatus(order))}`}>
                       {getPastOrderStatus(order)}
                     </span>

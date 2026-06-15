@@ -10,13 +10,16 @@ import {
   Clock, 
   Store,
   Check,
-  Wallet
+  Wallet,
+  ShoppingBag
 } from 'lucide-react';
 import { Button, Badge } from '@stackloop/ui';
 import { motion } from 'framer-motion';
 import { productApi } from '../../../lib/api';
 import { returnImageUrl } from '../../../config';
 import PullToRefresh from '../../components/PullToRefresh';
+import { reverseAddress } from './CustomerOrderPage';
+import { OrderStep } from '@/lib/types';
 
 type OrderDetailData = any;
 
@@ -115,6 +118,39 @@ const OrderDetailsPage: React.FC = () => {
     await fetchDetails(true);
   };
 
+  const mapStatusToStepKey = (status: string): string => {
+    const normalized = status.trim().toLowerCase();
+    if (normalized === 'new' || normalized === 'pending') return 'confirmed';
+    if (normalized === 'confirmed') return 'confirmed';
+    if (normalized.includes('prepare')) return 'preparing';
+    if (normalized.includes('way') || normalized.includes('on the way') || normalized.includes('ongoing')) return 'on the way';
+    if (normalized.includes('deliver')) return 'delivered';
+    return 'confirmed';
+  }; 
+  
+  const buildFallbackOrderSteps = (order: any): OrderStep[] => {
+      const currentStep = mapStatusToStepKey(order?.status ?? order?.orderStatus ?? 'confirmed');
+      const stepKeys = ['confirmed', 'preparing', 'on the way', 'delivered'];
+      const displayLabels: Record<string, string> = {
+        confirmed: 'Confirmed',
+        preparing: 'Preparing',
+        'on the way': 'On the way',
+        delivered: 'Delivered',
+      };
+      const currentIndex = stepKeys.indexOf(currentStep);
+  
+      return stepKeys.map((key, index) => ({
+        label: displayLabels[key],
+        completed: index < currentIndex,
+        active: index === currentIndex,
+        time: '',
+      }));
+    };
+  
+
+
+  const orderSteps: OrderStep[] = buildFallbackOrderSteps(orderDetails);
+
   if (isLoading || !orderDetails) {
     return (
       <div className="min-h-screen bg-background text-foreground pb-24 font-sans">
@@ -181,7 +217,7 @@ const OrderDetailsPage: React.FC = () => {
 
       <div className="px-4 space-y-3 mt-2">
         
-        {/* --- Store Status Card --- */}
+        {/* --- Store Status Card --- 
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -210,7 +246,7 @@ const OrderDetailsPage: React.FC = () => {
             </div>
           </div>
         </motion.div>
-
+        */}
         {/* --- Address Card --- */}
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
@@ -227,11 +263,58 @@ const OrderDetailsPage: React.FC = () => {
           </div>
           <div className="ml-7 flex justify-between items-start gap-3">
             <div>
-              <p className="text-xs font-medium">{orderDetails.address}</p>
-              <p className="text-[11px] text-foreground/50 mt-0.5">{orderDetails.addressNote}</p>
+              <p className="text-xs font-medium">{reverseAddress(orderDetails.extraData.location.address)}</p>
+              <p className="text-[11px] text-foreground/50 mt-0.5">{orderDetails.extraData.location.city}</p>
             </div>
-            <button className="text-primary text-[11px] font-semibold shrink-0">Change</button>
+            <button className="hidden text-primary text-[11px] font-semibold shrink-0">Change</button>
           </div>
+
+         
+           {/* Stepper */}
+          <div className="relative pt-2 flex items-start justify-between mb-4 px-1 pt-1">
+            {/* Background line */}
+            <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-border rounded-full" />
+            {/* Active progress */}
+            <div className="absolute top-5 left-[10%] w-[50%] h-0.5 bg-primary rounded-full" />
+            {orderSteps.map((step, index) => (
+              <div
+                key={index}
+                className="relative z-10 flex flex-1 flex-col items-center"
+              >
+                <div
+                  className={`flex items-center justify-center rounded-full border-2 ${
+                    step.completed
+                      ? 'w-8 h-8 bg-primary border-primary text-white'
+                      : step.active
+                        ? 'w-8 h-8 bg-white border-primary text-primary'
+                        : 'w-8 h-8 bg-white border-gray-200 text-gray-300'
+                  }`}
+                >
+                  {step.completed ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                  )}
+                </div>
+
+                <span
+                  className={`text-[10px] font-medium mt-1.5 ${
+                    step.active || step.completed
+                      ? 'text-primary'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {step.label}
+                </span>
+
+                {step.time && (
+                  <span className="text-[9px] text-gray-400 mt-0.5">
+                    {step.time}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div> 
         </motion.div>
 
         {/* --- Rider Card --- */}
@@ -272,10 +355,15 @@ const OrderDetailsPage: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden"
         >
+
+        
+
           <div className="p-3 border-b border-border/50 flex justify-between items-center">
             <h3 className="font-bold text-sm">Order Items</h3>
             <span className="text-[11px] text-foreground/50">{orderDetails.items.length} items</span>
           </div>
+
+
 
           <div className="divide-y divide-border/50">
             {orderDetails.items.map((item) => (
@@ -290,7 +378,7 @@ const OrderDetailsPage: React.FC = () => {
                   </div>
                   <p className="text-[11px] text-foreground/50 line-clamp-1">{item.description && item.description.length > 50 ? `${item.description.slice(0, 50)}...` : item.description}</p>
                 </div>
-                <p className="text-xs font-bold">KES {item.price.toLocaleString()}</p>
+                <p className="text-xs font-bold">KES {item.price.toFixed(2).toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -299,20 +387,17 @@ const OrderDetailsPage: React.FC = () => {
           <div className="p-3 space-y-1.5 bg-secondary/30">
             <div className="flex justify-between text-xs">
               <span className="text-foreground/60">Subtotal</span>
-              <span className="font-medium">KES {orderDetails.summary.subtotal.toLocaleString()}</span>
+              <span className="font-medium">KES {orderDetails.summary.subtotal.toFixed(2).toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-foreground/60">Delivery Fee</span>
-              <span className="font-medium">KES {orderDetails.summary.deliveryFee.toLocaleString()}</span>
+              <span className="font-medium">KES {orderDetails.summary.deliveryFee.toFixed(2).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-foreground/60">Platform Fee</span>
-              <span className="font-medium">KES {orderDetails.summary.platformFee.toLocaleString()}</span>
-            </div>
+            
             <div className="h-px bg-border/50 my-1.5" />
             <div className="flex justify-between text-sm font-bold">
               <span>Total</span>
-              <span className="text-primary">KES {orderDetails.summary.total.toLocaleString()}</span>
+              <span className="text-primary">KES {orderDetails.summary.total.toFixed(2).toLocaleString()}</span>
             </div>
           </div>
         </motion.div>
@@ -325,10 +410,10 @@ const OrderDetailsPage: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold">Payment Method</p>
-              <p className="text-[11px] text-foreground/50 mt-0.5">{orderDetails.paymentMethod}</p>
+              <p className="text-[11px] text-foreground/50 mt-0.5 capitalize">{orderDetails.paymentMethod}</p>
             </div>
           </div>
-          <span className="text-xs font-bold">KES {orderDetails.summary.total.toLocaleString()}</span>
+          <span className="text-xs font-bold">KES {orderDetails.summary.total.toFixed(2).toLocaleString()}</span>
         </div>
 
         {/* --- Support --- */}

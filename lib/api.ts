@@ -246,6 +246,11 @@ export const productApi = {
     return response.data;
   },
 
+  getAllOrders: async () => {
+    const response = await axiosInstance.get('/orders/');
+    return response.data;
+  },
+
 };
 
 
