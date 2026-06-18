@@ -1,6 +1,8 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { handleMockRequest } from './mockTransport';
 import { TENANT_ID, BASE_URL, HEADERS } from '../config';
+import { useAuthStore } from '../src/store/authStore';
+import { useErrorStore } from '../src/store/errorStore';
 
 const nodeEnv = import.meta.env.MODE ?? process.env.NODE_ENV ?? 'development';
 
@@ -47,7 +49,7 @@ axiosInstance.interceptors.request.use((config) => {
     }
 
     (headers as any)['x-tenant-id'] = TENANT_ID;
-    config.headers = headers;
+    config.headers = headers as any;
   } catch (err) {
     // ignore storage errors
   }
@@ -66,7 +68,33 @@ const extractErrorMessage = (error: unknown) => {
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => Promise.reject(new Error(extractErrorMessage(error)))
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      const responseData = error.response?.data as any;
+      const status = error.response?.status;
+      const errorStatusCode = responseData?.error?.statusCode ?? responseData?.statusCode;
+
+      if (status === 401 || status === 403 || errorStatusCode === 401 || errorStatusCode === 403) {
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('token');
+          }
+          useAuthStore.getState().logout();
+        } catch (logoutError) {
+          console.error('Failed to log out user on auth error:', logoutError);
+        }
+      }
+
+      // Show global error modal
+      const errorMessage = extractErrorMessage(error);
+      try {
+        useErrorStore.getState().showError(errorMessage, 'Request Failed');
+      } catch (modalError) {
+        console.error('Failed to show error modal:', modalError);
+      }
+    }
+    return Promise.reject(new Error(extractErrorMessage(error)));
+  }
 );
 
 
@@ -89,12 +117,22 @@ export type RequestOptions = Pick<AxiosRequestConfig, 'headers' | 'params' | 'da
 
 export const request = async <T>(options: RequestOptions): Promise<T> => {
   if (useMockApi) {
-    return handleMockRequest<T>({
-      method: options.method,
-      url: options.url,
-      data: options.data,
-      params: options.params as Record<string, unknown> | undefined,
-    });
+    try {
+      return await handleMockRequest<T>({
+        method: options.method,
+        url: options.url,
+        data: options.data,
+        params: options.params as Record<string, unknown> | undefined,
+      });
+    } catch (mockError) {
+      const errorMessage = mockError instanceof Error ? mockError.message : 'Request failed. Please try again.';
+      try {
+        useErrorStore.getState().showError(errorMessage, 'Request Failed');
+      } catch (modalError) {
+        console.error('Failed to show error modal:', modalError);
+      }
+      throw mockError;
+    }
   }
 
   const response = await axiosInstance.request<T>({

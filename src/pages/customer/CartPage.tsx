@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { customerApi, productApi } from '../../../lib/api';
 import type { LocationDetails } from '../../../lib/types';
 import { UserProfile } from '@/src/types';
+import { StatusModal } from '../../components/shared/StatusModal';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +45,18 @@ export const CartPage: React.FC = () => {
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [statusSheet, setStatusSheet] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+    onAction?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
   const subtotal = selectCartTotal(cartItems);
   const cartCount = selectCartCount(cartItems);
@@ -209,7 +222,6 @@ export const CartPage: React.FC = () => {
     try {
       const response = await productApi.submitSignupOrder(payload);
 
-
       const user: UserProfile = {
         id: response.user.id,
         fullName: response.user.fullName || "",
@@ -222,12 +234,19 @@ export const CartPage: React.FC = () => {
               
       login({ token: response?.user.token || '', user });            
       
-      alert('Order submitted successfully! ');
-
-      clearCart();
-      setOrderNotes('');
-      setShippingInfo(null);
-      navigate('/customer/');
+      setStatusSheet({
+        isOpen: true,
+        type: 'success',
+        title: 'Order Placed!',
+        message: 'Your order has been submitted successfully.',
+        onAction: () => {
+          setStatusSheet((prev) => ({ ...prev, isOpen: false }));
+          clearCart();
+          setOrderNotes('');
+          setShippingInfo(null);
+          navigate('/customer/');
+        },
+      });
     } catch (err: any) {
       console.error('Checkout error:', err);
     } finally {
@@ -593,6 +612,21 @@ export const CartPage: React.FC = () => {
           </div>
         </div>
       </BottomSheet>
+
+      <StatusModal
+        isOpen={statusSheet.isOpen}
+        onClose={() => {
+          if (statusSheet.type === 'success' && statusSheet.onAction) {
+            statusSheet.onAction();
+          } else {
+            setStatusSheet((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
+        type={statusSheet.type}
+        title={statusSheet.title}
+        message={statusSheet.message}
+        onAction={statusSheet.onAction}
+      />
 
 
       {/* --- Bottom Navigation --- */}

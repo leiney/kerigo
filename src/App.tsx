@@ -64,6 +64,8 @@ import OrderDetailsPage from './pages/customer/OrderDetailsPage';
 import { TrackOrder } from './pages/customer/TrackOrder';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { StatusModal } from './components/shared/StatusModal';
+import { useErrorStore } from './store/errorStore';
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { isAuthenticated, isInitialized, user } = useAuth();
@@ -137,6 +139,7 @@ const UnauthorizedPage = () => {
 };
 
 export default function App() {
+  const errorModal = useErrorStore();
   const location = useLocation();
   const protect = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['customer']}>{children}</ProtectedRoute>;
   const protectVendor = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['vendor']}>{children}</ProtectedRoute>;
@@ -247,6 +250,13 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <StatusModal
+          isOpen={errorModal.isOpen}
+          onClose={errorModal.hideError}
+          type={errorModal.type}
+          title={errorModal.title}
+          message={errorModal.message}
+        />
     </ToastProvider>
   );
 }

@@ -8,7 +8,7 @@ import {
   Lock,
   Mail,
   Leaf,
-  Home,
+  ShoppingBag,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
@@ -127,14 +127,6 @@ export const PhoneLoginPage: React.FC = () => {
 
       <div className="pt-8 pb-4 flex justify-between items-center relative z-10">
         <img src="kerigo.png" alt="KeriGo Logo" className="h-12 sm:h-14 object-contain" />
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="p-2.5 rounded-full border border-border bg-white text-foreground/70 hover:bg-secondary hover:text-foreground transition-all shadow-sm flex items-center justify-center cursor-pointer"
-          title="Go to Home"
-        >
-          <Home className="w-5 h-5" />
-        </button>
       </div>
 
       <section className="flex flex-nowrap items-center gap-4 mb-6">
@@ -246,6 +238,24 @@ export const PhoneLoginPage: React.FC = () => {
         >
           <Mail className="h-5 w-5 text-foreground/80" />
           <span className="font-bold text-foreground/80">Login with Email</span>
+        </Button>
+      </motion.div>
+
+      {/* Continue to Shop Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className="mt-3"
+      >
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => navigate('/')}
+          className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary text-foreground/80"
+        >
+          <ShoppingBag className="h-5 w-5 text-foreground/80" />
+          <span className="font-bold text-foreground/80">Continue to shop</span>
         </Button>
       </motion.div>
 
