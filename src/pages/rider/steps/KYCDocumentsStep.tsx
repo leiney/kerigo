@@ -3,6 +3,7 @@ import { FileText, Camera, CheckCircle2, Circle, File, X } from 'lucide-react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../../lib/onboardingAttachmentStorage';
+import { useErrorStore } from '../../../store/errorStore';
 
 type KYCDocumentsStepProps = {
   onNext: () => void;
@@ -163,7 +164,7 @@ export const KYCDocumentsStep: React.FC<KYCDocumentsStepProps> = ({ onNext, onBa
     const filesToAdd = incomingFiles.filter(file => file.size <= 5 * 1024 * 1024);
 
     if (filesToAdd.length === 0) {
-      alert('File size must be less than 5MB');
+      useErrorStore.getState().showError('File size must be less than 5MB', 'Upload Error');
       return;
     }
 

@@ -72,7 +72,6 @@ export const ReviewConfirmStep: React.FC<ReviewConfirmStepProps> = ({ onNext, on
       onNext();
     } catch (err) {
       console.error(err);
-      alert('Signup failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

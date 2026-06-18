@@ -5,6 +5,7 @@ import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayou
 import { generateDocumentSerial, type VendorDocumentAttachment } from '../../../lib/vendorOnboarding';
 import { useVendorOnboardingStore } from '../../../store/vendorOnboardingStore';
 import { readOnboardingAttachmentSnapshot, writeOnboardingAttachmentSnapshot } from '../../../lib/onboardingAttachmentStorage';
+import { useErrorStore } from '../../../store/errorStore';
 
 type KYCDocumentsStepProps = {
   onNext: () => void;
@@ -155,7 +156,7 @@ export const KYCDocumentsStep: React.FC<KYCDocumentsStepProps> = ({ onNext, onBa
   const handleFileUpload = (id: string, files: File[]) => {
     const validFiles = files.filter((file) => file.size <= 5 * 1024 * 1024);
     if (validFiles.length !== files.length) {
-      alert('File size must be less than 5MB');
+      useErrorStore.getState().showError('File size must be less than 5MB', 'Upload Error');
       return;
     }
 

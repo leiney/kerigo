@@ -74,7 +74,7 @@ export const ReviewAndConfirmStep: React.FC<ReviewAndConfirmStepProps> = ({ onNe
       await Promise.all(riderAttachmentKeys.map((key) => deleteOnboardingAttachmentSnapshot(key)));
       onNext();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Could not submit rider signup.');
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }

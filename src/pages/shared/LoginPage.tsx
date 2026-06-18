@@ -123,17 +123,7 @@ export const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white text-foreground font-sans antialiased px-5 pb-10 relative overflow-hidden">
       
-      {/* Decorative Leaves Background */}
-      <div className="absolute top-20 right-0 w-32 h-32 opacity-20 pointer-events-none">
-        <Leaf className="w-full h-full text-primary rotate-12" />
-      </div>
-      <div className="absolute bottom-40 left-0 w-24 h-24 opacity-20 pointer-events-none">
-        <Leaf className="w-full h-full text-primary -rotate-12" />
-      </div>
-      <div className="absolute bottom-20 right-10 w-20 h-20 opacity-20 pointer-events-none">
-        <Leaf className="w-full h-full text-primary rotate-45" />
-      </div>
-
+     
       {/* Header / Logo */}
       <div className="pt-8 pb-4 flex justify-between items-center relative z-10">
         <img 
@@ -214,13 +204,7 @@ export const LoginPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Error Message */}
-        {errorMessage && (
-          <div className="p-3.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed">
-            {errorMessage}
-          </div>
-        )}
-
+       
         {/* Login Button */}
         <Button 
           type="submit" 
@@ -279,10 +263,10 @@ export const LoginPage: React.FC = () => {
           type="button"
           variant="outline" 
           onClick={() => navigate('/')}
-          className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary text-foreground/80"
+          className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary text-primary"
         >
-          <ShoppingBag className="h-5 w-5 text-foreground/80" />
-          <span className="font-bold text-foreground/80">Continue to shop</span>
+          <ShoppingBag className="h-5 w-5 text-primary" />
+          <span className="font-bold text-primary">Continue to shop</span>
         </Button>
       </motion.div>
 
