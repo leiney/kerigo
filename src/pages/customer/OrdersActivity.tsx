@@ -12,21 +12,23 @@ import {
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
-import { customerApi } from '../../../lib/api';
-import type { OrderHistoryItem } from '../../../lib/types';
+import { productApi } from '../../../lib/api';
 
 export const OrdersActivity: React.FC = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadOrders = async () => {
-      const data = await customerApi.getOrders();
-
-      if (isMounted) {
-        setOrders(data.results);
+      try {
+        const data = await productApi.getAllOrders();
+        if (isMounted) {
+          setOrders(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to load orders count:', err);
       }
     };
 

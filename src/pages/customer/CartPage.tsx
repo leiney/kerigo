@@ -24,6 +24,8 @@ export const CartPage: React.FC = () => {
   const decreaseItem = useCartStore((state) => state.decreaseItem);
   const removeItem = useCartStore((state) => state.removeItem);
   const clearCart = useCartStore((state) => state.clearCart);
+  const vendorId = useCartStore((state) => state.vendorId);
+  const vendorName = useCartStore((state) => state.vendorName);
 
   const [orderNotes, setOrderNotes] = useState('');
   const [checkoutFullName, setCheckoutFullName] = useState('');
@@ -215,24 +217,32 @@ export const CartPage: React.FC = () => {
             receiptNo: '',
             accountReference: '',
           },
+          vendor: {
+            id: vendorId || cartItems[0]?.vendorId || 'id',
+            name: vendorName || cartItems[0]?.vendorName || 'VENDOR_NAME',
+          }
         },
       },
     };
 
     try {
       const response = await productApi.submitSignupOrder(payload);
+       
+      
+     if (!user){
+        const user: UserProfile = {
+          id: response.user.id,
+          fullName: response.user.fullName || "",
+          email: response.user.email,
+          phoneNo: response.user.phoneNo || "",
+          userType: "customer",
+          username: response.user.username || "",
+          extraData: response.user.extraData || {},
+        };
+                
+        login({ token: response?.user.token || '', user });            
 
-      const user: UserProfile = {
-        id: response.user.id,
-        fullName: response.user.fullName || "",
-        email: response.user.email,
-        phoneNo: response.user.phoneNo || "",
-        userType: "customer",
-        username: response.user.username || "",
-        extraData: response.user.extraData || {},
-      };
-              
-      login({ token: response?.user.token || '', user });            
+     }
       
       setStatusSheet({
         isOpen: true,
@@ -344,7 +354,7 @@ export const CartPage: React.FC = () => {
                       <ShoppingBag className="w-3.5 h-3.5 text-primary" />
                       <span className="text-xs text-foreground/60">{item.store}</span>
                     </div>
-                    <p className="text-sm text-primary font-semibold">KES {item.price} each</p>
+                    <p className="text-sm text-primary font-semibold">KES {item.price.toLocaleString()} each</p>
 
                     <div className="flex items-center justify-between mt-1">
                       <div className="flex items-center gap-2 bg-primary/5 rounded-xl">

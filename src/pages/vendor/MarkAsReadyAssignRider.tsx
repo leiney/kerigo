@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   X,
@@ -18,20 +18,10 @@ import {
 } from 'lucide-react';
 import { Button, Badge, Toggle } from '@stackloop/ui';
 import { motion } from 'motion/react';
+import { useQuery } from '@tanstack/react-query';
+import { productApi } from '@/lib/api';
 
-// --- Mock Data ---
-const orderData = {
-  id: 'KR1021',
-  status: 'Preparing',
-  time: '10:25 AM',
-  type: 'Delivery',
-  items: ['Chicken 1kg', 'Potatoes', 'Carrots'],
-  amount: 1560,
-  customer: 'John M.',
-  distance: '2.4 km',
-  paymentStatus: 'Paid',
-};
-
+// --- Mock Riders List ---
 const riders = [
   {
     id: '1',
@@ -70,10 +60,38 @@ const riders = [
 
 export const MarkAsReadyAssignRider: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedRider, setSelectedRider] = useState<string>('1');
   const [autoAssign, setAutoAssign] = useState(false);
   const [pickupTime, setPickupTime] = useState(5);
   const [note, setNote] = useState('');
+
+  const orderFromState = location.state?.order;
+  const orderId = orderFromState?.orderID || location.state?.orderId;
+
+  // Retrieve the order details
+  const { data: orderDetails } = useQuery({
+    queryKey: ['vendorOrderDetail', orderId],
+    queryFn: () => productApi.getVendorOrderDetails(orderId),
+    enabled: !!orderId,
+    initialData: orderFromState,
+  });
+
+  const order = orderDetails || orderFromState;
+
+  const getItemsText = (ord: any) => {
+    if (!ord?.orderItems || ord.orderItems.length === 0) return 'No items';
+    return ord.orderItems.map((item: any) => `${item.quantity}x ${item.name}`).join(', ');
+  };
+
+  const formatOrderTime = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   const handleIncrementTime = () => {
     if (pickupTime < 60) setPickupTime(pickupTime + 1);
@@ -83,15 +101,24 @@ export const MarkAsReadyAssignRider: React.FC = () => {
     if (pickupTime > 1) setPickupTime(pickupTime - 1);
   };
 
-  const handleMarkAsReady = () => {
-    // Handle mark as ready logic
-    console.log('Marking as ready:', {
-      orderId: orderData.id,
-      riderId: selectedRider,
-      pickupTime,
-      note,
-    });
-    navigate('/vendor/dashboard');
+  const handleMarkAsReady = async () => {
+    if (!order) return;
+    try {
+      const activeRider = autoAssign ? undefined : riders.find(r => r.id === selectedRider);
+      const riderObj = activeRider ? { id: activeRider.id, fullName: activeRider.name } : undefined;
+      const message = note || `Order ready for pickup. Assigned to ${riderObj?.fullName || 'auto-assigned rider'}.`;
+
+      await productApi.updateOrderStatus(
+        order.orderID,
+        'on_the_way',
+        message,
+        note,
+        riderObj
+      );
+      navigate('/vendor/dashboard');
+    } catch (err) {
+      console.error('Failed to mark order as ready:', err);
+    }
   };
 
   return (
@@ -136,24 +163,24 @@ export const MarkAsReadyAssignRider: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="font-bold text-sm">Order #{orderData.id}</p>
+                  <p className="font-bold text-sm">Order #{order?.orderNo || order?.orderID?.slice(-6).toUpperCase()}</p>
                   <Badge
                     variant="warning"
-                    className="bg-warning/10 text-warning text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                    className="bg-warning/10 text-warning text-[9px] font-semibold px-2 py-0.5 rounded-full capitalize"
                   >
-                    {orderData.status}
+                    {order?.orderStatus || 'preparing'}
                   </Badge>
                 </div>
                 <p className="text-[11px] text-foreground/50">
-                  {orderData.time} • {orderData.type}
+                  {order?.orderDate ? formatOrderTime(order.orderDate) : ''} • {order?.shippingCharges > 0 ? 'Delivery' : 'Pickup'}
                 </p>
                 <p className="text-xs text-foreground/70 mt-1">
-                  {orderData.items.join(', ')}
+                  {getItemsText(order)}
                 </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="font-bold text-base">KES {orderData.amount.toLocaleString()}</p>
+              <p className="font-bold text-base">KES {(order?.subTotal || 0).toLocaleString()}</p>
             </div>
           </div>
 
@@ -164,8 +191,8 @@ export const MarkAsReadyAssignRider: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] text-foreground/50 font-medium">Deliver to</p>
-                <p className="text-xs font-bold text-foreground">{orderData.customer}</p>
-                <p className="text-[10px] text-foreground/40">{orderData.distance} away</p>
+                <p className="text-xs font-bold text-foreground">{order?.extraData?.customer?.name || 'Customer'}</p>
+                <p className="text-[10px] text-foreground/40">{order?.extraData?.distanceKm ? `${order.extraData.distanceKm.toFixed(1)} km` : 'N/A'} away</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -174,8 +201,8 @@ export const MarkAsReadyAssignRider: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] text-foreground/50 font-medium">Payment</p>
-                <p className="text-xs font-bold text-primary flex items-center gap-1">
-                  {orderData.paymentStatus} <CheckCircle className="w-3 h-3" />
+                <p className="text-xs font-bold text-primary flex items-center gap-1 capitalize">
+                  {order?.paymentStatus || 'pending'} <CheckCircle className="w-3 h-3" />
                 </p>
               </div>
             </div>

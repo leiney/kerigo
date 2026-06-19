@@ -36,12 +36,13 @@ export const RegisterPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await authApi.register(formData);
+      const userType = (response.user.userType ?? response.user.roles?.[0] ?? 'customer') as UserRole;
       const user: UserProfile = {
         id: response.user.id,
-        name: response.user.fullName,
+        fullName: response.user.fullName,
         email: response.user.email,
-        phone: response.user.phoneNumber,
-        role: (response.user.role ?? response.user.roles?.[0] ?? 'customer') as UserRole,
+        phoneNo: response.user.phoneNumber,
+        userType,
         avatar: response.user.avatarUrl,
       };
 

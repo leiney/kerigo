@@ -19,8 +19,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import BottomNav from '../../components/BottomNav';
-import { customerApi } from '../../../lib/api';
-
+import { productApi } from '../../../lib/api';
 // Fix for default Leaflet marker icons
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -115,7 +114,7 @@ export const TrackOrder: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const latest = await customerApi.getLatestOrder();
+        const latest = await productApi.getLatestOrder();
         if (!mounted) return;
         setOrderState(latest);
         // set map center if delivery/rider coords exist on latest

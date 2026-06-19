@@ -222,6 +222,36 @@ export interface OrderHistoryItem {
   imageUrl: string;
 }
 
+export interface CustomerOrderCard {
+  id: string;
+  reference: string;
+  storeName: string;
+  storeImageUrl: string;
+  itemCount: number;
+  total: number;
+  status: string;
+  statusTone: 'success' | 'warning' | 'neutral' | 'error';
+  eta: string;
+  riderName?: string | null;
+  riderRole?: string;
+  riderAvatarUrl?: string;
+}
+
+export interface CustomerOrdersPageData {
+  tabs: {
+    current: number;
+    completed: number;
+    cancelled: number;
+  };
+  banner: {
+    title: string;
+    subtitle: string;
+  };
+  currentOrders: CustomerOrderCard[];
+  completedOrders: CustomerOrderCard[];
+  cancelledOrders: CustomerOrderCard[];
+}
+
 export interface RecommendationItem {
   id: number;
   name: string;
@@ -622,3 +652,12 @@ export interface RegisterRiderResponse {
   message: string;
   riderId?: string;
 }
+
+export enum OrderTrackingStatus {
+  RECEIVED = 'new',
+  PREPARING = 'preparing',
+  ON_THE_WAY = 'on_the_way',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+}
+

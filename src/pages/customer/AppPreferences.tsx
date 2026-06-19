@@ -26,6 +26,8 @@ export const AppPreferences: React.FC = () => {
     language: 'English',
     currency: 'KES (Kenyan Shilling)',
     theme: 'System Default',
+    defaultMapApp: 'Google Maps',
+    chatPreferences: 'In-app Chat',
   });
 
   useEffect(() => {

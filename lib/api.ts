@@ -116,8 +116,6 @@ export const customerApi = {
   getStoreData: async (): Promise<VendorStoreData> => apiGet('/customer/store/'),
   getStoreItems: async (): Promise<VendorMenuItem[]> => apiGet('/customer/store/items/'),
   getVendorList: async (): Promise<SharedWelcomeData['vendors']> => apiGet('/customer/vendors/'),
-  getOrders: async (): Promise<PaginatedResponse<OrderHistoryItem>> => apiGet('/customer/orders/'),
-  getLatestOrder: async (): Promise<CustomerHomeData['latestOrder']> => apiGet('/customer/orders/latest/'),
   getAddresses: async (): Promise<PaginatedResponse<AddressItem>> => apiGet('/customer/addresses/'),
   createAddress: async (payload: Partial<AddressItem>): Promise<AddressItem> => apiPost('/customer/addresses/', payload),
   updateAddress: async (id: string, payload: Partial<AddressItem>): Promise<AddressItem> => apiPatch(`/customer/addresses/${id}/`, payload),
@@ -250,6 +248,35 @@ export const productApi = {
     const response = await axiosInstance.get('/orders/');
     return response.data;
   },
+
+  getVendorOrders: async (params? : any) =>{
+    const response = await axiosInstance.get('/orders/vendor', { params } );
+
+    return response.data;
+  },
+
+  getVendorOrderDetails: async (orderID: string) => {
+    const response = await axiosInstance.get(`/orders/vendor/${orderID}`);
+    return response.data;
+  },
+
+  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string, fullName: string }) => {
+    const response = await axiosInstance.patch(`/orders/${orderID}/tracking`, {
+      status,
+      message,
+      vendorNotes,
+      rider,
+    });
+    return response.data;
+  },
+
+
+  getRiderOrders: async (params : any) =>{
+    const response = await axiosInstance.get('/orders/rider', { params } );
+    return response.data;
+  },
+
+
 
 };
 

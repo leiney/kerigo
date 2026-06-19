@@ -23,6 +23,13 @@ import { OrderStep } from '@/lib/types';
 
 type OrderDetailData = any;
 
+const formatMoney = (amount: number | string | undefined): string => {
+  if (amount === undefined || amount === null) return '0.00';
+  const num = typeof amount === 'number' ? amount : parseFloat(amount);
+  if (isNaN(num)) return '0.00';
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const OrderDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { orderId } = useParams();
@@ -35,41 +42,21 @@ const OrderDetailsPage: React.FC = () => {
       console.log('OrderDetails raw response:', data);
 
       const orderItemsList = data.orderItems || [];
-      const itemsWithDetails = await Promise.all(
-        orderItemsList.map(async (item: any) => {
-          try {
-            const product = await productApi.getProductById(item.productID);
-            const variant = (product.variants || []).find(
-              (v: any) => v.variantID === item.variantID
-            );
-            const imageId = variant?.images?.[0];
-            const imageUrl = returnImageUrl(imageId);
+      const itemsWithDetails = orderItemsList.map((item: any) => {
+        const imageId = item.imageURL || item.variant?.images?.[0];
+        const imageUrl = returnImageUrl(imageId);
 
-            return {
-              id: item.variantID || item.productID,
-              productID: item.productID,
-              variantID: item.variantID,
-              quantity: item.quantity,
-              name: product.name || 'Product',
-              description: product.description || '',
-              price: variant?.price ?? item.price ?? 0,
-              imageUrl: imageUrl,
-            };
-          } catch (err) {
-            console.error('Error fetching product details for', item.productID, err);
-            return {
-              id: item.variantID || item.productID,
-              productID: item.productID,
-              variantID: item.variantID,
-              quantity: item.quantity,
-              name: 'Product',
-              description: '',
-              price: item.price ?? 0,
-              imageUrl: '/logo.png',
-            };
-          }
-        })
-      );
+        return {
+          id: item.variantID || item.productID,
+          productID: item.productID,
+          variantID: item.variantID,
+          quantity: item.quantity,
+          name: item.name || 'Product',
+          description: item.variant?.unit ? `Unit: ${item.variant.unit}` : '',
+          price: item.variant?.price ?? item.price ?? 0,
+          imageUrl: imageUrl,
+        };
+      });
 
       const normalized = {
         ...data,
@@ -378,7 +365,7 @@ const OrderDetailsPage: React.FC = () => {
                   </div>
                   <p className="text-[11px] text-foreground/50 line-clamp-1">{item.description && item.description.length > 50 ? `${item.description.slice(0, 50)}...` : item.description}</p>
                 </div>
-                <p className="text-xs font-bold">KES {item.price.toFixed(2).toLocaleString()}</p>
+                <p className="text-xs font-bold">KES {formatMoney(item.price)}</p>
               </div>
             ))}
           </div>
@@ -387,17 +374,17 @@ const OrderDetailsPage: React.FC = () => {
           <div className="p-3 space-y-1.5 bg-secondary/30">
             <div className="flex justify-between text-xs">
               <span className="text-foreground/60">Subtotal</span>
-              <span className="font-medium">KES {orderDetails.summary.subtotal.toFixed(2).toLocaleString()}</span>
+              <span className="font-medium">KES {formatMoney(orderDetails.summary.subtotal)}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-foreground/60">Delivery Fee</span>
-              <span className="font-medium">KES {orderDetails.summary.deliveryFee.toFixed(2).toLocaleString()}</span>
+              <span className="font-medium">KES {formatMoney(orderDetails.summary.deliveryFee)}</span>
             </div>
             
             <div className="h-px bg-border/50 my-1.5" />
             <div className="flex justify-between text-sm font-bold">
               <span>Total</span>
-              <span className="text-primary">KES {orderDetails.summary.total.toFixed(2).toLocaleString()}</span>
+              <span className="text-primary">KES {formatMoney(orderDetails.summary.total)}</span>
             </div>
           </div>
         </motion.div>
@@ -413,7 +400,7 @@ const OrderDetailsPage: React.FC = () => {
               <p className="text-[11px] text-foreground/50 mt-0.5 capitalize">{orderDetails.paymentMethod}</p>
             </div>
           </div>
-          <span className="text-xs font-bold">KES {orderDetails.summary.total.toFixed(2).toLocaleString()}</span>
+          <span className="text-xs font-bold">KES {formatMoney(orderDetails.summary.total)}</span>
         </div>
 
         {/* --- Support --- */}

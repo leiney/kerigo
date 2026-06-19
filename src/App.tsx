@@ -12,6 +12,7 @@ import { WelcomePage } from './pages/shared/WelcomePage';
 // Vendor Pages
 import { VendorLandingPage } from './pages/vendor/VendorLandingPage';
 import { VendorDashboard } from './pages/vendor/VendorDashboard';
+import { VendorOrders } from './pages/vendor/VendorOrders';
 import { MarkAsReadyAssignRider } from './pages/vendor/MarkAsReadyAssignRider';
 import { VendorOnboarding } from './pages/vendor/VendorOnboarding';
 import { AddStoreDashboardPage } from './pages/vendor/AddStoreDashboardPage';
@@ -217,7 +218,7 @@ export default function App() {
           
           <Route path='/vendor/dashboard' element={protectVendor(<VendorDashboard />)} />
           <Route path='/vendor/mark-as-ready-assign-rider' element={protectVendor(<MarkAsReadyAssignRider />)} />
-          <Route path='/vendor/orders' element={protectVendor(<VendorDashboard />)} />
+          <Route path='/vendor/orders' element={protectVendor(<VendorOrders />)} />
           <Route path='/vendor/products' element={protectVendor(<ProductsDashboard />)} />
           <Route path='/vendor/categories' element={protectVendor(<ManageCategoriesPage />)} />
           <Route path='/vendor/add-category' element={protectVendor(<AddCategoryPage />)} />

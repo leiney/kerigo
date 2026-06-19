@@ -69,19 +69,6 @@ export const CustomerHomePage: React.FC = () => {
 
 
 
-  const allOrders = useQuery<any>({
-    queryKey: ['customerAllOrders'],
-    queryFn: async () => {
-      const response = await productApi.getAllOrders();
-      console.log('All Orders:', response);
-      return response;
-    },
-    staleTime: 1000 * 60,
-    refetchOnWindowFocus: false,
-  });
-
-
-  allOrders.data && console.log('All Orders Data:', allOrders.data);
 
 
   const normalizePastOrders = (raw: any): any[] => {
@@ -188,7 +175,7 @@ export const CustomerHomePage: React.FC = () => {
     const currentStep = mapStatusToStepKey(order?.status ?? order?.orderStatus ?? 'confirmed');
     const stepKeys = ['confirmed', 'preparing', 'on the way', 'delivered'];
     const displayLabels: Record<string, string> = {
-      confirmed: 'Confirmed',
+      confirmed: 'Received',
       preparing: 'Preparing',
       'on the way': 'On the way',
       delivered: 'Delivered',

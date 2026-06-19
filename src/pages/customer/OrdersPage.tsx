@@ -13,23 +13,88 @@ import {
 } from 'lucide-react';
 import { Button, Badge, BottomSheet, Input } from '@stackloop/ui';
 import { motion } from 'framer-motion';
-import { customerApi } from '../../../lib/api';
-import type { CustomerOrderCard, CustomerOrdersPageData } from '../../../lib/types';
+import { productApi } from '../../../lib/api';
+import { returnImageUrl } from '../../../config';
+import type { CustomerOrderCard } from '../../../lib/types';
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('current');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [pageData, setPageData] = useState<CustomerOrdersPageData | null>(null);
+  const [orders, setOrders] = useState<CustomerOrderCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadPageData = async () => {
-      const data = await customerApi.getOrdersPageData();
+      try {
+        const rawOrders = await productApi.getAllOrders();
+        console.log('getAllOrders raw response:', rawOrders);
 
-      if (isMounted) {
-        setPageData(data);
+        const normalized: CustomerOrderCard[] = (rawOrders || []).map((order: any) => {
+          const firstItem = order.orderItems?.[0];
+          const firstItemImage = firstItem?.imageURL || firstItem?.variant?.images?.[0];
+          const storeImageUrl = firstItemImage ? returnImageUrl(firstItemImage) : '/logo.png';
+
+          const itemCount = order.orderItems?.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0) || 0;
+
+          // Determine status tone
+          const rawStatus = (order.orderStatus || 'new').toLowerCase();
+          let statusTone: 'success' | 'warning' | 'neutral' | 'error' = 'neutral';
+          if (rawStatus === 'new' || rawStatus === 'pending') {
+            statusTone = 'warning';
+          } else if (rawStatus === 'confirmed' || rawStatus === 'preparing' || rawStatus.includes('way') || rawStatus.includes('ongoing')) {
+            statusTone = 'success';
+          } else if (rawStatus === 'delivered' || rawStatus === 'completed') {
+            statusTone = 'neutral';
+          } else if (rawStatus === 'cancelled') {
+            statusTone = 'error';
+          }
+
+          // Format ETA
+          const eta = order.deliveryDurationLength
+            ? `${order.deliveryDurationLength} ${order.deliveryDurationType || 'days'}`
+            : '2 days';
+
+          // Format title
+          let storeName = 'Kerigo Order';
+          if (order.orderItems && order.orderItems.length > 0) {
+            if (order.orderItems.length === 1) {
+              storeName = order.orderItems[0].name || 'Product';
+            } else {
+              storeName = `${order.orderItems[0].name || 'Product'} + ${order.orderItems.length - 1} more`;
+            }
+          }
+
+          // Rider details (if any)
+          const rider = order.rider || order.extraData?.rider || null;
+
+          return {
+            id: order.orderID,
+            reference: order.orderNo || order.orderID,
+            storeName,
+            storeImageUrl,
+            itemCount,
+            total: order.total || order.subTotal || 0,
+            status: order.orderStatus ? order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1) : 'New',
+            statusTone,
+            eta,
+            riderName: rider?.name || rider?.fullName || null,
+            riderRole: rider?.role || 'Your Rider',
+            riderAvatarUrl: rider?.avatarUrl || rider?.avatar || '/placeholder-avatar.webp',
+          };
+        });
+
+        if (isMounted) {
+          setOrders(normalized);
+        }
+      } catch (err) {
+        console.error('Failed to load orders:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -40,17 +105,22 @@ export const OrdersPage: React.FC = () => {
     };
   }, []);
 
-  const activeOrderCount = pageData?.tabs.current ?? 0;
-  const visibleOrders: CustomerOrderCard[] =
+  const currentOrders = orders.filter(
+    (o) => o.statusTone === 'success' || o.statusTone === 'warning'
+  );
+  const completedOrders = orders.filter((o) => o.statusTone === 'neutral');
+  const cancelledOrders = orders.filter((o) => o.statusTone === 'error');
+
+  const visibleOrders =
     activeTab === 'current'
-      ? pageData?.currentOrders ?? []
+      ? currentOrders
       : activeTab === 'completed'
-        ? pageData?.completedOrders ?? []
-        : pageData?.cancelledOrders ?? [];
+        ? completedOrders
+        : cancelledOrders;
 
   const statusStyles: Record<CustomerOrderCard['statusTone'], { pill: string; dot: string; eta: string; border: string; }> = {
     success: { pill: 'bg-primary/10 text-primary', dot: 'bg-primary', eta: 'text-primary', border: 'border-l-primary' },
-    warning: { pill: 'bg-warning/10 text-warning', dot: 'bg-warning', eta: 'text-warning', border: 'border-l-warning' },
+    warning: { pill: 'bg-warning/10 text-warning', dot: 'bg-warning', eta: 'text-foreground', border: 'border-l-warning' },
     neutral: { pill: 'bg-foreground/10 text-foreground/70', dot: 'bg-foreground/50', eta: 'text-foreground/70', border: 'border-l-border' },
     error: { pill: 'bg-red-100 text-red-600', dot: 'bg-red-500', eta: 'text-red-600', border: 'border-l-red-500' },
   };
@@ -69,6 +139,32 @@ export const OrdersPage: React.FC = () => {
       </button>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground pb-24 font-sans animate-pulse">
+        {/* Header */}
+        <header className="px-4 pt-5 pb-3 flex items-center justify-between sticky top-0 bg-background z-30">
+          <div>
+            <div className="h-6 w-32 bg-gray-200 rounded-md" />
+            <div className="h-4 w-48 bg-gray-200 rounded-md mt-2" />
+          </div>
+        </header>
+        {/* Tabs skeleton */}
+        <div className="px-4 border-b border-border z-20 pb-3 flex gap-6">
+          <div className="h-4 w-16 bg-gray-200 rounded" />
+          <div className="h-4 w-16 bg-gray-200 rounded" />
+          <div className="h-4 w-16 bg-gray-200 rounded" />
+        </div>
+        {/* Orders list skeleton */}
+        <div className="px-4 mt-4 space-y-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-md p-4 border border-border/50 h-32" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 font-sans">
@@ -103,9 +199,9 @@ export const OrdersPage: React.FC = () => {
               }`}
             >
               {tab}
-              {tab === 'current' && <span className="text-[10px] text-foreground/40">({pageData?.tabs.current ?? 0})</span>}
-              {tab === 'completed' && <span className="text-[10px] text-foreground/40">({pageData?.tabs.completed ?? 0})</span>}
-              {tab === 'cancelled' && <span className="text-[10px] text-foreground/40">({pageData?.tabs.cancelled ?? 0})</span>}
+              {tab === 'current' && <span className="text-[10px] text-foreground/40">({currentOrders.length})</span>}
+              {tab === 'completed' && <span className="text-[10px] text-foreground/40">({completedOrders.length})</span>}
+              {tab === 'cancelled' && <span className="text-[10px] text-foreground/40">({cancelledOrders.length})</span>}
               
               {activeTab === tab && (
                 <motion.div
@@ -130,8 +226,12 @@ export const OrdersPage: React.FC = () => {
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-semibold text-primary text-xs">{pageData?.banner.title ?? 'You have 0 active orders'}</h3>
-              <p className="text-[11px] text-foreground/60 mt-0.5">{pageData?.banner.subtitle ?? 'Track and manage your ongoing deliveries'}</p>
+              <h3 className="font-semibold text-primary text-xs">
+                {currentOrders.length > 0
+                  ? `You have ${currentOrders.length} active order${currentOrders.length === 1 ? '' : 's'}`
+                  : 'You have 0 active orders'}
+              </h3>
+              <p className="text-[11px] text-foreground/60 mt-0.5">Track and manage your ongoing deliveries</p>
             </div>
           </div>
         </motion.div>
@@ -139,68 +239,88 @@ export const OrdersPage: React.FC = () => {
 
       {/* --- Orders List --- */}
       <div className="px-4 mt-4 space-y-3">
-        {visibleOrders.map((order) => (
-          <motion.button
-            key={order.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            type="button"
-            onClick={() => navigate(`/customer/orders/${encodeURIComponent(order.id)}`)}
-            className={`w-full text-left bg-white rounded-md p-3 border border-border/50 border-l-4 shadow-sm active:scale-[0.99] transition-transform ${statusStyles[order.statusTone].border}`}
-          >
-            {/* Top Section */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-start gap-2.5">
-                <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center border border-border">
-                  <img src={order.storeImageUrl} alt={order.storeName} className="w-full h-full object-contain" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm leading-tight">{order.reference}</h4>
-                  <p className="text-xs font-medium text-foreground/80 mt-0.5">{order.storeName}</p>
-                  <div className="flex items-center gap-1 mt-1 text-[11px] text-foreground/50">
-                    <span>{order.itemCount} item{order.itemCount === 1 ? '' : 's'}</span>
-                    <span>•</span>
-                    <span>KES {order.total.toLocaleString()}</span>
+        {visibleOrders.length === 0 ? (
+          <div className="py-12 text-center flex flex-col items-center justify-center bg-white rounded-md border border-border/50 p-6">
+            <div className="p-3 bg-primary/5 rounded-full text-primary mb-3">
+              <ShoppingBag className="w-8 h-8" />
+            </div>
+            <h3 className="font-bold text-sm text-foreground">No orders found</h3>
+            <p className="text-xs text-foreground/50 mt-1 max-w-[240px]">
+              {activeTab === 'current'
+                ? "You don't have any active orders right now."
+                : activeTab === 'completed'
+                  ? "You haven't completed any orders yet."
+                  : "You don't have any cancelled orders."}
+            </p>
+          </div>
+        ) : (
+          visibleOrders.map((order) => (
+            <motion.button
+              key={order.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              type="button"
+              onClick={() => navigate(`/customer/orders/${encodeURIComponent(order.id)}`)}
+              className={`w-full text-left bg-white rounded-md p-3 border border-border/50 border-l-4 shadow-sm active:scale-[0.99] transition-transform ${statusStyles[order.statusTone].border}`}
+            >
+              {/* Top Section */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-12 h-12 rounded-md overflow-hidden shrink-0 bg-primary/10 flex items-center justify-center border border-border">
+                    <img src={order.storeImageUrl} alt={order.storeName} className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm leading-tight">{order.reference}</h4>
+                    <p className="text-xs font-medium text-foreground/80 mt-0.5">{order.storeName}</p>
+                    <div className="flex items-center gap-1 mt-1 text-[11px] text-foreground/50">
+                      <span>{order.itemCount} item{order.itemCount === 1 ? '' : 's'}</span>
+                      <span>•</span>
+                      <span>KES {order.total.toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="text-right flex flex-col items-end gap-2">
-                <Badge 
-                  variant={order.statusTone === 'error' ? 'warning' : 'success'} 
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${statusStyles[order.statusTone].pill}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusStyles[order.statusTone].dot}`}></span>
-                  {order.status}
-                </Badge>
-                <div className={`text-[11px] font-semibold ${statusStyles[order.statusTone].eta}`}>
-                  Arriving in {order.eta}
+                
+                <div className="text-right flex flex-col items-end gap-2">
+                  <Badge 
+                    variant={order.statusTone === 'error' ? 'warning' : 'success'} 
+                    className={`text-[10px] px-2 py-0.5 rounded-full ${statusStyles[order.statusTone].pill}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusStyles[order.statusTone].dot}`}></span>
+                    {order.status}
+                  </Badge>
+                  <div className={`text-[11px] font-semibold ${statusStyles[order.statusTone].eta}`}>
+                    Arriving in {order.eta}
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-foreground/30" />
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-foreground/30" />
               </div>
-            </div>
 
-            <div className="h-px bg-border/50 w-full my-2.5" />
+              {order.riderName ? (
+                <>
+                  <div className="h-px bg-border/50 w-full my-2.5" />
 
-            {/* Rider Section */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-white shadow-sm">
-                  <img src={order.riderAvatarUrl} alt={order.riderName} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-foreground">{order.riderName}</p>
-                  <p className="text-[10px] text-foreground/50">{order.riderRole}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {getActionButton(Phone, 'Call')}
-                {getActionButton(MessageSquare, 'Message')}
-              </div>
-            </div>
-          </motion.button>
-        ))}
+                  {/* Rider Section */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-white shadow-sm">
+                        <img src={order.riderAvatarUrl} alt={order.riderName} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-foreground">{order.riderName}</p>
+                        <p className="text-[10px] text-foreground/50">{order.riderRole}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {getActionButton(Phone, 'Call')}
+                      {getActionButton(MessageSquare, 'Message')}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </motion.button>
+          ))
+        )}
       </div>
 
       {/* --- Filters Bottom Sheet --- */}

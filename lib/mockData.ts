@@ -81,7 +81,6 @@ const latestOrder: OrderSummary = {
     reviews: '230',
     lat: -1.2725,
     lng: 36.8152,
-    avatarUrl: '/rider.png',
   },
   deliveryLocation: {
     label: 'Home',
@@ -98,12 +97,12 @@ const latestOrder: OrderSummary = {
 };
 
 const pastOrders: OrderHistoryItem[] = [
-  { id: '#KR1010', items: 'Bananas', date: 'Yesterday', price: 980, status: 'Delivered', imageUrl: '/banana.jpeg', avatarUrl: '/placeholder-avatar.webp' },
-  { id: '#KR0985', items: 'Milk 500ml', date: 'Last Week', price: 1450, status: 'Delivered', imageUrl: '/milk.jpeg', avatarUrl: '/placeholder-avatar.webp' },
-  { id: '#KR0954', items: 'Tomatoes', date: '2 Weeks Ago', price: 670, status: 'Cancelled', imageUrl: '/tomatoes.jpeg', avatarUrl: '/placeholder-avatar.webp' },
+  { id: '#KR1010', items: 'Bananas', date: 'Yesterday', price: 980, status: 'Delivered', imageUrl: '/banana.jpeg' },
+  { id: '#KR0985', items: 'Milk 500ml', date: 'Last Week', price: 1450, status: 'Delivered', imageUrl: '/milk.jpeg' },
+  { id: '#KR0954', items: 'Tomatoes', date: '2 Weeks Ago', price: 670, status: 'Cancelled', imageUrl: '/tomatoes.jpeg' },
 ];
 
-const orderDetailsById: Record<string, OrderDetailData> = {
+const orderDetailsById: Record<string, any> = {
   KR1024: {
     id: 'KR1024',
     reference: 'KR1024',
@@ -400,6 +399,8 @@ const appPreferences: AppPreferenceValues = {
   language: 'English',
   currency: 'KES (Kenyan Shilling)',
   theme: 'System Default',
+  defaultMapApp: 'Google Maps',
+  chatPreferences: 'In-app Chat',
 };
 
 const privacySecurity = {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 import { returnImageUrl } from '@/config';
@@ -25,12 +25,6 @@ import {
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 
-// --- Static/Fallback Stats ---
-const staticStats = {
-  prepTime: '18m',
-  rating: 4.8,
-};
-
 const EmptyState: React.FC<{ message: string; subMessage?: string }> = ({ message, subMessage }) => {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 bg-white rounded-2xl border border-border/50 shadow-sm text-center">
@@ -45,8 +39,14 @@ const EmptyState: React.FC<{ message: string; subMessage?: string }> = ({ messag
   );
 };
 
-export const VendorDashboard: React.FC = () => {
+export const VendorOrders: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read initial tab from state if passed, defaulting to 'new'
+  const [activeTab, setActiveTab] = useState<'new' | 'preparing' | 'ready' | 'recent'>(
+    location.state?.tab || 'new'
+  );
 
   // Full-Screen Order Details Modal State
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<any | null>(null);
@@ -76,13 +76,6 @@ export const VendorDashboard: React.FC = () => {
   const recentOrders = orders.filter((o: any) => 
     o.orderStatus === 'delivered' || o.orderStatus === 'completed' || o.orderStatus === 'cancelled'
   );
-
-  // Compute stats
-  const todayRevenue = orders
-    .filter((o: any) => o.orderStatus === 'delivered' || o.orderStatus === 'completed')
-    .reduce((sum: number, o: any) => sum + (o.subTotal || 0), 0);
-
-  const totalOrdersCount = orders.length;
 
   const handleOpenConfirm = (order: any) => {
     setSelectedOrder(order);
@@ -258,7 +251,7 @@ export const VendorDashboard: React.FC = () => {
           setSelectedOrderForDetail(order);
           setShowDetailModal(true);
         }}
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors animate-fade-in"
       >
         <div>
           <p className="font-bold text-xs">#{order.orderNo || order.orderID.slice(-6).toUpperCase()}</p>
@@ -291,12 +284,18 @@ export const VendorDashboard: React.FC = () => {
       {/* --- Header --- */}
       <header className="px-4 p-4 mb-2 flex items-center justify-between border-b border-border top-0 fixed w-full bg-background z-10">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/vendor/dashboard')}
+            className="p-1 -ml-1 rounded-full hover:bg-secondary transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
             <ShoppingBag className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-foreground">Dashboard</h1>
-            <p className="text-[10px] text-foreground/50">Overview & Stats</p>
+            <h1 className="text-base font-bold text-foreground">Orders</h1>
+            <p className="text-[10px] text-foreground/50">Manage your orders</p>
           </div>
         </div>
         <div className="flex items-center gap-3">        
@@ -309,120 +308,101 @@ export const VendorDashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* --- Revenue Summary --- */}
-      <section className="px-4  mb-6">
-        <div className="bg-primary rounded-2xl p-3 text-white shadow-sm shadow-primary/10">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-sm text-white/90">Today's Revenue</p>
-              <div className="flex items-end relative gap-3">
-                <p className="text-xl sm:text-2xl font-extrabold tracking-tight">KES {todayRevenue.toLocaleString()}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-center text-right">
-                <Package className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{totalOrdersCount}</span>
-                <span className="text-[11px] text-white/75">Orders</span>
-              </div>
-              <div className="flex flex-col items-center text-right">
-                <Clock className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{staticStats.prepTime}</span>
-                <span className="text-[11px] text-white/75">Avg. prep time</span>
-              </div>
-              <div className="flex flex-col items-center text-right">
-                <Star className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{staticStats.rating}</span>
-                <span className="text-[11px] text-white/75">Rating</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* --- New Orders Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-base">New Orders</h2>
-            <Badge variant="default" className="bg-primary/10 text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full border-0">
-              {newOrders.length}
-            </Badge>
-          </div>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'new' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
+      {/* --- Tabs --- */}
+      <section className="px-4 mb-4">
+        <div className="flex bg-white rounded-xl border border-border/50 p-1">
+          <button
+            onClick={() => setActiveTab('new')}
+            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'new'
+                ? 'bg-primary text-white shadow-sm shadow-primary/25'
+                : 'text-foreground/60 hover:text-foreground'
+            }`}
+          >
+            New ({newOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('preparing')}
+            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'preparing'
+                ? 'bg-primary text-white shadow-sm shadow-primary/25'
+                : 'text-foreground/60 hover:text-foreground'
+            }`}
+          >
+            Preparing ({preparingOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('ready')}
+            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'ready'
+                ? 'bg-primary text-white shadow-sm shadow-primary/25'
+                : 'text-foreground/60 hover:text-foreground'
+            }`}
+          >
+            Ready ({readyOrders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('recent')}
+            className={`flex-1 py-2 text-center text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'recent'
+                ? 'bg-primary text-white shadow-sm shadow-primary/25'
+                : 'text-foreground/60 hover:text-foreground'
+            }`}
+          >
+            Recent ({recentOrders.length})
           </button>
         </div>
-        {newOrders.length === 0 ? (
-          <EmptyState message="No new orders" subMessage="New orders will appear here as they are placed by customers." />
-        ) : (
-          <div className="space-y-3">
-            {newOrders.slice(0, 3).map((order, idx) => renderOrderCard(order, idx, 'new'))}
-          </div>
-        )}
       </section>
 
-      {/* --- Preparing Orders Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-base">Preparing Orders</h2>
-            <Badge variant="default" className="bg-warning/10 text-warning text-[11px] font-semibold px-2 py-0.5 rounded-full border-0">
-              {preparingOrders.length}
-            </Badge>
-          </div>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'preparing' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {preparingOrders.length === 0 ? (
-          <EmptyState message="No preparing orders" subMessage="Confirmed orders that you are preparing will show up here." />
-        ) : (
-          <div className="space-y-3">
-            {preparingOrders.slice(0, 3).map((order, idx) => renderOrderCard(order, idx, 'preparing'))}
-          </div>
+      <div className="space-y-4">
+        {activeTab === 'new' && (
+          <section className="px-4">
+            {newOrders.length === 0 ? (
+              <EmptyState message="No new orders" subMessage="New orders will appear here as they are placed by customers." />
+            ) : (
+              <div className="space-y-3">
+                {newOrders.map((order, idx) => renderOrderCard(order, idx, 'new'))}
+              </div>
+            )}
+          </section>
         )}
-      </section>
 
-      {/* --- Ready for Pickup Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-base">Ready for Pickup</h2>
-            <Badge variant="default" className="bg-primary/10 text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full border-0">
-              {readyOrders.length}
-            </Badge>
-          </div>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'ready' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {readyOrders.length === 0 ? (
-          <EmptyState message="No orders ready for pickup" subMessage="Orders marked as ready for rider collection will be listed here." />
-        ) : (
-          <div className="space-y-3">
-            {readyOrders.slice(0, 3).map((order, idx) => renderOrderCard(order, idx, 'ready'))}
-          </div>
+        {activeTab === 'preparing' && (
+          <section className="px-4">
+            {preparingOrders.length === 0 ? (
+              <EmptyState message="No preparing orders" subMessage="Confirmed orders that you are preparing will show up here." />
+            ) : (
+              <div className="space-y-3">
+                {preparingOrders.map((order, idx) => renderOrderCard(order, idx, 'preparing'))}
+              </div>
+            )}
+          </section>
         )}
-      </section>
 
-      {/* --- Recent Orders Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-base">Recent Orders</h2>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'recent' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {recentOrders.length === 0 ? (
-          <EmptyState message="No recent orders" subMessage="Completed and cancelled orders will be archived here." />
-        ) : (
-          <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
-            {recentOrders.slice(0, 5).map((order, idx) => renderRecentOrderRow(order, idx))}
-          </div>
+        {activeTab === 'ready' && (
+          <section className="px-4">
+            {readyOrders.length === 0 ? (
+              <EmptyState message="No orders ready for pickup" subMessage="Orders marked as ready for rider collection will be listed here." />
+            ) : (
+              <div className="space-y-3">
+                {readyOrders.map((order, idx) => renderOrderCard(order, idx, 'ready'))}
+              </div>
+            )}
+          </section>
         )}
-      </section>
+
+        {activeTab === 'recent' && (
+          <section className="px-4">
+            {recentOrders.length === 0 ? (
+              <EmptyState message="No recent orders" subMessage="Completed and cancelled orders will be archived here." />
+            ) : (
+              <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
+                {recentOrders.map((order, idx) => renderRecentOrderRow(order, idx))}
+              </div>
+            )}
+          </section>
+        )}
+      </div>
 
       {/* --- Bottom Navigation --- */}
       <BottomNav />
@@ -668,7 +648,7 @@ export const VendorDashboard: React.FC = () => {
                   <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-2">Customer details</p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                      <Star className="w-5 h-5 text-star text-primary fill-primary" />
+                      <Star className="w-5 h-5 text-primary fill-primary" />
                     </div>
                     <div>
                       <p className="font-bold text-sm text-foreground">
