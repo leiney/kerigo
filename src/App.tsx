@@ -238,7 +238,7 @@ export default function App() {
           <Route path="/rider/dashboard" element={protectRider(<RiderDashboard />)} />
           <Route path="/rider/mark-as-delivered" element={protectRider(<MarkAsDeliveredPage />)} />
           <Route path="/rider/mark-as-picked-up" element={protectRider(<MarkAsPickedUpPage />)} />
-          <Route path="/rider/orders" element={protectRider(<RiderDashboard />)} />
+          <Route path="/rider/orders" element={protectRider(<RiderDashboard />)} /> 
           <Route path="/rider/earnings" element={protectRider(<RiderDashboard />)} />
           <Route path="/rider/profile" element={protectRider(<RiderAccountSettings />)} />
           <Route path='/rider/settings/personal' element={protectRider(<RiderPersonalInformation />)} />
