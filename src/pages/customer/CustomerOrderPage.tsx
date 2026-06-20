@@ -306,7 +306,7 @@ export const CustomerHomePage: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h2 className="font-bold text-base text-foreground">Latest Order</h2>
-                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize">
                   {latestOrder?.status ?? latestOrder?.orderStatus ?? 'New'}
                 </span>
               </div>

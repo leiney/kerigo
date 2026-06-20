@@ -159,7 +159,10 @@ export const VendorOrganizationDetails: React.FC = () => {
             label="Registration Number"
             type="text"
             value={formData.registrationNo}
-            onChange={(value) => setFormData({ ...formData, registrationNo: String(value) })}
+            onChange={(value) => {
+              const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+              setFormData({ ...formData, registrationNo: sanitized });
+            }}
             className="w-full"
             placeholder="Enter company registration number"
             leftIcon={<FileSpreadsheet className="w-4 h-4 text-foreground/40" />}
@@ -170,7 +173,10 @@ export const VendorOrganizationDetails: React.FC = () => {
             label="Tax ID Number / KRA PIN"
             type="text"
             value={formData.taxIDNumber}
-            onChange={(value) => setFormData({ ...formData, taxIDNumber: String(value) })}
+            onChange={(value) => {
+              const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+              setFormData({ ...formData, taxIDNumber: sanitized });
+            }}
             className="w-full"
             placeholder="Enter tax/KRA PIN"
             leftIcon={<Globe className="w-4 h-4 text-foreground/40" />}

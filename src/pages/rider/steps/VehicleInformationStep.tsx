@@ -92,7 +92,10 @@ export const VehicleInformationStep: React.FC<VehicleInformationStepProps> = ({ 
           label="Registration Number"
           placeholder="Enter registration number"
           value={formData.registrationNumber}
-          onChange={(value) => setFormData({ ...formData, registrationNumber: String(value) })}
+          onChange={(value) => {
+            const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setFormData({ ...formData, registrationNumber: sanitized });
+          }}
           error={registrationNumberError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"

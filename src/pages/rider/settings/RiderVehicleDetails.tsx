@@ -162,7 +162,10 @@ export const RiderVehicleDetails: React.FC = () => {
             label="Registration Number"
             type="text"
             value={formData.registrationNo}
-            onChange={(value) => setFormData({ ...formData, registrationNo: String(value) })}
+            onChange={(value) => {
+              const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+              setFormData({ ...formData, registrationNo: sanitized });
+            }}
             className="w-full"
             placeholder="e.g. KDL 123A"
             leftIcon={<FileText className="w-4 h-4 text-foreground/40" />}

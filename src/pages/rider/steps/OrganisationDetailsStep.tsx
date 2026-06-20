@@ -103,7 +103,10 @@ export const OrganisationDetailsStep: React.FC<OrganisationDetailsStepProps> = (
           label="Registration Number"
           placeholder="Enter registration number"
           value={formData.organisationNumber}
-          onChange={(value) => setFormData({ ...formData, organisationNumber: String(value) })}
+          onChange={(value) => {
+            const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setFormData({ ...formData, organisationNumber: sanitized });
+          }}
           error={organisationNumberError}
           leftIcon={<Hash className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"
@@ -116,7 +119,10 @@ export const OrganisationDetailsStep: React.FC<OrganisationDetailsStepProps> = (
           label="KRA PIN"
           placeholder="Enter KRA PIN"
           value={formData.taxId}
-          onChange={(value) => setFormData({ ...formData, taxId: String(value) })}
+          onChange={(value) => {
+            const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setFormData({ ...formData, taxId: sanitized });
+          }}
           error={taxIdError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"

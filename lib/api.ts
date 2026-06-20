@@ -256,7 +256,7 @@ export const productApi = {
   },
 
   getVendorOrderDetails: async (orderID: string) => {
-    const response = await axiosInstance.get(`/orders/vendor/${orderID}`);
+    const response = await axiosInstance.get(`/orders/${orderID}`);
     return response.data;
   },
 
@@ -273,6 +273,19 @@ export const productApi = {
 
   getRiderOrders: async (params : any) =>{
     const response = await axiosInstance.get('/orders/rider', { params } );
+    return response.data;
+  },
+
+
+ 
+
+  getAllRiders : async (latitude : number, longitude : number, vehicleType? : string, limit? : number) =>{
+    const response = await axiosInstance.get('/riders/nearby', { params : {
+      latitude : latitude,
+      longitude : longitude,
+      vehicleType : 'motorbike',
+      limit : limit,//number of riders to display 
+    } } );
     return response.data;
   },
 

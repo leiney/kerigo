@@ -107,7 +107,10 @@ export const CompanyDetailsStep: React.FC<CompanyDetailsStepProps> = ({ onNext, 
           label="Business Registration Number"
           placeholder="Enter registration number"
           value={formData.businessRegistrationNumber}
-          onChange={(value) => setFormData({ ...formData, businessRegistrationNumber: String(value) })}
+          onChange={(value) => {
+            const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setFormData({ ...formData, businessRegistrationNumber: sanitized });
+          }}
           error={registrationNumberError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"
@@ -121,7 +124,10 @@ export const CompanyDetailsStep: React.FC<CompanyDetailsStepProps> = ({ onNext, 
           label="KRA PIN"
           placeholder="Enter KRA PIN"
           value={formData.kraPIN}
-          onChange={(value) => setFormData({ ...formData, kraPIN: String(value) })}
+          onChange={(value) => {
+            const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            setFormData({ ...formData, kraPIN: sanitized });
+          }}
           error={kraPinError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"

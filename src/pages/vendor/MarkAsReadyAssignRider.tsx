@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -18,50 +18,16 @@ import {
 } from 'lucide-react';
 import { Button, Badge, Toggle } from '@stackloop/ui';
 import { motion } from 'motion/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 
-// --- Mock Riders List ---
-const riders = [
-  {
-    id: '1',
-    name: 'John Kamau',
-    rating: 4.8,
-    totalOrders: 256,
-    distance: '1.2 km',
-    eta: '~3 mins',
-    status: 'available',
-    recommended: true,
-    avatar: '/rider1.png',
-  },
-  {
-    id: '2',
-    name: 'Peter Mwangi',
-    rating: 4.6,
-    totalOrders: 189,
-    distance: '1.8 km',
-    eta: '~4 mins',
-    status: 'busy',
-    recommended: false,
-    avatar: '/rider2.png',
-  },
-  {
-    id: '3',
-    name: 'Steve Otieno',
-    rating: 4.5,
-    totalOrders: 142,
-    distance: '2.3 km',
-    eta: '~6 mins',
-    status: 'busy',
-    recommended: false,
-    avatar: '/rider3.png',
-  },
-];
+
 
 export const MarkAsReadyAssignRider: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
-  const [selectedRider, setSelectedRider] = useState<string>('1');
+  const [selectedRider, setSelectedRider] = useState<string>('');
   const [autoAssign, setAutoAssign] = useState(false);
   const [pickupTime, setPickupTime] = useState(5);
   const [note, setNote] = useState('');
@@ -78,6 +44,41 @@ export const MarkAsReadyAssignRider: React.FC = () => {
   });
 
   const order = orderDetails || orderFromState;
+
+  const latitude = order?.extraData?.vendor?.location?.latitude;
+  const longitude = order?.extraData?.vendor?.location?.longitude;
+
+  // Fetch nearby riders using productApi.getAllRiders
+  const { data: fetchedRiders = [] } = useQuery<any[]>({
+    queryKey: ['nearbyRiders', latitude, longitude],
+    queryFn: async () => {
+      if (!latitude || !longitude) return [];
+      const response = await productApi.getAllRiders(latitude, longitude, 'motorbike', 5);
+      console.log('Fetched Nearby Riders:', response);
+      return response || [];
+    },
+    enabled: !!latitude && !!longitude,
+  });
+
+  const riders = (Array.isArray(fetchedRiders) ? fetchedRiders : []).map((r: any) => ({
+    id: r.id || r.riderID || r.riderId || String(r._id || ''),
+    name: r.name || r.fullName || r.riderName || 'Rider',
+    rating: r.rating || 5.0,
+    totalOrders: r.totalOrders || r.ordersCount || 0,
+    distance: r.distance ? (typeof r.distance === 'number' ? `${r.distance.toFixed(1)} km` : r.distance) : 'Nearby',
+    eta: r.eta || '~5 mins',
+    status: r.status || 'available',
+    recommended: r.recommended || false,
+    avatar: r.avatar || r.avatarUrl || '/placeholder-avatar.webp',
+  }));
+
+  useEffect(() => {
+    if (riders.length > 0) {
+      if (!riders.some(r => r.id === selectedRider)) {
+        setSelectedRider(riders[0].id);
+      }
+    }
+  }, [riders, selectedRider]);
 
   const getItemsText = (ord: any) => {
     if (!ord?.orderItems || ord.orderItems.length === 0) return 'No items';
@@ -115,6 +116,7 @@ export const MarkAsReadyAssignRider: React.FC = () => {
         note,
         riderObj
       );
+      queryClient.invalidateQueries({ queryKey: ['vendorOrders'] });
       navigate('/vendor/dashboard');
     } catch (err) {
       console.error('Failed to mark order as ready:', err);
@@ -327,6 +329,11 @@ export const MarkAsReadyAssignRider: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+            {riders.length === 0 && (
+              <div className="p-8 text-center text-foreground/45 text-xs font-semibold">
+                No nearby riders found for this vendor location.
+              </div>
+            )}
             <button className="w-full py-3 text-center text-primary text-xs font-semibold flex items-center justify-center gap-1 hover:bg-secondary/50 transition-colors">
               View more riders <ChevronDown className="w-3.5 h-3.5" />
             </button>

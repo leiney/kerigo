@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 import { returnImageUrl } from '@/config';
 import { Button, Badge, BottomSheet } from '@stackloop/ui';
@@ -57,32 +57,61 @@ export const VendorDashboard: React.FC = () => {
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
-  // Fetch Vendor Orders
-  const { data: orders = [], isLoading, refetch } = useQuery<any[]>({
-    queryKey: ['vendorAllOrders'],
+  const queryClient = useQueryClient();
+
+  // Fetch Vendor Orders by status parameters
+  const { data: newOrders = [], isLoading: isLoadingNew } = useQuery<any[]>({
+    queryKey: ['vendorOrders', 'new'],
     queryFn: async () => {
-      const response = await productApi.getVendorOrders();
-      console.log('Fetched Vendor Orders:', response);
+      const response = await productApi.getVendorOrders({ orderStatus: 'new' });
+      console.log('Fetched New Vendor Orders:', response);
       return response || [];
     },
     staleTime: 1000 * 15,
     refetchOnWindowFocus: false,
   });
 
-  // Filter orders by status
-  const newOrders = orders.filter((o: any) => o.orderStatus === 'new');
-  const preparingOrders = orders.filter((o: any) => o.orderStatus === 'preparing');
-  const readyOrders = orders.filter((o: any) => o.orderStatus === 'on_the_way');
-  const recentOrders = orders.filter((o: any) => 
-    o.orderStatus === 'delivered' || o.orderStatus === 'completed' || o.orderStatus === 'cancelled'
-  );
+  const { data: preparingOrders = [], isLoading: isLoadingPreparing } = useQuery<any[]>({
+    queryKey: ['vendorOrders', 'preparing'],
+    queryFn: async () => {
+      const response = await productApi.getVendorOrders({ orderStatus: 'preparing' });
+      console.log('Fetched Preparing Vendor Orders:', response);
+      return response || [];
+    },
+    staleTime: 1000 * 15,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: readyOrders = [], isLoading: isLoadingReady } = useQuery<any[]>({
+    queryKey: ['vendorOrders', 'on_the_way'],
+    queryFn: async () => {
+      const response = await productApi.getVendorOrders({ orderStatus: 'on_the_way' });
+      console.log('Fetched Ready Vendor Orders:', response);
+      return response || [];
+    },
+    staleTime: 1000 * 15,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: recentOrders = [], isLoading: isLoadingRecent } = useQuery<any[]>({
+    queryKey: ['vendorOrders', 'recent'],
+    queryFn: async () => {
+      const response = await productApi.getVendorOrders({ status: 'completed,delivered,cancelled' });
+      console.log('Fetched Recent Vendor Orders:', response);
+      return response || [];
+    },
+    staleTime: 1000 * 15,
+    refetchOnWindowFocus: false,
+  });
+
+  const isLoading = isLoadingNew || isLoadingPreparing || isLoadingReady || isLoadingRecent;
 
   // Compute stats
-  const todayRevenue = orders
+  const todayRevenue = recentOrders
     .filter((o: any) => o.orderStatus === 'delivered' || o.orderStatus === 'completed')
     .reduce((sum: number, o: any) => sum + (o.subTotal || 0), 0);
 
-  const totalOrdersCount = orders.length;
+  const totalOrdersCount = newOrders.length + preparingOrders.length + readyOrders.length + recentOrders.length;
 
   const handleOpenConfirm = (order: any) => {
     setSelectedOrder(order);
@@ -98,7 +127,7 @@ export const VendorDashboard: React.FC = () => {
     if (!selectedOrder) return;
     try {
       await productApi.updateOrderStatus(selectedOrder.orderID, 'preparing');
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['vendorOrders'] });
       setShowConfirmSheet(false);
     } catch (err) {
       console.error('Failed to confirm order:', err);
@@ -109,7 +138,7 @@ export const VendorDashboard: React.FC = () => {
     if (!selectedOrder) return;
     try {
       await productApi.updateOrderStatus(selectedOrder.orderID, 'cancelled');
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['vendorOrders'] });
       setShowCancelSheet(false);
     } catch (err) {
       console.error('Failed to cancel order:', err);

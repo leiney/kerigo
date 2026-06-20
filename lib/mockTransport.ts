@@ -44,6 +44,100 @@ const buildAuthResponse = (message = 'Authentication successful'): LoginResponse
   },
 });
 
+const mockVendorOrders = [
+  {
+    orderID: 'order_1',
+    orderNo: 'KR1001',
+    orderStatus: 'new',
+    orderDate: new Date(Date.now() - 5 * 60000).toISOString(),
+    subTotal: 850,
+    shippingCharges: 100,
+    tax: 30,
+    total: 980,
+    extraData: {
+      distanceKm: 1.5,
+      customer: { name: 'Alex Kamau' },
+      location: { description: 'Westlands, Nairobi, House 4B' }
+    },
+    orderItems: [
+      { name: 'Streetwise 2', quantity: 1, price: 550, variant: { price: 550 } },
+      { name: 'Zinger Burger', quantity: 1, price: 450, variant: { price: 450 } }
+    ]
+  },
+  {
+    orderID: 'order_2',
+    orderNo: 'KR1002',
+    orderStatus: 'new',
+    orderDate: new Date(Date.now() - 12 * 60000).toISOString(),
+    subTotal: 1200,
+    shippingCharges: 150,
+    tax: 40,
+    total: 1390,
+    extraData: {
+      distanceKm: 3.2,
+      customer: { name: 'Jane Mwangi' },
+      location: { description: 'Kilimani, Nairobi, Block C' }
+    },
+    orderItems: [
+      { name: 'Streetwise 3', quantity: 2, price: 750, variant: { price: 750 } }
+    ]
+  },
+  {
+    orderID: 'order_3',
+    orderNo: 'KR1003',
+    orderStatus: 'preparing',
+    orderDate: new Date(Date.now() - 25 * 60000).toISOString(),
+    subTotal: 550,
+    shippingCharges: 0,
+    tax: 20,
+    total: 570,
+    extraData: {
+      distanceKm: 0.5,
+      customer: { name: 'David Kiprop' },
+      location: { description: 'Pickup at Store' }
+    },
+    orderItems: [
+      { name: 'Streetwise 2', quantity: 1, price: 550, variant: { price: 550 } }
+    ]
+  },
+  {
+    orderID: 'order_4',
+    orderNo: 'KR1004',
+    orderStatus: 'on_the_way',
+    orderDate: new Date(Date.now() - 40 * 60000).toISOString(),
+    subTotal: 2150,
+    shippingCharges: 200,
+    tax: 80,
+    total: 2430,
+    extraData: {
+      distanceKm: 5.8,
+      customer: { name: 'Grace Omondi' },
+      location: { description: 'Lavington, Nairobi, Amber Crest Apt 5' }
+    },
+    orderItems: [
+      { name: 'Family Feast', quantity: 1, price: 2150, variant: { price: 2150 } }
+    ]
+  },
+  {
+    orderID: 'order_5',
+    orderNo: 'KR1005',
+    orderStatus: 'completed',
+    orderDate: new Date(Date.now() - 120 * 60000).toISOString(),
+    subTotal: 750,
+    shippingCharges: 100,
+    tax: 30,
+    total: 880,
+    extraData: {
+      distanceKm: 2.1,
+      customer: { name: 'Peter Njoroge' },
+      location: { description: 'Parklands, Nairobi' }
+    },
+    orderItems: [
+      { name: 'Streetwise 3', quantity: 1, price: 750, variant: { price: 750 } }
+    ]
+  }
+];
+
 export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> => {
   const { method } = config;
   const url = normalizeUrl(config.url);
@@ -340,6 +434,26 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
 
   if (method === 'POST' && url === '/product-stores') {
     return clone(config.data) as T;
+  }
+
+  if (method === 'GET' && url === '/orders/vendor') {
+    const statusParam = config.params?.status as string | undefined;
+    if (statusParam) {
+      const statuses = statusParam.split(',');
+      const filtered = mockVendorOrders.filter(order => statuses.includes(order.orderStatus));
+      return clone(filtered) as T;
+    }
+    return clone(mockVendorOrders) as T;
+  }
+
+  if (method === 'PATCH' && url.startsWith('/orders/') && url.endsWith('/tracking')) {
+    const orderId = url.split('/')[2];
+    const { status } = config.data as { status: string };
+    const order = mockVendorOrders.find(o => o.orderID === orderId);
+    if (order) {
+      order.orderStatus = status;
+    }
+    return clone({ message: 'Order status updated successfully', order }) as T;
   }
 
   throw new Error(`No mock handler registered for ${method} ${config.url}`);
