@@ -24,6 +24,65 @@ export const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<CustomerOrderCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getStatusBadgeStyles = (status: string) => {
+    const s = status.toLowerCase().trim();
+    if (s === 'received' || s === 'new' || s === 'pending') {
+      return {
+        pill: 'bg-yellow-50 text-yellow-700 border border-yellow-100',
+        dot: 'bg-yellow-500',
+      };
+    }
+    if (s === 'preparing') {
+      return {
+        pill: 'bg-amber-50 text-amber-600 border border-amber-100',
+        dot: 'bg-amber-500',
+      };
+    }
+    if (s === 'on the way' || s === 'on_the_way' || s === 'ongoing') {
+      return {
+        pill: 'bg-primary/10 text-primary border border-primary/20',
+        dot: 'bg-primary',
+      };
+    }
+    if (s === 'delivered' || s === 'completed') {
+      return {
+        pill: 'bg-green-50 text-green-700 border border-green-100',
+        dot: 'bg-green-600',
+      };
+    }
+    if (s === 'cancelled') {
+      return {
+        pill: 'bg-rose-50 text-rose-600 border border-rose-100',
+        dot: 'bg-rose-500',
+      };
+    }
+    return {
+      pill: 'bg-gray-50 text-gray-600 border border-gray-100',
+      dot: 'bg-gray-400',
+    };
+  };
+
+  const formatStatus = (status: string | undefined): string => {
+    if (!status) return 'New';
+    const s = status.toLowerCase().trim();
+    if (s === 'new' || s === 'pending') return 'Received';
+    if (s === 'preparing') return 'Preparing';
+    if (s === 'on_the_way' || s === 'on the way') return 'On the Way';
+    if (s === 'delivered' || s === 'completed') return 'Delivered';
+    if (s === 'cancelled') return 'Cancelled';
+    return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const getLatestStatus = (order: any): string => {
+    if (order?.tracking && Array.isArray(order.tracking) && order.tracking.length > 0) {
+      const latest = order.tracking[order.tracking.length - 1];
+      if (latest && latest.status) {
+        return latest.status;
+      }
+    }
+    return order?.orderStatus ?? order?.status ?? 'new';
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -40,7 +99,7 @@ export const OrdersPage: React.FC = () => {
           const itemCount = order.orderItems?.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0) || 0;
 
           // Determine status tone
-          const rawStatus = (order.orderStatus || 'new').toLowerCase();
+          const rawStatus = (getLatestStatus(order) || 'new').toLowerCase();
           let statusTone: 'success' | 'warning' | 'neutral' | 'error' = 'neutral';
           if (rawStatus === 'new' || rawStatus === 'pending') {
             statusTone = 'warning';
@@ -77,7 +136,7 @@ export const OrdersPage: React.FC = () => {
             storeImageUrl,
             itemCount,
             total: order.total || order.subTotal || 0,
-            status: order.orderStatus ? order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1) : 'New',
+            status: formatStatus(getLatestStatus(order)),
             statusTone,
             eta,
             riderName: rider?.name || rider?.fullName || null,
@@ -281,13 +340,15 @@ export const OrdersPage: React.FC = () => {
                 </div>
                 
                 <div className="text-right flex flex-col items-end gap-2">
-                  <Badge 
-                    variant={order.statusTone === 'error' ? 'warning' : 'success'} 
-                    className={`text-[10px] px-2 py-0.5 rounded-full ${statusStyles[order.statusTone].pill}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusStyles[order.statusTone].dot}`}></span>
-                    {order.status}
-                  </Badge>
+                  {(() => {
+                    const badgeStyles = getStatusBadgeStyles(order.status);
+                    return (
+                      <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${badgeStyles.pill}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${badgeStyles.dot}`}></span>
+                        {order.status}
+                      </span>
+                    );
+                  })()}
                   <div className={`text-[11px] font-semibold ${statusStyles[order.statusTone].eta}`}>
                     Arriving in {order.eta}
                   </div>

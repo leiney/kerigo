@@ -24,6 +24,7 @@ import {
   Package
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
+import PullToRefresh from '../../components/PullToRefresh';
 
 // --- Static/Fallback Stats ---
 const staticStats = {
@@ -51,7 +52,7 @@ export const VendorDashboard: React.FC = () => {
   // Full-Screen Order Details Modal State
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<any | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  
+
   // Bottom Sheet State
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
@@ -175,9 +176,8 @@ export const VendorDashboard: React.FC = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 + idx * 0.05 }}
-        className={`bg-white rounded-2xl p-4 border border-border/50 shadow-sm cursor-pointer hover:border-primary/20 transition-all ${
-          isPreparing ? 'bg-warning/5 border-warning/20' : ''
-        }`}
+        className={`bg-white rounded-2xl p-4 border border-border/50 shadow-sm cursor-pointer hover:border-primary/20 transition-all ${isPreparing ? 'bg-warning/5 border-warning/20' : ''
+          }`}
         onClick={() => {
           setSelectedOrderForDetail(order);
           setShowDetailModal(true);
@@ -185,9 +185,8 @@ export const VendorDashboard: React.FC = () => {
       >
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-start gap-3">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-              isPreparing ? 'bg-warning/15' : 'bg-primary/10'
-            }`}>
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isPreparing ? 'bg-warning/15' : 'bg-primary/10'
+              }`}>
               <ShoppingBag className={`w-4 h-4 ${isPreparing ? 'text-warning' : 'text-primary'}`} />
             </div>
             <div>
@@ -208,20 +207,19 @@ export const VendorDashboard: React.FC = () => {
             <p className="text-xs text-foreground/70 leading-relaxed truncate">
               {getItemsText(order)}
             </p>
-            <Badge 
-              variant={isPreparing ? 'warning' : 'success'} 
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full mt-2 border-0 ${
-                isPreparing 
-                  ? 'bg-warning/10 text-warning' 
-                  : isReady 
-                    ? 'bg-primary/10 text-primary' 
+            <Badge
+              variant={isPreparing ? 'warning' : 'success'}
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full mt-2 border-0 ${isPreparing
+                  ? 'bg-warning/10 text-warning'
+                  : isReady
+                    ? 'bg-primary/10 text-primary'
                     : 'bg-primary/10 text-primary'
-              }`}
+                }`}
             >
               {isReady ? 'Awaiting Rider' : order.shippingCharges > 0 ? 'Delivery' : 'Pickup'}
             </Badge>
           </div>
-          
+
           <div className="flex flex-col gap-2 ml-2 shrink-0">
             {isNew && (
               <>
@@ -301,11 +299,10 @@ export const VendorDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <Badge
             variant={isCompleted ? 'success' : 'danger'}
-            className={`${
-              isCompleted
+            className={`${isCompleted
                 ? 'bg-primary/10 text-primary'
                 : 'bg-error/10 text-error'
-            } text-[10px] font-semibold px-2 py-0.5 rounded-full border-0`}
+              } text-[10px] font-semibold px-2 py-0.5 rounded-full border-0`}
           >
             {statusLabel}
           </Badge>
@@ -315,8 +312,13 @@ export const VendorDashboard: React.FC = () => {
     );
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['vendorOrders'] });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased pt-20 pb-20">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased pt-20 pb-20">
       {/* --- Header --- */}
       <header className="px-4 p-4 mb-2 flex items-center justify-between border-b border-border top-0 fixed w-full bg-background z-10">
         <div className="flex items-center gap-3">
@@ -328,7 +330,7 @@ export const VendorDashboard: React.FC = () => {
             <p className="text-[10px] text-foreground/50">Overview & Stats</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">        
+        <div className="flex items-center gap-3">
           <button className="relative p-2">
             <Bell className="w-5 h-5 text-foreground/70" />
             <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-background">
@@ -369,7 +371,7 @@ export const VendorDashboard: React.FC = () => {
           </div>
         </div>
       </section>
-      
+
       {/* --- New Orders Section --- */}
       <section className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -383,7 +385,30 @@ export const VendorDashboard: React.FC = () => {
             View all <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        {newOrders.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-28 bg-secondary rounded-lg" />
+                      <div className="h-3 w-16 bg-secondary rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <div className="h-4 w-16 bg-secondary rounded-lg" />
+                    <div className="h-3 w-12 bg-secondary rounded-lg" />
+                  </div>
+                </div>
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <div className="h-3.5 w-full bg-secondary rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : newOrders.length === 0 ? (
           <EmptyState message="No new orders" subMessage="New orders will appear here as they are placed by customers." />
         ) : (
           <div className="space-y-3">
@@ -405,7 +430,30 @@ export const VendorDashboard: React.FC = () => {
             View all <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        {preparingOrders.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-28 bg-secondary rounded-lg" />
+                      <div className="h-3 w-16 bg-secondary rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <div className="h-4 w-16 bg-secondary rounded-lg" />
+                    <div className="h-3 w-12 bg-secondary rounded-lg" />
+                  </div>
+                </div>
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <div className="h-3.5 w-full bg-secondary rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : preparingOrders.length === 0 ? (
           <EmptyState message="No preparing orders" subMessage="Confirmed orders that you are preparing will show up here." />
         ) : (
           <div className="space-y-3">
@@ -427,7 +475,30 @@ export const VendorDashboard: React.FC = () => {
             View all <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        {readyOrders.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-28 bg-secondary rounded-lg" />
+                      <div className="h-3 w-16 bg-secondary rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <div className="h-4 w-16 bg-secondary rounded-lg" />
+                    <div className="h-3 w-12 bg-secondary rounded-lg" />
+                  </div>
+                </div>
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <div className="h-3.5 w-full bg-secondary rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : readyOrders.length === 0 ? (
           <EmptyState message="No orders ready for pickup" subMessage="Orders marked as ready for rider collection will be listed here." />
         ) : (
           <div className="space-y-3">
@@ -444,7 +515,24 @@ export const VendorDashboard: React.FC = () => {
             View all <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        {recentOrders.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50 animate-pulse">
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center justify-between p-4">
+                <div className="space-y-2">
+                  <div className="h-3.5 w-20 bg-secondary rounded-lg" />
+                  <div className="h-3 w-32 bg-secondary rounded-lg" />
+                </div>
+                <div>
+                  <div className="h-3.5 w-16 bg-secondary rounded-lg" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-16 bg-secondary rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : recentOrders.length === 0 ? (
           <EmptyState message="No recent orders" subMessage="Completed and cancelled orders will be archived here." />
         ) : (
           <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
@@ -457,7 +545,7 @@ export const VendorDashboard: React.FC = () => {
       <BottomNav />
 
       {/* --- Bottom Sheets --- */}
-      
+
       {/* 1. Confirm Order Bottom Sheet */}
       <BottomSheet
         isOpen={showConfirmSheet}
@@ -545,8 +633,8 @@ export const VendorDashboard: React.FC = () => {
             <Button className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3" onClick={handleConfirmOrder}>
               Confirm Order
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full border-primary text-primary hover:bg-primary/5 font-bold py-3"
               onClick={() => setShowConfirmSheet(false)}
             >
@@ -718,9 +806,9 @@ export const VendorDashboard: React.FC = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-foreground">
-                        {selectedOrderForDetail.extraData?.location?.description || 
-                         selectedOrderForDetail.extraData?.location?.address || 
-                         'No address description provided'}
+                        {selectedOrderForDetail.extraData?.location?.description ||
+                          selectedOrderForDetail.extraData?.location?.address ||
+                          'No address description provided'}
                       </p>
                       {selectedOrderForDetail.extraData?.location?.latitude && (
                         <p className="text-[10px] text-foreground/45 mt-1 font-mono">
@@ -850,6 +938,7 @@ export const VendorDashboard: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };

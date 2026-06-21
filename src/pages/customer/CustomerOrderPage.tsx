@@ -132,6 +132,17 @@ export const CustomerHomePage: React.FC = () => {
     }
   };
 
+  const formatStatus = (status: string | undefined): string => {
+    if (!status) return 'New';
+    const s = status.toLowerCase().trim();
+    if (s === 'new' || s === 'pending') return 'Received';
+    if (s === 'preparing') return 'Preparing';
+    if (s === 'on_the_way' || s === 'on the way') return 'On the Way';
+    if (s === 'delivered' || s === 'completed') return 'Delivered';
+    if (s === 'cancelled') return 'Cancelled';
+    return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   const getPastOrderImageUrl = (order: any): string => {
     if (!order?.imageURL) return '/logo.png';
     return returnImageUrl(order.imageURL);
@@ -141,14 +152,13 @@ export const CustomerHomePage: React.FC = () => {
   const getPastOrderRouteId = (order: any): string => order.orderID ?? '';
   const getPastOrderLabel = (order: any): string => order.productName ?? '';
   const getPastOrderStatus = (order: any): string => {
-    const status = order.orderStatus ?? 'Unknown';
-    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    return formatStatus(order.orderStatus ?? 'Unknown');
   };
   const getPastOrderStatusClasses = (status: string): string => {
     const normalized = status.toLowerCase();
-    if (normalized === 'new') return 'bg-primary/10 text-primary';
+    if (normalized === 'new' || normalized === 'received') return 'bg-primary/10 text-primary';
     if (normalized === 'delivered') return 'bg-primary/10 text-primary';
-    if (['confirmed', 'preparing', 'on the way'].includes(normalized)) return 'bg-yellow-100 text-yellow-700';
+    if (['confirmed', 'preparing', 'on the way', 'on_the_way'].includes(normalized)) return 'bg-yellow-100 text-yellow-700';
     return 'bg-gray-100 text-gray-600';
   };
   const getPastOrderPrice = (order: any): number => Number(order.amount ?? 0);
@@ -164,15 +174,63 @@ export const CustomerHomePage: React.FC = () => {
   const mapStatusToStepKey = (status: string): string => {
     const normalized = status.trim().toLowerCase();
     if (normalized === 'new' || normalized === 'pending') return 'confirmed';
-    if (normalized === 'confirmed') return 'confirmed';
+    if (normalized === 'confirmed') return 'preparing';
     if (normalized.includes('prepare')) return 'preparing';
     if (normalized.includes('way') || normalized.includes('on the way') || normalized.includes('ongoing')) return 'on the way';
-    if (normalized.includes('deliver')) return 'delivered';
+    if (normalized.includes('deliver') || normalized.includes('completed')) return 'delivered';
     return 'confirmed';
   };
 
+  const getStatusBadgeStyles = (status: string) => {
+    const s = status.toLowerCase().trim();
+    if (s === 'received' || s === 'new' || s === 'pending') {
+      return {
+        pill: 'bg-yellow-50 text-yellow-700 border border-yellow-100',
+        dot: 'bg-yellow-500',
+      };
+    }
+    if (s === 'preparing') {
+      return {
+        pill: 'bg-amber-50 text-amber-600 border border-amber-100',
+        dot: 'bg-amber-500',
+      };
+    }
+    if (s === 'on the way' || s === 'on_the_way' || s === 'ongoing') {
+      return {
+        pill: 'bg-primary/10 text-primary border border-primary/20',
+        dot: 'bg-primary',
+      };
+    }
+    if (s === 'delivered' || s === 'completed') {
+      return {
+        pill: 'bg-green-50 text-green-700 border border-green-100',
+        dot: 'bg-green-600',
+      };
+    }
+    if (s === 'cancelled') {
+      return {
+        pill: 'bg-rose-50 text-rose-600 border border-rose-100',
+        dot: 'bg-rose-500',
+      };
+    }
+    return {
+      pill: 'bg-gray-50 text-gray-600 border border-gray-100',
+      dot: 'bg-gray-400',
+    };
+  };
+
+  const getLatestStatus = (order: any): string => {
+    if (order?.tracking && Array.isArray(order.tracking) && order.tracking.length > 0) {
+      const latest = order.tracking[order.tracking.length - 1];
+      if (latest && latest.status) {
+        return latest.status;
+      }
+    }
+    return order?.orderStatus ?? order?.status ?? 'new';
+  };
+
   const buildFallbackOrderSteps = (order: any): OrderStep[] => {
-    const currentStep = mapStatusToStepKey(order?.status ?? order?.orderStatus ?? 'confirmed');
+    const currentStep = mapStatusToStepKey(getLatestStatus(order));
     const stepKeys = ['confirmed', 'preparing', 'on the way', 'delivered'];
     const displayLabels: Record<string, string> = {
       confirmed: 'Received',
@@ -182,12 +240,26 @@ export const CustomerHomePage: React.FC = () => {
     };
     const currentIndex = stepKeys.indexOf(currentStep);
 
-    return stepKeys.map((key, index) => ({
-      label: displayLabels[key],
-      completed: index < currentIndex,
-      active: index === currentIndex,
-      time: '',
-    }));
+    return stepKeys.map((key, index) => {
+      const isCompleted = index <= currentIndex;
+      const isActive = index === currentIndex + 1 && currentIndex < stepKeys.length - 1;
+      return {
+        label: displayLabels[key],
+        completed: isCompleted,
+        active: isActive,
+        time: '',
+      };
+    });
+  };
+
+  const getProgressWidth = (steps: OrderStep[]) => {
+    const totalSteps = steps.length;
+    if (totalSteps <= 1) return '0%';
+    const completedCount = steps.filter(s => s.completed).length;
+    if (completedCount === 0) return '0%';
+    if (completedCount === totalSteps) return '75%';
+    
+    return `${((completedCount - 1) / (totalSteps - 1)) * 75}%`;
   };
 
   const latestOrder = latestOrderQuery.data;
@@ -306,9 +378,16 @@ export const CustomerHomePage: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h2 className="font-bold text-base text-foreground">Latest Order</h2>
-                <span className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize">
-                  {latestOrder?.status ?? latestOrder?.orderStatus ?? 'New'}
-                </span>
+                {(() => {
+                  const statusStr = formatStatus(getLatestStatus(latestOrder));
+                  const badgeStyles = getStatusBadgeStyles(statusStr);
+                  return (
+                    <span className={`inline-flex items-center shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${badgeStyles.pill}`}>
+                      <span className={`w-1 h-1 rounded-full mr-1 shrink-0 ${badgeStyles.dot}`}></span>
+                      {statusStr}
+                    </span>
+                  );
+                })()}
               </div>
               <button
                 onClick={() => navigate('/customer/orders')}
@@ -351,10 +430,13 @@ export const CustomerHomePage: React.FC = () => {
             <div className="relative flex items-start justify-between mb-4 px-1 pt-1">
 
               {/* Background line */}
-              <div className="absolute top-5 left-[10%] right-[10%] h-0.5 bg-border rounded-full" />
+              <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 bg-border rounded-full" />
 
               {/* Active progress */}
-              <div className="absolute top-5 left-[10%] w-[50%] h-0.5 bg-primary rounded-full" />
+              <div 
+                className="absolute top-5 left-[12.5%] h-0.5 bg-primary rounded-full transition-all duration-500" 
+                style={{ width: getProgressWidth(latestOrderSteps) }}
+              />
 
               {latestOrderSteps.map((step, index) => (
                 <div
@@ -499,9 +581,16 @@ export const CustomerHomePage: React.FC = () => {
                         <span className="text-[9px] font-semibold text-foreground/60">KES</span>{' '}
                         <span className="text-[10px] font-bold text-foreground">{getPastOrderPrice(order).toLocaleString()}</span>
                       </p>
-                    <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1 ${getPastOrderStatusClasses(getPastOrderStatus(order))}`}>
-                      {getPastOrderStatus(order)}
-                    </span>
+                    {(() => {
+                      const statusStr = getPastOrderStatus(order);
+                      const badgeStyles = getStatusBadgeStyles(statusStr);
+                      return (
+                        <span className={`inline-flex items-center shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-1 ${badgeStyles.pill}`}>
+                          <span className={`w-1 h-1 rounded-full mr-1 shrink-0 ${badgeStyles.dot}`}></span>
+                          {statusStr}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Reorder Button */}

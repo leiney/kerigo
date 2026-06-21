@@ -103,8 +103,64 @@ export const VendorAccountSettings: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <p className="text-sm font-semibold text-foreground/50 animate-pulse">Loading settings...</p>
+      <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-24 animate-pulse">
+        {/* CustomSettingsHeader Skeleton */}
+        <div className="px-4 pt-6 pb-5 bg-white border-b border-border/50">
+          <div className="h-6 w-36 bg-secondary rounded-lg mb-2" />
+          <div className="h-4 w-64 bg-secondary rounded-lg" />
+        </div>
+
+        <div className="px-4 mt-5 space-y-5">
+          {/* Profile Card Skeleton */}
+          <div className="w-full bg-white rounded-2xl p-4 border border-border/50 shadow-sm flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-secondary shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-32 bg-secondary rounded-lg" />
+              <div className="h-3.5 w-40 bg-secondary rounded-lg" />
+              <div className="h-5 w-24 bg-secondary rounded-full" />
+            </div>
+            <div className="w-5 h-5 bg-secondary rounded-full" />
+          </div>
+
+          {/* Section 1 Skeleton */}
+          <div>
+            <div className="h-3.5 w-28 bg-secondary rounded mb-3 ml-1" />
+            <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-secondary" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-secondary rounded-lg" />
+                      <div className="h-3 w-48 bg-secondary rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="w-5 h-5 bg-secondary rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2 Skeleton */}
+          <div>
+            <div className="h-3.5 w-28 bg-secondary rounded mb-3 ml-1" />
+            <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
+              {[1].map((i) => (
+                <div key={i} className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-secondary" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-secondary rounded-lg" />
+                      <div className="h-3 w-48 bg-secondary rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="w-5 h-5 bg-secondary rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <BottomNav />
       </div>
     );
   }

@@ -260,7 +260,7 @@ export const productApi = {
     return response.data;
   },
 
-  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string, fullName: string }) => {
+  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string, fullName: string, estimatedPickupTime?: number }) => {
     const response = await axiosInstance.patch(`/orders/${orderID}/tracking`, {
       status,
       message,
@@ -275,7 +275,6 @@ export const productApi = {
     const response = await axiosInstance.get('/orders/rider', { params } );
     return response.data;
   },
-
 
  
 
@@ -292,14 +291,6 @@ export const productApi = {
 
 
 };
-
-
-
-
-
-
-
-
 export const categoryApi = {
   getCategories: async (): Promise<CategoryItem[]> => {
     const response = await axiosInstance.get<CategoryItem[]>('/categories/vendor');

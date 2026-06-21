@@ -48,37 +48,27 @@ export const MarkAsReadyAssignRider: React.FC = () => {
   const latitude = order?.extraData?.vendor?.location?.latitude;
   const longitude = order?.extraData?.vendor?.location?.longitude;
 
-  // Fetch nearby riders using productApi.getAllRiders
   const { data: fetchedRiders = [] } = useQuery<any[]>({
     queryKey: ['nearbyRiders', latitude, longitude],
     queryFn: async () => {
       if (!latitude || !longitude) return [];
-      const response = await productApi.getAllRiders(latitude, longitude, 'motorbike', 5);
+      const response = await productApi.getAllRiders(latitude, longitude, 'motorbike', 3);
       console.log('Fetched Nearby Riders:', response);
       return response || [];
     },
     enabled: !!latitude && !!longitude,
   });
 
-  const riders = (Array.isArray(fetchedRiders) ? fetchedRiders : []).map((r: any) => ({
-    id: r.id || r.riderID || r.riderId || String(r._id || ''),
-    name: r.name || r.fullName || r.riderName || 'Rider',
-    rating: r.rating || 5.0,
-    totalOrders: r.totalOrders || r.ordersCount || 0,
-    distance: r.distance ? (typeof r.distance === 'number' ? `${r.distance.toFixed(1)} km` : r.distance) : 'Nearby',
-    eta: r.eta || '~5 mins',
-    status: r.status || 'available',
-    recommended: r.recommended || false,
-    avatar: r.avatar || r.avatarUrl || '/placeholder-avatar.webp',
-  }));
+  const ridersList = Array.isArray(fetchedRiders) ? fetchedRiders : [];
 
   useEffect(() => {
-    if (riders.length > 0) {
-      if (!riders.some(r => r.id === selectedRider)) {
-        setSelectedRider(riders[0].id);
+    if (ridersList.length > 0) {
+      const firstRiderId = ridersList[0].id || ridersList[0].riderID || ridersList[0].riderId;
+      if (!ridersList.some((r: any) => (r.id || r.riderID || r.riderId) === selectedRider)) {
+        setSelectedRider(firstRiderId);
       }
     }
-  }, [riders, selectedRider]);
+  }, [ridersList, selectedRider]);
 
   const getItemsText = (ord: any) => {
     if (!ord?.orderItems || ord.orderItems.length === 0) return 'No items';
@@ -105,8 +95,12 @@ export const MarkAsReadyAssignRider: React.FC = () => {
   const handleMarkAsReady = async () => {
     if (!order) return;
     try {
-      const activeRider = autoAssign ? undefined : riders.find(r => r.id === selectedRider);
-      const riderObj = activeRider ? { id: activeRider.id, fullName: activeRider.name } : undefined;
+      const activeRider = autoAssign ? undefined : ridersList.find((r: any) => (r.id || r.riderID || r.riderId) === selectedRider);
+      const riderObj = activeRider ? {
+        id: activeRider.id || activeRider.riderID || activeRider.riderId,
+        fullName: activeRider.fullName || activeRider.name || 'Rider',
+        estimatedPickupTime: pickupTime
+      } : undefined;
       const message = note || `Order ready for pickup. Assigned to ${riderObj?.fullName || 'auto-assigned rider'}.`;
 
       await productApi.updateOrderStatus(
@@ -272,64 +266,74 @@ export const MarkAsReadyAssignRider: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-            {riders.map((rider, index) => (
-              <motion.div
-                key={rider.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + index * 0.05 }}
-                className={`p-4 flex items-center gap-3 cursor-pointer transition-colors ${
-                  index !== riders.length - 1 ? 'border-b border-border/50' : ''
-                } ${
-                  selectedRider === rider.id
-                    ? 'bg-primary/5 border-l-4 border-l-primary'
-                    : 'hover:bg-secondary/50 border-l-4 border-l-transparent'
-                }`}
-                onClick={() => setSelectedRider(rider.id)}
-              >
-                <input
-                  type="radio"
-                  name="rider"
-                  value={rider.id}
-                  checked={selectedRider === rider.id}
-                  onChange={() => setSelectedRider(rider.id)}
-                  className="w-4 h-4 text-primary border-border focus:ring-primary"
-                />
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                  <User className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="font-bold text-sm text-foreground">{rider.name}</p>
-                    {rider.recommended && (
-                      <Badge
-                        variant="success"
-                        className="bg-primary/10 text-primary text-[9px] font-semibold px-2 py-0.5 rounded-full"
-                      >
-                        Recommended
-                      </Badge>
-                    )}
-                    {rider.status === 'busy' && (
-                      <Badge
-                        variant="warning"
-                        className="bg-warning/10 text-warning text-[9px] font-semibold px-2 py-0.5 rounded-full"
-                      >
-                        Busy
-                      </Badge>
-                    )}
+            {ridersList.map((rider, index) => {
+              const riderId = rider.id || rider.riderID || rider.riderId;
+              const riderName = rider.fullName || rider.name || 'Rider';
+              const rating = rider.rating || 5.0;
+              const totalOrders = rider.totalOrders || rider.ordersCount || 0;
+              const distance = rider.distance ? (typeof rider.distance === 'number' ? `${rider.distance.toFixed(1)} km` : rider.distance) : 'Nearby';
+              const eta = rider.durationMinutes ? `~${rider.durationMinutes} mins` : (rider.eta || '~5 mins');
+              const isSelected = selectedRider === riderId;
+
+              return (
+                <motion.div
+                  key={riderId}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + index * 0.05 }}
+                  className={`p-4 flex items-center gap-3 cursor-pointer transition-colors ${
+                    index !== ridersList.length - 1 ? 'border-b border-border/50' : ''
+                  } ${
+                    isSelected
+                      ? 'bg-primary/5 border-l-4 border-l-primary'
+                      : 'hover:bg-secondary/50 border-l-4 border-l-transparent'
+                  }`}
+                  onClick={() => setSelectedRider(riderId)}
+                >
+                  <input
+                    type="radio"
+                    name="rider"
+                    value={riderId}
+                    checked={isSelected}
+                    onChange={() => setSelectedRider(riderId)}
+                    className="w-4 h-4 text-primary border-border focus:ring-primary"
+                  />
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                    <User className="w-5 h-5 text-primary" />
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-foreground/60">
-                    <Star className="w-3 h-3 text-warning fill-warning" />
-                    <span className="font-medium">{rider.rating}</span>
-                    <span>({rider.totalOrders} orders)</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="font-bold text-sm text-foreground">{riderName}</p>
+                      {rider.recommended && (
+                        <Badge
+                          variant="success"
+                          className="bg-primary/10 text-primary text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                        >
+                          Recommended
+                        </Badge>
+                      )}
+                      {rider.status === 'busy' && (
+                        <Badge
+                          variant="warning"
+                          className="bg-warning/10 text-warning text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                        >
+                          Busy
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] text-foreground/60">
+                      <Star className="w-3 h-3 text-warning fill-warning" />
+                      <span className="font-medium">{rating}</span>
+                      <span>({totalOrders} orders)</span>
+                    </div>
+                    <p className="text-[11px] text-foreground/50 mt-0.5">
+                      {distance} away • {eta} to store
+                    </p>
                   </div>
-                  <p className="text-[11px] text-foreground/50 mt-0.5">
-                    {rider.distance} away • {rider.eta} to store
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-            {riders.length === 0 && (
+                </motion.div>
+              );
+            })}
+            {ridersList.length === 0 && (
               <div className="p-8 text-center text-foreground/45 text-xs font-semibold">
                 No nearby riders found for this vendor location.
               </div>

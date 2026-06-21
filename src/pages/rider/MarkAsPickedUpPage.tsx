@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   X,
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { Button, Badge } from '@stackloop/ui';
 import { motion, AnimatePresence } from 'motion/react';
+import { productApi } from '@/lib/api';
+import { returnImageUrl } from '@/config';
 
 // --- Mock Order Items ---
 const orderItems = [
@@ -27,8 +29,79 @@ const orderItems = [
 
 export const MarkAsPickedUpPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const order = location.state?.order;
+
   const [note, setNote] = useState('');
   const [itemsExpanded, setItemsExpanded] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatOrderDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      
+      const dateMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const diffTime = nowMidnight.getTime() - dateMidnight.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      
+      const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+      const timeString = date.toLocaleTimeString([], timeOptions);
+      
+      if (diffDays === 0) {
+        return timeString;
+      } else if (diffDays === 1) {
+        return `Yesterday, ${timeString}`;
+      } else {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = months[date.getMonth()];
+        const day = date.getDate();
+        const year = date.getFullYear();
+        return `${month}, ${day}, ${year} ${timeString.toLowerCase()}`;
+      }
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const handleConfirmPickup = async () => {
+    if (!order) return;
+    setIsSubmitting(true);
+    try {
+      const message = note || 'Order picked up by rider.';
+      await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note);
+      navigate('/rider/dashboard');
+    } catch (err) {
+      console.error('Failed to mark order as picked up:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-xl font-bold text-error mb-2">No Order Selected</h1>
+        <p className="text-sm text-foreground/60 mb-6">Please select an order from the dashboard.</p>
+        <Button onClick={() => navigate('/rider/dashboard')} className="bg-primary text-white font-bold py-2.5 px-6 rounded-full text-sm">
+          Go to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  const storeName = order.extraData?.vendor?.name || 'Vendor';
+  const storeAddress = order.extraData?.vendor?.location?.address || 'Pickup Address';
+  const dropoffArea = order.extraData?.location?.city || order.extraData?.location?.address || 'Customer Location';
+  const dropoffAddress = order.extraData?.location?.address || 'Dropoff Address';
+
+  const earnings = order.shippingCharges || 0;
+  const distance = order.extraData?.distanceKm ? `${order.extraData.distanceKm.toFixed(1)} km` : 'N/A';
+  const estTime = order.extraData?.durationMinutes ? `${order.extraData.durationMinutes} mins` : 'N/A';
+  const itemsToRender = order.orderItems || [];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans antialiased pb-8">
@@ -85,22 +158,22 @@ export const MarkAsPickedUpPage: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-foreground">Order #KR1024</span>
+              <span className="font-bold text-sm text-foreground">Order #{order.orderNo || order.orderID.slice(-6).toUpperCase()}</span>
               <Badge
                 variant="success"
                 className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full"
               >
-                On the way to customer
+                {order.orderStatus}
               </Badge>
             </div>
-            <span className="text-xs font-medium text-foreground/50">10:30 AM</span>
+            <span className="text-xs font-medium text-foreground/50">{formatOrderDate(order.orderDate)}</span>
           </div>
 
           <div className="flex gap-4">
             {/* Left: Route */}
             <div className="flex-1">
               <div className="flex items-start gap-3 mb-5">
-                  <div className="flex flex-col items-center pt-1">
+                <div className="flex flex-col items-center pt-1">
                   <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
                     <MapPin className="w-3.5 h-3.5 text-primary" />
                   </div>
@@ -114,15 +187,15 @@ export const MarkAsPickedUpPage: React.FC = () => {
                     <p className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider">
                       Pickup
                     </p>
-                    <p className="text-sm font-bold text-foreground mt-0.5">Naivas Westlands</p>
-                    <p className="text-xs text-foreground/50 mt-0.5">Ring Road, Westlands</p>
+                    <p className="text-sm font-bold text-foreground mt-0.5">{storeName}</p>
+                    <p className="text-xs text-foreground/50 mt-0.5">{storeAddress}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-foreground/50 font-bold uppercase tracking-wider">
                       Drop-off
                     </p>
-                    <p className="text-sm font-bold text-foreground mt-0.5">Kilimani, Nairobi</p>
-                    <p className="text-xs text-foreground/50 mt-0.5">Argwings Kodhek Road</p>
+                    <p className="text-sm font-bold text-foreground mt-0.5">{dropoffArea}</p>
+                    <p className="text-xs text-foreground/50 mt-0.5">{dropoffAddress}</p>
                   </div>
                 </div>
               </div>
@@ -132,6 +205,11 @@ export const MarkAsPickedUpPage: React.FC = () => {
                 <Button
                   variant="outline"
                   className="flex-1 border-border hover:bg-secondary text-foreground/70 h-9 text-xs font-semibold gap-2"
+                  onClick={() => {
+                    if (order.extraData?.vendor?.phoneNo) {
+                      window.location.href = `tel:${order.extraData.vendor.phoneNo}`;
+                    }
+                  }}
                 >
                   <Phone className="w-3.5 h-3.5" /> Call store
                 </Button>
@@ -147,21 +225,21 @@ export const MarkAsPickedUpPage: React.FC = () => {
             {/* Right: Stats */}
             <div className="flex flex-col gap-3 shrink-0 w-24">
               <div className="bg-primary/5 rounded-xl p-2 text-center">
-                <p className="text-base font-extrabold text-primary">KES 180</p>
+                <p className="text-base font-extrabold text-primary">KES {earnings.toLocaleString()}</p>
                 <p className="text-[9px] text-foreground/50 font-medium">Earnings</p>
               </div>
               <div className="space-y-2 text-right">
                 <div>
                   <div className="flex items-center gap-1 justify-end text-foreground/70">
                     <Route className="w-3 h-3" />
-                    <span className="text-xs font-bold">3.2 km</span>
+                    <span className="text-xs font-bold">{distance}</span>
                   </div>
                   <p className="text-[9px] text-foreground/40">Total distance</p>
                 </div>
                 <div>
                   <div className="flex items-center gap-1 justify-end text-foreground/70">
                     <Clock className="w-3 h-3" />
-                    <span className="text-xs font-bold">15 mins</span>
+                    <span className="text-xs font-bold">{estTime}</span>
                   </div>
                   <p className="text-[9px] text-foreground/40">Est. time</p>
                 </div>
@@ -181,7 +259,7 @@ export const MarkAsPickedUpPage: React.FC = () => {
             onClick={() => setItemsExpanded(!itemsExpanded)}
             className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors"
           >
-            <span className="text-sm font-bold text-foreground">Order items (3)</span>
+            <span className="text-sm font-bold text-foreground">Order items ({itemsToRender.length})</span>
             {itemsExpanded ? (
               <ChevronUp className="w-4 h-4 text-foreground/40" />
             ) : (
@@ -199,27 +277,30 @@ export const MarkAsPickedUpPage: React.FC = () => {
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 space-y-3">
-                  {orderItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-foreground/60 w-6">{item.qty}</span>
-                        <span className="text-sm text-foreground font-medium">{item.name}</span>
+                  {itemsToRender.map((item: any, idx: number) => {
+                    const itemImageId = item.variant?.images?.[0] || item.images?.[0] || item.imageURL;
+                    const itemImageUrl = itemImageId ? returnImageUrl(itemImageId.toString()) : '/logo.png';
+                    return (
+                      <div key={idx} className="flex items-center justify-between py-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-foreground/60 w-6">{item.quantity}x</span>
+                          <span className="text-sm text-foreground font-medium">{item.name}</span>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                          <img
+                            src={itemImageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-gray-300');
+                              (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden shrink-0">
-                        <img
-                          src={item.img}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            (e.target as HTMLImageElement).parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-gray-300');
-                            (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-xs text-primary font-semibold pt-1">+ 2 more items</p>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -283,12 +364,17 @@ export const MarkAsPickedUpPage: React.FC = () => {
 
         {/* --- Action Buttons --- */}
         <div className="space-y-3 pt-2">
-          <Button className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 gap-2 text-sm">
-            <CheckCircle2 className="w-5 h-5" /> Mark as Picked Up
+          <Button
+            onClick={handleConfirmPickup}
+            disabled={isSubmitting}
+            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 gap-2 text-sm"
+          >
+            <CheckCircle2 className="w-5 h-5" /> {isSubmitting ? 'Submitting...' : 'Mark as Picked Up'}
           </Button>
           <Button
             variant="outline"
             onClick={() => navigate(-1)}
+            disabled={isSubmitting}
             className="w-full border-primary/20 text-primary hover:bg-primary/5 font-bold py-3.5 text-sm"
           >
             Go Back

@@ -130,7 +130,109 @@ export const TrackOrder: React.FC = () => {
     };
   }, []);
 
-  const order = orderState ?? {
+  const getStatusBadgeStyles = (status: string) => {
+    const s = status.toLowerCase().trim();
+    if (s === 'received' || s === 'new' || s === 'pending') {
+      return {
+        pill: 'bg-yellow-50 text-yellow-700 border border-yellow-100',
+        dot: 'bg-yellow-500',
+      };
+    }
+    if (s === 'preparing') {
+      return {
+        pill: 'bg-amber-50 text-amber-600 border border-amber-100',
+        dot: 'bg-amber-500',
+      };
+    }
+    if (s === 'on the way' || s === 'on_the_way' || s === 'ongoing') {
+      return {
+        pill: 'bg-primary/10 text-primary border border-primary/20',
+        dot: 'bg-primary',
+      };
+    }
+    if (s === 'delivered' || s === 'completed') {
+      return {
+        pill: 'bg-green-50 text-green-700 border border-green-100',
+        dot: 'bg-green-600',
+      };
+    }
+    if (s === 'cancelled') {
+      return {
+        pill: 'bg-rose-50 text-rose-600 border border-rose-100',
+        dot: 'bg-rose-500',
+      };
+    }
+    return {
+      pill: 'bg-gray-50 text-gray-600 border border-gray-100',
+      dot: 'bg-gray-400',
+    };
+  };
+
+  const formatStatus = (status: string | undefined): string => {
+    if (!status) return 'New';
+    const s = status.toLowerCase().trim();
+    if (s === 'new' || s === 'pending') return 'Received';
+    if (s === 'preparing') return 'Preparing';
+    if (s === 'on_the_way' || s === 'on the way') return 'On the Way';
+    if (s === 'delivered' || s === 'completed') return 'Delivered';
+    if (s === 'cancelled') return 'Cancelled';
+    return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const mapStatusToStepKey = (status: string): string => {
+    const normalized = status.trim().toLowerCase();
+    if (normalized === 'new' || normalized === 'pending') return 'confirmed';
+    if (normalized === 'confirmed') return 'preparing';
+    if (normalized.includes('prepare')) return 'preparing';
+    if (normalized.includes('way') || normalized.includes('on the way') || normalized.includes('ongoing')) return 'on the way';
+    if (normalized.includes('deliver') || normalized.includes('completed')) return 'delivered';
+    return 'confirmed';
+  };
+
+  const getLatestStatus = (order: any): string => {
+    if (order?.tracking && Array.isArray(order.tracking) && order.tracking.length > 0) {
+      const latest = order.tracking[order.tracking.length - 1];
+      if (latest && latest.status) {
+        return latest.status;
+      }
+    }
+    return order?.status ?? order?.orderStatus ?? 'new';
+  };
+
+  const buildFallbackOrderSteps = (orderObj: any): any[] => {
+    const currentStep = mapStatusToStepKey(getLatestStatus(orderObj));
+    const stepKeys = ['confirmed', 'preparing', 'on the way', 'delivered'];
+    const displayLabels: Record<string, string> = {
+      confirmed: 'Received',
+      preparing: 'Preparing',
+      'on the way': 'On the way',
+      delivered: 'Delivered',
+    };
+    const currentIndex = stepKeys.indexOf(currentStep);
+
+    return stepKeys.map((key, index) => {
+      const isCompleted = index <= currentIndex;
+      const isActive = index === currentIndex + 1 && currentIndex < stepKeys.length - 1;
+      return {
+        label: displayLabels[key],
+        completed: isCompleted,
+        active: isActive,
+        time: '',
+      };
+    });
+  };
+
+  const getProgressWidth = (steps: any[]) => {
+    const totalSteps = steps.length;
+    if (totalSteps <= 1) return '0%';
+    const completedCount = steps.filter(s => s.completed).length;
+    if (completedCount === 0) return '0%';
+    if (completedCount === totalSteps) return '75%';
+    
+    return `${((completedCount - 1) / (totalSteps - 1)) * 75}%`;
+  };
+
+  const rawOrder = orderState ?? {
     id: '',
     estimatedDelivery: '',
     deliveryTime: '',
@@ -144,6 +246,18 @@ export const TrackOrder: React.FC = () => {
     steps: [] as any[],
   };
 
+  const order = {
+    ...rawOrder,
+    status: formatStatus(getLatestStatus(rawOrder)),
+    steps: Array.isArray(rawOrder.steps) && rawOrder.steps.length
+      ? rawOrder.steps
+      : buildFallbackOrderSteps(rawOrder),
+  };
+
+  const currentStepKey = mapStatusToStepKey(getLatestStatus(rawOrder));
+  const stepKeysList = ['confirmed', 'preparing', 'on the way', 'delivered'];
+  const orderCurrentIndex = stepKeysList.indexOf(currentStepKey);
+
   // Build route coordinates from API data when available
   const routeCoordinates: [number, number][] = orderState?.store && orderState?.rider && orderState?.deliveryLocation
     ? [[orderState.store.lat, orderState.store.lng], [orderState.rider.lat, orderState.rider.lng], [orderState.deliveryLocation.lat, orderState.deliveryLocation.lng]]
@@ -154,7 +268,9 @@ export const TrackOrder: React.FC = () => {
   const deliveryLocation = order.deliveryLocation;
   const estimatedDelivery = order.estimatedDelivery ?? order.eta ?? '';
   const deliveryTime = order.deliveryTime ?? '';
-  const statusDescription = order.statusDescription ?? '';
+  const statusDescription = orderState?.tracking && Array.isArray(orderState.tracking) && orderState.tracking.length > 0
+    ? (orderState.tracking[orderState.tracking.length - 1]?.message ?? order.statusDescription ?? '')
+    : (order.statusDescription ?? '');
   const orderItems = formatOrderItems(order.items, order.itemCount);
   const orderTotal = typeof order.total === 'number' ? `KES ${order.total.toLocaleString()}` : order.total;
 
@@ -173,7 +289,18 @@ export const TrackOrder: React.FC = () => {
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <div className="leading-tight">
-            <h1 className="text-[17px] font-bold text-foreground">Track Order</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-[17px] font-bold text-foreground">Track Order</h1>
+              {(() => {
+                const badgeStyles = getStatusBadgeStyles(order.status);
+                return (
+                  <span className={`inline-flex items-center shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${badgeStyles.pill}`}>
+                    <span className={`w-1 h-1 rounded-full mr-1 shrink-0 ${badgeStyles.dot}`}></span>
+                    {order.status}
+                  </span>
+                );
+              })()}
+            </div>
             <p className="text-[11px] text-foreground/50 mt-0.5">Order #{order.id}</p>
           </div>
         </div>
@@ -204,8 +331,16 @@ export const TrackOrder: React.FC = () => {
 
               <div className="flex-1 pl-2">
                 <p className="text-[11px] text-foreground/50 mb-1">Order Status</p>
-                <p className="text-[18px] font-bold text-primary leading-tight">{order.status}</p>
-                <p className="text-[11px] text-foreground/50 mt-0.5">{statusDescription}</p>
+                {(() => {
+                  const badgeStyles = getStatusBadgeStyles(order.status);
+                  return (
+                    <span className={`inline-flex items-center shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-full ${badgeStyles.pill}`}>
+                      <span className={`w-1 h-1 rounded-full mr-1 shrink-0 ${badgeStyles.dot}`}></span>
+                      {order.status}
+                    </span>
+                  );
+                })()}
+                <p className="text-[11px] text-foreground/50 mt-1">{statusDescription}</p>
               </div>
 
               {/* Rider photo */}
@@ -447,7 +582,7 @@ export const TrackOrder: React.FC = () => {
                   <div className="absolute top-5 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 -translate-y-1/2">
                     <div
                       className={`h-full rounded-full ${
-                        step.completed ? 'bg-primary' : 'bg-border'
+                        index < orderCurrentIndex ? 'bg-primary' : 'bg-border'
                       }`}
                     />
                   </div>
