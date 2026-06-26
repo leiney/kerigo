@@ -507,7 +507,6 @@ const OrderDetailsPage: React.FC = () => {
             const riderName = orderDetails.rider?.name ?? orderDetails.extraData?.rider?.name ?? 'Your rider';
             const riderPhone = orderDetails.rider?.phoneNo ?? orderDetails.extraData?.rider?.phoneNo  ?? '';
             const riderInitial = riderName?.trim()?.charAt(0).toUpperCase() ?? 'R';
-            const orderReference = encodeURIComponent(orderDetails.id ?? '');
 
             return (
               <>
@@ -527,7 +526,9 @@ const OrderDetailsPage: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/customer/track-order/${orderReference}`)}
+                  onClick={() => {
+                    navigate(`/customer/track-order/${orderDetails.orderID}`)
+                  }}
                   className="w-full bg-primary text-white rounded-2xl py-3 text-sm font-semibold"
                 >
                   {isDelivered ? 'View tracking details' : 'Track order'}
