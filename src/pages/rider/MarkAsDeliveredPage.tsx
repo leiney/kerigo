@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -18,7 +18,6 @@ import {
   User,
   Camera,
   Image as ImageIcon,
-  PenTool,
   CheckCircle,
 } from 'lucide-react';
 import { Button, Badge } from '@stackloop/ui';
@@ -92,26 +91,114 @@ export const MarkAsDeliveredPage: React.FC = () => {
   const [selectedPreviewItem, setSelectedPreviewItem] = useState<any | null>(null);
   const [proofImage, setProofImage] = useState<string | null>(null);
   const [proofBlob, setProofBlob] = useState<Blob | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraErrorRequiresPermission, setCameraErrorRequiresPermission] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleCaptureImage = async (source: any) => {
+  useEffect(() => {
+    return () => {
+      cameraStream?.getTracks().forEach((track) => track.stop());
+    };
+  }, [cameraStream]);
+
+  useEffect(() => {
+    if (!isCameraOpen || !cameraStream || !videoRef.current) {
+      return;
+    }
+
+    videoRef.current.srcObject = cameraStream;
+    videoRef.current.play().catch((err) => {
+      console.error('Failed to start camera preview:', err);
+      setCameraError('Unable to start the camera preview. Please try again.');
+    });
+  }, [cameraStream, isCameraOpen]);
+
+  const stopCameraStream = () => {
+    cameraStream?.getTracks().forEach((track) => track.stop());
+    setCameraStream(null);
+    setIsCameraLoading(false);
+  };
+
+  const closeCameraModal = () => {
+    stopCameraStream();
+    setIsCameraOpen(false);
+    setCameraError(null);
+    setCameraErrorRequiresPermission(false);
+  };
+
+  const openInAppCamera = async () => {
+    setCameraError(null);
+    setCameraErrorRequiresPermission(false);
+    setIsCameraOpen(true);
+    setIsCameraLoading(true);
+    setSelectedProof('camera');
+
+    stopCameraStream();
+
     try {
-      const { Camera, CameraResultType } = await import('@capacitor/camera');
-      const image = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.Uri,
-        source: source,
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera access is not supported on this device.');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
       });
 
-      if (image.webPath) {
-        setProofImage(image.webPath);
-        const res = await fetch(image.webPath);
-        const blob = await res.blob();
-        setProofBlob(blob);
-      }
+      setCameraStream(stream);
+      setIsCameraLoading(false);
     } catch (err) {
-      console.error('Failed to capture image:', err);
+      console.error('Failed to open in-app camera:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unable to access camera. Please allow camera permission and try again.';
+      const requiresPermission = /permission|denied|not allowed/i.test(errorMessage);
+      setCameraError(errorMessage);
+      setCameraErrorRequiresPermission(requiresPermission);
+      setIsCameraLoading(false);
     }
+  };
+
+  const captureFromCamera = async () => {
+    if (!videoRef.current || !cameraStream) {
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      setCameraError('Unable to capture camera frame.');
+      return;
+    }
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    setProofImage(dataUrl);
+    setProofBlob(blob);
+    closeCameraModal();
+  };
+
+  const handleGalleryPick = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setSelectedProof('gallery');
+    setProofImage(objectUrl);
+    setProofBlob(file);
+    event.target.value = '';
   };
 
   const formatStatus = (status: string) => {
@@ -166,12 +253,12 @@ export const MarkAsDeliveredPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      // 1. Upload proof of delivery photo first
+      // upload proof of delivery photo first
       const file = new File([proofBlob], `proof_${order.orderID}.jpg`, { type: 'image/jpeg' });
       await productApi.uploadOrderResource(order.orderID, 'proofOfDelivery', file);
       console.log('Proof of delivery photo uploaded successfully');
 
-      // 2. Mark order as delivered
+      // mrk order as delivered
       const message = note || 'Order delivered to customer.';
       await productApi.updateOrderStatus(order.orderID, 'delivered', message, note);
 
@@ -508,14 +595,8 @@ export const MarkAsDeliveredPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Camera */}
             <button
-              onClick={async () => {
-                setSelectedProof('camera');
-                try {
-                  const { CameraSource } = await import('@capacitor/camera');
-                  await handleCaptureImage(CameraSource.Camera);
-                } catch (err) {
-                  console.error('Failed to import CameraSource:', err);
-                }
+              onClick={() => {
+                void openInAppCamera();
               }}
               className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
                 selectedProof === 'camera'
@@ -539,15 +620,7 @@ export const MarkAsDeliveredPage: React.FC = () => {
 
             {/* Gallery */}
             <button
-              onClick={async () => {
-                setSelectedProof('gallery');
-                try {
-                  const { CameraSource } = await import('@capacitor/camera');
-                  await handleCaptureImage(CameraSource.Photos);
-                } catch (err) {
-                  console.error('Failed to import CameraSource:', err);
-                }
-              }}
+              onClick={() => fileInputRef.current?.click()}
               className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
                 selectedProof === 'gallery'
                   ? 'border-primary bg-primary/5'
@@ -588,6 +661,14 @@ export const MarkAsDeliveredPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleGalleryPick}
+        />
 
         {/* --- Confirm Delivery Checklist --- */}
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
@@ -666,6 +747,99 @@ export const MarkAsDeliveredPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isCameraOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-70 bg-black"
+            onClick={closeCameraModal}
+          >
+            <motion.div
+              initial={{ scale: 0.98, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.98, opacity: 0 }}
+              className="relative h-full w-full bg-black"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-black/60 px-4 py-3 backdrop-blur-sm">
+                <div>
+                  <p className="text-sm font-bold text-white">Capture proof</p>
+                  <p className="text-[11px] text-white/70">Take a photo of the delivery</p>
+                </div>
+                <button
+                  onClick={closeCameraModal}
+                  className="rounded-full p-2 text-white/90 hover:bg-white/10"
+                  title="Close camera"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="relative h-full w-full bg-black">
+                {cameraError ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-white">
+                    <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur-sm">
+                      <p className="text-base font-semibold">
+                        {cameraErrorRequiresPermission ? 'Camera permission needed' : 'Camera unavailable'}
+                      </p>
+                      <p className="mt-2 text-sm text-white/80">{cameraError}</p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        void openInAppCamera();
+                      }}
+                      className="bg-primary text-white"
+                    >
+                      {cameraErrorRequiresPermission ? 'Enable camera' : 'Try again'}
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {isCameraLoading && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 text-sm text-white">
+                        Opening camera…
+                      </div>
+                    )}
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="h-full w-full object-cover"
+                    />
+                  </>
+                )}
+              </div>
+
+              {!cameraError && (
+                <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent px-4 pb-5 pt-12">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={closeCameraModal}
+                      className="flex-1 border-white/20 bg-white/10 text-white hover:bg-white/20"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        void captureFromCamera();
+                      }}
+                      disabled={isCameraLoading}
+                      className="flex-1 bg-primary text-white"
+                    >
+                      Capture
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* --- Item Image/Details Preview Modal --- */}
       <AnimatePresence>

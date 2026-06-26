@@ -4,7 +4,14 @@ import { productApi } from '../../lib/api';
 //  tracking distance filter in meters 5 kilometers
 export const TRACKING_DISTANCE_FILTER_METERS = 5000;
 
+const isProductionBuild = import.meta.env.PROD;
+
 export const initBackgroundGeolocation = async () => {
+  if (!isProductionBuild) {
+    console.info('[BackgroundGeolocation] Skipping initialization in development build to avoid the debug-license prompt.');
+    return;
+  }
+
   //  Set up the onLocation listener
   BackgroundGeolocation.onLocation(async (location) => {
     console.log('[BackgroundGeolocation] onLocation event:', location);
@@ -29,6 +36,7 @@ export const initBackgroundGeolocation = async () => {
       geolocation: {
         desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High,
         distanceFilter: TRACKING_DISTANCE_FILTER_METERS,
+        disableLocationAuthorizationAlert: true,
       },
       app: {
         stopOnTerminate: false,
@@ -46,6 +54,11 @@ export const initBackgroundGeolocation = async () => {
 };
 
 export const startTracking = async (orderId: string) => {
+  if (!isProductionBuild) {
+    console.info('[BackgroundGeolocation] Skipping tracking start in development build.');
+    return;
+  }
+
   console.log(`[BackgroundGeolocation] Starting tracking for order: ${orderId}`);
   localStorage.setItem('active_tracking_order_id', orderId);
   try {
@@ -57,6 +70,11 @@ export const startTracking = async (orderId: string) => {
 };
 
 export const stopTracking = async () => {
+  if (!isProductionBuild) {
+    console.info('[BackgroundGeolocation] Skipping tracking stop in development build.');
+    return;
+  }
+
   console.log('[BackgroundGeolocation] Stopping tracking');
   localStorage.removeItem('active_tracking_order_id');
   try {
