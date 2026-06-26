@@ -512,7 +512,7 @@ const OrderDetailsPage: React.FC = () => {
               <>
                 <div className="flex items-start gap-3">
                   <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-lg">
-                    {isDelivered ? '✅' : '🚴'}
+                    {isDelivered ? <Check className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-bold text-foreground">
@@ -520,19 +520,22 @@ const OrderDetailsPage: React.FC = () => {
                     </p>
                     <p className="text-xs text-foreground/60 mt-1">
                       {isDelivered
-                        ? 'Delivery completed successfully. View the full tracking summary.'
+                        ? 'Delivery completed successfully.'
                         : 'Follow your rider in real time and see the latest delivery progress.'}
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    navigate(`/customer/track-order/${orderDetails.orderID}`)
-                  }}
-                  className="w-full bg-primary text-white rounded-2xl py-3 text-sm font-semibold"
-                >
-                  {isDelivered ? 'View tracking details' : 'Track order'}
-                </button>
+                {!isDelivered && (
+                  <button
+                    onClick={() => {
+                      navigate(`/customer/track-order/${orderDetails.orderID}`);
+                    }}
+                    className="w-full bg-primary text-white rounded-2xl py-3 text-sm font-semibold"
+                    type="button"
+                  >
+                    Track order
+                  </button>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base">
@@ -540,18 +543,22 @@ const OrderDetailsPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-foreground">{riderName}</p>
-                      <p className="text-xs text-foreground/60 mt-1">Active delivery rider</p>
+                      <p className="text-xs text-foreground/60 mt-1">
+                        {isDelivered ? 'Delivery completed' : 'Active delivery rider'}
+                      </p>
                     </div>
                   </div>
-                  <button
-                    disabled={!riderPhone}
-                    onClick={() => {
-                      if (riderPhone) window.location.href = `tel:${riderPhone}`;
-                    }}
-                    className={`rounded-2xl py-2 px-4 text-sm font-semibold ${riderPhone ? 'bg-primary text-white' : 'bg-border text-foreground/50 cursor-not-allowed'}`}
-                  >
-                    Call rider
-                  </button>
+                  {!isDelivered && (
+                    <button
+                      disabled={!riderPhone}
+                      onClick={() => {
+                        if (riderPhone) window.location.href = `tel:${riderPhone}`;
+                      }}
+                      className={`rounded-2xl py-2 px-4 text-sm font-semibold ${riderPhone ? 'bg-primary text-white' : 'bg-border text-foreground/50 cursor-not-allowed'}`}
+                    >
+                      Call rider
+                    </button>
+                  )}
                 </div>
               </>
             );
