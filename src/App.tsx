@@ -212,6 +212,15 @@ export default function App() {
           <Route path="/settings/privacy/change-password" element={protect(<ChangePassword />)} />
           <Route path="/settings/privacy/two-factor" element={protect(<TwoFactorAuth />)} />
           <Route path="/settings/privacy/login-activity" element={protect(<LoginActivity />)} />
+          {/* Vendor & Rider equivalents for privacy and change-password */}
+          <Route path="/vendor/settings/privacy" element={protectVendor(<PrivacySecurity />)} />
+          <Route path="/vendor/settings/privacy/change-password" element={protectVendor(<ChangePassword />)} />
+          <Route path="/vendor/settings/privacy/two-factor" element={protectVendor(<TwoFactorAuth />)} />
+          <Route path="/vendor/settings/privacy/login-activity" element={protectVendor(<LoginActivity />)} />
+          <Route path="/rider/settings/privacy" element={protectRider(<PrivacySecurity />)} />
+          <Route path="/rider/settings/privacy/change-password" element={protectRider(<ChangePassword />)} />
+          <Route path="/rider/settings/privacy/two-factor" element={protectRider(<TwoFactorAuth />)} />
+          <Route path="/rider/settings/privacy/login-activity" element={protectRider(<LoginActivity />)} />
           <Route path="/settings/privacy/profile-visibility" element={protect(<PrivacySecurity />)} />
           <Route path="/settings/privacy/blocked-users" element={protect(<PrivacySecurity />)} />
           <Route path="/settings/privacy/data" element={protect(<PrivacySecurity />)} />

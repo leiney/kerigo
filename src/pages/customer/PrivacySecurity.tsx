@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Lock,
@@ -18,6 +18,7 @@ import type { PrivacySecurityValues } from '../../../lib/types';
 
 export const PrivacySecurity: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [security, setSecurity] = useState<PrivacySecurityValues | null>(null);
 
   useEffect(() => {
@@ -88,20 +89,44 @@ export const PrivacySecurity: React.FC = () => {
               icon={Lock}
               title="Change Password"
               subtitle="Update your password"
-              onClick={() => navigate('/settings/privacy/change-password')}
+              onClick={() => {
+                if (location.pathname.startsWith('/vendor')) {
+                  navigate('/vendor/settings/privacy/change-password');
+                } else if (location.pathname.startsWith('/rider')) {
+                  navigate('/rider/settings/privacy/change-password');
+                } else {
+                  navigate('/settings/privacy/change-password');
+                }
+              }}
             />
             <MenuItem
               icon={Shield}
               title="Two-Factor Authentication"
               subtitle="Add extra security to your account"
               rightText={security?.twoFactorEnabled ? 'On' : 'Off'}
-              onClick={() => navigate('/settings/privacy/two-factor')}
+              onClick={() => {
+                if (location.pathname.startsWith('/vendor')) {
+                  navigate('/vendor/settings/privacy/two-factor');
+                } else if (location.pathname.startsWith('/rider')) {
+                  navigate('/rider/settings/privacy/two-factor');
+                } else {
+                  navigate('/settings/privacy/two-factor');
+                }
+              }}
             />
             <MenuItem
               icon={Activity}
               title="Login Activity"
               subtitle="View your recent login activity"
-              onClick={() => navigate('/settings/privacy/login-activity')}
+              onClick={() => {
+                if (location.pathname.startsWith('/vendor')) {
+                  navigate('/vendor/settings/privacy/login-activity');
+                } else if (location.pathname.startsWith('/rider')) {
+                  navigate('/rider/settings/privacy/login-activity');
+                } else {
+                  navigate('/settings/privacy/login-activity');
+                }
+              }}
             />
           </div>
         </section>

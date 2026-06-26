@@ -57,14 +57,7 @@ export const PersonalInformation: React.FC = () => {
         title="Personal Information"
         rightContent={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-foreground/60 border-border hover:bg-secondary text-xs font-semibold h-8 px-4"
-              onClick={handleCancel}
-            >
-              Cancel
-            </Button>
+           
             <Button
               size="sm"
               className="bg-primary hover:bg-primary/90 text-white text-xs font-bold h-8 px-5"

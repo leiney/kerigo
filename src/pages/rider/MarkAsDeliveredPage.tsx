@@ -87,7 +87,7 @@ export const MarkAsDeliveredPage: React.FC = () => {
     const roundedDays = Math.round(days * 10) / 10;
     return `${roundedDays} days`;
   };
-  const [selectedProof, setSelectedProof] = useState<'camera' | 'gallery' | 'signature'>('camera');
+  const [selectedProof, setSelectedProof] = useState<'camera' | 'gallery'>('camera');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPreviewItem, setSelectedPreviewItem] = useState<any | null>(null);
   const [proofImage, setProofImage] = useState<string | null>(null);
@@ -505,7 +505,7 @@ export const MarkAsDeliveredPage: React.FC = () => {
             </Badge>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Camera */}
             <button
               onClick={async () => {
@@ -568,28 +568,7 @@ export const MarkAsDeliveredPage: React.FC = () => {
               </p>
             </button>
 
-            {/* Signature */}
-            <button
-              onClick={() => setSelectedProof('signature')}
-              className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
-                selectedProof === 'signature'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border/50 bg-white hover:border-border'
-              }`}
-            >
-              <div className="relative w-10 h-10 mb-2">
-                <PenTool className="w-6 h-6 text-foreground/60 mx-auto" />
-                {selectedProof === 'signature' && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center border-2 border-white">
-                    <Check className="w-3 h-3 text-white" />
-                  </div>
-                )}
-              </div>
-              <p className="text-xs font-bold text-foreground">Customer signature</p>
-              <p className="text-[10px] text-foreground/50 text-center mt-0.5 leading-tight">
-                Get signature
-              </p>
-            </button>
+            {/* Signature removed: proof now only supports camera or gallery */}
           </div>
 
           {/* Captured Proof Preview */}

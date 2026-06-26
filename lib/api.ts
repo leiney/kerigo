@@ -87,10 +87,6 @@ export const authApi = {
     return response.data;
   },
   
-  updateProfile: async (payload: Partial<UserProfile>) : Promise<UserProfile> => {
-    const response = await axiosInstance.patch<UserProfile>('/me/', payload);
-    return response.data;
-  },
   
   verifyLogin: async (identifier: string, code: string): Promise<LoginResponse> => apiPost('/auth/login/verify/', { identifier, code }),
   resendCode: async (identifier: string): Promise<{ message: string }> => apiPost('/auth/login/resend-code/', { identifier }),
@@ -104,6 +100,14 @@ export const authApi = {
   disableTwoFactor: async (payload: { otpCode?: string; recoveryCode?: string }): Promise<{ message: string }> => apiPost('/auth/2fa/disable/', payload),
   regenerateRecoveryCodes: async (otpCode: string): Promise<{ backupCodes: string[] }> => apiPost('/auth/2fa/recovery-codes/regenerate/', { otpCode }),
   
+  updateProfile: async (payload: Partial<UserProfile>) : Promise<UserProfile> => {
+    const response = await axiosInstance.patch<UserProfile>('/me/', payload);
+    return response.data;
+  },
+  changeLoggedInPassword: async (payload: PasswordPayload): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/change-logged-in-password', payload as any);
+    return response.data;
+  },
   updateLocation: async (location: LocationDetails): Promise<{ message: string }> => {
     const response = await axiosInstance.patch('/update-location', location);
     return response.data;

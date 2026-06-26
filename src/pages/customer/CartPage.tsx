@@ -229,18 +229,23 @@ export const CartPage: React.FC = () => {
     try {
       const response = await productApi.submitSignupOrder(payload);        
       
-      const user: UserProfile = {
-        id: response.user.id,
-        fullName: response.user.fullName || "",
-        email: response.user.email,
-        phoneNo: response.user.phoneNo || "",
-        userType: "customer",
-        username: response.user.username || "",
-        extraData: response.user.extraData || {},
-      };
-               
-      login({ token: response?.user.token || '', user });                  
-      
+      {
+        /*
+        
+          const user: UserProfile = {
+            id: response.user.id,
+            fullName: response.user.fullName || "",
+            email: response.user.email,
+            phoneNo: response.user.phoneNo || "",
+            userType: "customer",
+            username: response.user.username || "",
+            extraData: response.user.extraData || {},
+          };
+                  
+          login({ token: response?.user.token || '', user });                  
+        
+        */
+      }      
       setStatusSheet({
         isOpen: true,
         type: 'success',

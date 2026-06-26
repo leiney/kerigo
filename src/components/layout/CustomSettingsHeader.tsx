@@ -19,7 +19,7 @@ type CustomSettingsHeaderProps = {
 export const CustomSettingsHeader: React.FC<CustomSettingsHeaderProps> = ({
   title,
   subtitle,
-  breadcrumbs = [{ label: 'Settings' }, { label: title, emphasized: true }],
+  breadcrumbs = [{ label: title, emphasized: true }],
   rightContent,
   onBack,
 }) => {

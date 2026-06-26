@@ -344,8 +344,7 @@ export const StoreLocationPicker: React.FC = () => {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${!isCaptured ? 'animate-spin' : ''}`} />
               Refresh
-            </Button>
-            {requiresLocationPermission && (
+            </Button>           
               <Button
                 variant="outline"
                 size="sm"
@@ -354,7 +353,6 @@ export const StoreLocationPicker: React.FC = () => {
               >
                 Enable GPS
               </Button>
-            )}
           </div>
         </motion.div>
 

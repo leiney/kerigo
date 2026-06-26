@@ -245,7 +245,7 @@ export const VendorAccountSettings: React.FC = () => {
               icon={Shield}
               title="Privacy & Security"
               subtitle="Change password and security options"
-              onClick={() => navigate('/settings/privacy')}
+              onClick={() => navigate('/vendor/settings/privacy')}
             />
           </div>
         </div>

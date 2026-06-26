@@ -16,12 +16,37 @@ export const ChangePassword: React.FC = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ confirm?: string }>({});
+
+  const validateConfirm = (newPass: string, confirm: string) => {
+    if (!confirm) {
+      setErrors((s) => ({ ...s, confirm: undefined }));
+      return;
+    }
+
+    if (newPass !== confirm) {
+      setErrors((s) => ({ ...s, confirm: 'Passwords do not match' }));
+    } else {
+      setErrors((s) => ({ ...s, confirm: undefined }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // final validation
+    if (formData.newPassword !== formData.confirmPassword) {
+      setErrors((s) => ({ ...s, confirm: 'Passwords do not match' }));
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await authApi.setPassword(formData);
+      const payload = {
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      };
+
+      await authApi.changeLoggedInPassword(payload as any);
     } catch (error) {
       console.error('Failed to update password', error);
     } finally {
@@ -53,7 +78,11 @@ export const ChangePassword: React.FC = () => {
             type="password"
             label="New Password"
             value={formData.newPassword}
-            onChange={(val) => setFormData({ ...formData, newPassword: String(val) })}
+            onChange={(val) => {
+              const newVal = String(val);
+              setFormData({ ...formData, newPassword: newVal });
+              validateConfirm(newVal, formData.confirmPassword);
+            }}
             placeholder="Enter new password"
             className="w-full"
           />
@@ -67,10 +96,17 @@ export const ChangePassword: React.FC = () => {
           type="password"
           label="Confirm New Password"
           value={formData.confirmPassword}
-          onChange={(val) => setFormData({ ...formData, confirmPassword: String(val) })}
+          onChange={(val) => {
+            const newVal = String(val);
+            setFormData({ ...formData, confirmPassword: newVal });
+            validateConfirm(formData.newPassword, newVal);
+          }}
           placeholder="Confirm new password"
           className="w-full"
         />
+        {errors.confirm && (
+          <p className="text-xs text-red-500 mt-2 ml-1">{errors.confirm}</p>
+        )}
 
         {/* Submit Button */}
         <div className="pt-4 pb-6">

@@ -239,7 +239,7 @@ export const RiderAccountSettings: React.FC = () => {
               icon={Shield}
               title="Privacy & Security"
               subtitle="Change password and security options"
-              onClick={() => navigate('/settings/privacy')}
+              onClick={() => navigate('/rider/settings/privacy')}
             />
           </div>
         </div>
