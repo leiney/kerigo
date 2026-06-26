@@ -26,7 +26,9 @@ export const PhoneLoginPage: React.FC = () => {
     password: '',
   });
 
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+  const searchParams = new URLSearchParams(location.search);
+  const redirectParam = searchParams.get('redirect');
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? redirectParam ?? undefined;
 
   const resolveRole = (roleValue: unknown): UserRole => {
     const validRoles: UserRole[] = ['customer', 'vendor', 'rider', 'rider-admin'];
@@ -219,7 +221,7 @@ export const PhoneLoginPage: React.FC = () => {
         <Button
           type="button"
           variant="outline"
-          onClick={() => navigate('/login')}
+          onClick={() => navigate(`/phone-login${location.search}`, { state: location.state })}
           className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary"
         >
           <Mail className="h-5 w-5 text-foreground/80" />

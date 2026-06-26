@@ -26,7 +26,9 @@ export const ReviewConfirmStep: React.FC<ReviewConfirmStepProps> = ({ onNext, on
   const summaryData = useMemo(() => {
     const payoutSummary = draft.payoutInfo?.mode === 'bank'
       ? `Bank Account (${(draft.payoutInfo.details as any).bank || 'Bank'} ${(draft.payoutInfo.details as any).accountNumber ? `**** ${(draft.payoutInfo.details as any).accountNumber.slice(-4)}` : ''})`
-      : `M-Pesa (${(draft.payoutInfo?.details as any)?.phoneNo || '—'})`;
+      : draft.payoutInfo?.mode === 'mpesa'
+      ? `M-Pesa (${(draft.payoutInfo?.details as any)?.phoneNo || '—'})`
+      : `Custom (${draft.customInstructions ? (draft.customInstructions.length > 25 ? `${draft.customInstructions.slice(0, 25)}...` : draft.customInstructions) : '—'})`;
 
     return [
       { label: 'Account Type', value: draft.accountType || 'individual' },

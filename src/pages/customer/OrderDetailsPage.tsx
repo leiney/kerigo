@@ -5,7 +5,6 @@ import {
   Headphones, 
   MapPin, 
   Phone, 
-  MessageSquare, 
   ChevronRight, 
   Clock, 
   Store,
@@ -38,7 +37,10 @@ const OrderDetailsPage: React.FC = () => {
 
   const fetchDetails = async (isMounted: boolean) => {
     try {
-      const data = await productApi.getOrderDetails(orderId ?? 'KR1024');
+      if (!orderId) {
+        return;
+      }
+      const data = await productApi.getOrderDetails(orderId);
       console.log('OrderDetails raw response:', data);
 
       const orderItemsList = data.orderItems || [];
@@ -341,7 +343,7 @@ const OrderDetailsPage: React.FC = () => {
 
          
            {/* Stepper */}
-          <div className="relative pt-2 flex items-start justify-between mb-4 px-1 pt-1">
+          <div className="relative pt-2 flex items-start justify-between mb-4 px-1">
             {/* Background line */}
             <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 bg-border rounded-full" />
             {/* Active progress */}
@@ -398,8 +400,14 @@ const OrderDetailsPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="bg-white rounded-2xl p-3 border border-border/50 shadow-sm flex items-center justify-between"
           >
-            <div className="flex items-center gap-2.5">
-              <img src={orderDetails.rider.avatarUrl} alt="Rider" className="w-10 h-10 rounded-full border border-white shadow-sm bg-gray-100 object-cover" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gray-200 border border-white shadow-sm flex items-center justify-center text-sm font-bold text-foreground/80">
+                {orderDetails.rider.avatarUrl ? (
+                  <img src={orderDetails.rider.avatarUrl} alt={orderDetails.rider.name ?? 'Rider'} className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <span>{orderDetails.rider.name?.charAt(0).toUpperCase() ?? 'R'}</span>
+                )}
+              </div>
               <div>
                 <p className="font-bold text-sm">{orderDetails.rider.name}</p>
                 <p className="text-[11px] text-foreground/50">{orderDetails.rider.role}</p>
@@ -410,12 +418,16 @@ const OrderDetailsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <Button variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-lg gap-1.5 text-[11px] font-semibold">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const riderPhone = orderDetails.rider?.phoneNo ?? orderDetails.extraData?.rider?.phoneNo ?? orderDetails.extraData?.customer?.phoneNo ?? '';
+                  if (riderPhone) window.location.href = `tel:${riderPhone}`;
+                }}
+                className="border-primary/30 text-primary h-10 px-4 rounded-lg gap-1.5 text-[11px] font-semibold"
+              >
                 <Phone className="w-3.5 h-3.5" /> Call
-              </Button>
-              <Button variant="outline" className="border-primary/30 text-primary h-8 px-3 rounded-lg gap-1.5 text-[11px] font-semibold">
-                <MessageSquare className="w-3.5 h-3.5" /> Message
               </Button>
             </div>
           </motion.div>
@@ -436,10 +448,8 @@ const OrderDetailsPage: React.FC = () => {
             <span className="text-[11px] text-foreground/50">{orderDetails.items.length} items</span>
           </div>
 
-
-
           <div className="divide-y divide-border/50">
-            {orderDetails.items.map((item) => (
+            {orderDetails.items.map((item : any) => (
               <div key={item.id} className="p-3 flex items-center gap-3">
                 <div className="w-10 h-10 bg-secondary rounded-lg overflow-hidden shrink-0">
                   <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
@@ -487,6 +497,64 @@ const OrderDetailsPage: React.FC = () => {
             </div>
           </div>
           <span className="text-xs font-bold">KES {formatMoney(orderDetails.summary.total)}</span>
+        </div>
+
+        {/* --- Rider contact / tracking card --- */}
+        <div className="bg-white rounded-2xl p-3 border border-border/50 shadow-sm space-y-4">
+          {(() => {
+            const rawStatus = getLatestStatus(orderDetails).toLowerCase();
+            const isDelivered = rawStatus === 'delivered' || rawStatus === 'completed';
+            const riderName = orderDetails.rider?.name ?? orderDetails.extraData?.rider?.name ?? 'Your rider';
+            const riderPhone = orderDetails.rider?.phoneNo ?? orderDetails.extraData?.rider?.phoneNo  ?? '';
+            const riderInitial = riderName?.trim()?.charAt(0).toUpperCase() ?? 'R';
+            const orderReference = encodeURIComponent(orderDetails.id ?? '');
+
+            return (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-lg">
+                    {isDelivered ? '✅' : '🚴'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-foreground">
+                      {isDelivered ? 'Order delivered' : 'Track your delivery'}
+                    </p>
+                    <p className="text-xs text-foreground/60 mt-1">
+                      {isDelivered
+                        ? 'Delivery completed successfully. View the full tracking summary.'
+                        : 'Follow your rider in real time and see the latest delivery progress.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate(`/customer/track-order/${orderReference}`)}
+                  className="w-full bg-primary text-white rounded-2xl py-3 text-sm font-semibold"
+                >
+                  {isDelivered ? 'View tracking details' : 'Track order'}
+                </button>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-base">
+                      {riderInitial}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{riderName}</p>
+                      <p className="text-xs text-foreground/60 mt-1">Active delivery rider</p>
+                    </div>
+                  </div>
+                  <button
+                    disabled={!riderPhone}
+                    onClick={() => {
+                      if (riderPhone) window.location.href = `tel:${riderPhone}`;
+                    }}
+                    className={`rounded-2xl py-2 px-4 text-sm font-semibold ${riderPhone ? 'bg-primary text-white' : 'bg-border text-foreground/50 cursor-not-allowed'}`}
+                  >
+                    Call rider
+                  </button>
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         {/* --- Support --- */}

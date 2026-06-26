@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Headphones,
@@ -37,27 +37,21 @@ L.Icon.Default.mergeOptions({
 
 // Custom marker icons
 const createCustomIcon = (color: string, type: 'store' | 'rider' | 'delivery') => {
+  const iconSymbol = type === 'store' ? '🏪' : type === 'delivery' ? '🏠' : '🛵';
   const html = `
-    <div style="
-      background: ${color};
-      border: 3px solid white;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    ">
-      ${type === 'store' ? '🏪' : type === 'rider' ? '' : '🏠'}
+    <div style="position: relative; width: 44px; height: 44px; transform: translateY(-14px);">
+      <div style="width: 44px; height: 44px; background: ${color}; border-radius: 50% 50% 50% 0; transform: rotate(45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 9px rgba(0,0,0,0.24); color: white; font-size: 18px;">
+        <span style="transform: rotate(-45deg);">${iconSymbol}</span>
+      </div>
+      <div style="position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); width: 12px; height: 12px; background: ${color}; border-radius: 50%; border: 2px solid white;"></div>
     </div>
   `;
-  
   return L.divIcon({
     html,
     className: 'custom-marker',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [44, 50],
+    iconAnchor: [22, 50],
+    popupAnchor: [0, -50],
   });
 };
 
@@ -107,28 +101,71 @@ const formatOrderItems = (items: unknown, fallbackCount?: number): string => {
 
 export const TrackOrder: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { orderId } = useParams();
   const [mapCenter, setMapCenter] = useState<L.LatLngExpression | null>(null);
   const [orderState, setOrderState] = useState<any | null>(null);
 
+  const resolvedOrderId = orderId ?? location.state?.orderId;
+
+  const extractLatestRiderCoords = (order: any) => {
+    const explicitLat = order?.extraData?.rider?.lat ?? order?.extraData?.rider?.location?.latitude;
+    const explicitLng = order?.extraData?.rider?.lng ?? order?.extraData?.rider?.location?.longitude;
+    if (typeof explicitLat === 'number' && typeof explicitLng === 'number') {
+      return { lat: explicitLat, lng: explicitLng };
+    }
+
+    const coordinates = order?.extraData?.cordinates ?? order?.extraData?.coordinates ?? [];
+    if (Array.isArray(coordinates) && coordinates.length > 0) {
+      const latest = coordinates[coordinates.length - 1];
+      if (latest && typeof latest.latitude === 'number' && typeof latest.longitude === 'number') {
+        return { lat: latest.latitude, lng: latest.longitude };
+      }
+    }
+
+    return { lat: 0, lng: 0 };
+  };
+
+  const getRiderRouteCoordinates = (order: any): [number, number][] => {
+    const coordinates = order?.extraData?.cordinates ?? order?.extraData?.coordinates ?? [];
+    if (Array.isArray(coordinates) && coordinates.length > 0) {
+      return coordinates
+        .filter((point: any) => typeof point.latitude === 'number' && typeof point.longitude === 'number')
+        .map((point: any) => [point.latitude, point.longitude] as [number, number]);
+    }
+    return [];
+  };
+
   useEffect(() => {
     let mounted = true;
+    if (!resolvedOrderId) {
+      setOrderState(null);
+      setMapCenter(null);
+      return () => {
+        mounted = false;
+      };
+    }
+
     (async () => {
       try {
-        const latest = await productApi.getLatestOrder();
+        const fetched = await productApi.getOrderDetails(resolvedOrderId);
         if (!mounted) return;
-        setOrderState(latest);
-        // set map center if delivery/rider coords exist on latest
-        if (latest?.rider?.lat && latest?.rider?.lng) {
-          setMapCenter([latest.rider.lat, latest.rider.lng]);
+        setOrderState(fetched);
+
+        const riderCoords = extractLatestRiderCoords(fetched);
+        if (riderCoords.lat !== 0 && riderCoords.lng !== 0) {
+          setMapCenter([riderCoords.lat, riderCoords.lng]);
+        } else if (fetched?.extraData?.vendor?.location) {
+          setMapCenter([fetched.extraData.vendor.location.latitude, fetched.extraData.vendor.location.longitude]);
         }
       } catch (e) {
-        // ignore and keep UI minimal
+        console.error('[TrackOrder] Failed to load order details:', e);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [resolvedOrderId]);
 
   const getStatusBadgeStyles = (status: string) => {
     const s = status.toLowerCase().trim();
@@ -246,8 +283,44 @@ export const TrackOrder: React.FC = () => {
     steps: [] as any[],
   };
 
+  const storeLat = rawOrder.extraData?.vendor?.location?.latitude;
+  const storeLng = rawOrder.extraData?.vendor?.location?.longitude;
+
+  const riderCoords = extractLatestRiderCoords(rawOrder);
+  const riderLat = riderCoords.lat;
+  const riderLng = riderCoords.lng;
+
+  const destLat = rawOrder.extraData?.location?.latitude;
+  const destLng = rawOrder.extraData?.location?.longitude;
+
+  const store = {
+    name: rawOrder.extraData?.vendor?.name ?? 'Store',
+    description: rawOrder.extraData?.vendor?.location?.address ?? 'Vendor Pickup location',
+    lat: typeof storeLat === 'number' ? storeLat : 0,
+    lng: typeof storeLng === 'number' ? storeLng : 0,
+  };
+
+  const rider = {
+    name: rawOrder.extraData?.rider?.name ?? 'Rider',
+    role: rawOrder.extraData?.rider?.role ?? 'Delivery rider',
+    rating: rawOrder.extraData?.rider?.rating ?? '4.8',
+    reviews: rawOrder.extraData?.rider?.reviews ?? '100',
+    lat: riderLat,
+    lng: riderLng,
+  };
+
+  const deliveryLocation = {
+    label: rawOrder.extraData?.location?.address ? 'Delivery Address' : 'Customer Address',
+    description: rawOrder.extraData?.location?.address ?? 'Customer delivery location',
+    lat: typeof destLat === 'number' ? destLat : 0,
+    lng: typeof destLng === 'number' ? destLng : 0,
+  };
+
   const order = {
     ...rawOrder,
+    store,
+    rider,
+    deliveryLocation,
     status: formatStatus(getLatestStatus(rawOrder)),
     steps: Array.isArray(rawOrder.steps) && rawOrder.steps.length
       ? rawOrder.steps
@@ -259,13 +332,15 @@ export const TrackOrder: React.FC = () => {
   const orderCurrentIndex = stepKeysList.indexOf(currentStepKey);
 
   // Build route coordinates from API data when available
-  const routeCoordinates: [number, number][] = orderState?.store && orderState?.rider && orderState?.deliveryLocation
-    ? [[orderState.store.lat, orderState.store.lng], [orderState.rider.lat, orderState.rider.lng], [orderState.deliveryLocation.lat, orderState.deliveryLocation.lng]]
-    : [];
-
-  const store = order.store;
-  const rider = order.rider;
-  const deliveryLocation = order.deliveryLocation;
+  const routeCoordinates: [number, number][] = [];
+  const riderRoute = getRiderRouteCoordinates(rawOrder);
+  if (store.lat !== 0 && store.lng !== 0) routeCoordinates.push([store.lat, store.lng]);
+  if (riderRoute.length) {
+    riderRoute.forEach((point) => routeCoordinates.push(point));
+  } else if (rider.lat !== 0 && rider.lng !== 0) {
+    routeCoordinates.push([rider.lat, rider.lng]);
+  }
+  if (deliveryLocation.lat !== 0 && deliveryLocation.lng !== 0) routeCoordinates.push([deliveryLocation.lat, deliveryLocation.lng]);
   const estimatedDelivery = order.estimatedDelivery ?? order.eta ?? '';
   const deliveryTime = order.deliveryTime ?? '';
   const statusDescription = orderState?.tracking && Array.isArray(orderState.tracking) && orderState.tracking.length > 0
@@ -364,7 +439,7 @@ export const TrackOrder: React.FC = () => {
         >
           {routeCoordinates.length ? (
           <MapContainer
-            center={mapCenter ?? [routeCoordinates[1][0], routeCoordinates[1][1]]}
+            center={mapCenter ?? [routeCoordinates[0]?.[0] ?? -1.2920656, routeCoordinates[0]?.[1] ?? 36.8219467]}
             zoom={14}
             scrollWheelZoom={false}
             className="w-full h-full z-0"
@@ -379,40 +454,46 @@ export const TrackOrder: React.FC = () => {
             <Polyline positions={routeCoordinates} color="#3f940e" weight={4} opacity={0.8} dashArray="5, 5" />
 
             {/* Store Marker */}
-            <Marker position={[store.lat, store.lng]}
-              icon={createCustomIcon('#3f940e', 'store')}
-            >
-              <Popup>
-                <div className="p-2">
-                    <p className="font-bold text-sm">{store.name}</p>
-                      <p className="text-xs text-gray-600">{store.description}</p>
-                </div>
-              </Popup>
-            </Marker>
+            {store.lat !== 0 && store.lng !== 0 && (
+              <Marker position={[store.lat, store.lng]}
+                icon={createCustomIcon('#3f940e', 'store')}
+              >
+                <Popup>
+                  <div className="p-2">
+                      <p className="font-bold text-sm">{store.name}</p>
+                        <p className="text-xs text-gray-600">{store.description}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
 
             {/* Rider Marker */}
-            <Marker position={[rider.lat, rider.lng]}
-              icon={createCustomIcon('#3f940e', 'rider')}
-            >
-              <Popup>
-                <div className="p-2">
-                  <p className="font-bold text-sm">Rider is here</p>
-                  <p className="text-xs text-gray-600">5 min away</p>
-                </div>
-              </Popup>
-            </Marker>
+            {rider.lat !== 0 && rider.lng !== 0 && (
+              <Marker position={[rider.lat, rider.lng]}
+                icon={createCustomIcon('#3f940e', 'rider')}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <p className="font-bold text-sm">Rider is here</p>
+                    <p className="text-xs text-gray-600">5 min away</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
 
             {/* Delivery Location Marker */}
-            <Marker position={[deliveryLocation.lat, deliveryLocation.lng]}
-              icon={createCustomIcon('#3b82f6', 'delivery')}
-            >
-              <Popup>
-                <div className="p-2">
-                  <p className="font-bold text-sm">{deliveryLocation.label}</p>
-                  <p className="text-xs text-gray-600">{deliveryLocation.description}</p>
-                </div>
-              </Popup>
-            </Marker>
+            {deliveryLocation.lat !== 0 && deliveryLocation.lng !== 0 && (
+              <Marker position={[deliveryLocation.lat, deliveryLocation.lng]}
+                icon={createCustomIcon('#3b82f6', 'delivery')}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <p className="font-bold text-sm">{deliveryLocation.label}</p>
+                    <p className="text-xs text-gray-600">{deliveryLocation.description}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
 
             {mapBounds && <FitMapBounds bounds={mapBounds} />}
           </MapContainer>
@@ -421,46 +502,6 @@ export const TrackOrder: React.FC = () => {
           )}
 
           {/* Map overlay controls */}
-          <div className="absolute top-3 left-3 bg-white rounded-xl px-3 py-2 shadow-md border border-border/30 z-400 max-w-[58%]">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary/10 rounded-md flex items-center justify-center">
-                <Store className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <div>
-                  <p className="text-xs font-bold text-foreground">{store?.name ?? 'Store'}</p>
-                  <p className="text-[10px] text-foreground/50 leading-tight">{store?.description ?? 'Preparing your order'}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute top-3 right-3 bg-white rounded-xl px-3 py-2 shadow-md border border-border/30 z-400">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary/10 rounded-md flex items-center justify-center">
-                <Navigation className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-foreground">Rider is here</p>
-                <p className="text-[10px] text-foreground/50">5 min away</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute bottom-12 right-3 bg-white rounded-xl px-3 py-2 shadow-md border border-border/30 z-400 max-w-[42%]">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-blue-100 rounded-md flex items-center justify-center">
-                <Home className="w-3.5 h-3.5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-foreground">{deliveryLocation?.label ?? 'Delivery location'}</p>
-                <p className="text-[10px] text-foreground/50 leading-tight">{deliveryLocation?.description ?? 'Selected address'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Locate button */}
-          <button className="absolute bottom-3 right-3 w-10 h-10 bg-white rounded-full shadow-md border border-border/30 flex items-center justify-center z-400 hover:bg-secondary transition-colors">
-            <Target className="w-5 h-5 text-foreground/70" />
-          </button>
         </motion.div>
 
         {/* --- Rider Card --- */}

@@ -90,6 +90,29 @@ export const MarkAsDeliveredPage: React.FC = () => {
   const [selectedProof, setSelectedProof] = useState<'camera' | 'gallery' | 'signature'>('camera');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPreviewItem, setSelectedPreviewItem] = useState<any | null>(null);
+  const [proofImage, setProofImage] = useState<string | null>(null);
+  const [proofBlob, setProofBlob] = useState<Blob | null>(null);
+
+  const handleCaptureImage = async (source: any) => {
+    try {
+      const { Camera, CameraResultType } = await import('@capacitor/camera');
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: source,
+      });
+
+      if (image.webPath) {
+        setProofImage(image.webPath);
+        const res = await fetch(image.webPath);
+        const blob = await res.blob();
+        setProofBlob(blob);
+      }
+    } catch (err) {
+      console.error('Failed to capture image:', err);
+    }
+  };
 
   const formatStatus = (status: string) => {
     if (!status) return '';
@@ -135,14 +158,36 @@ export const MarkAsDeliveredPage: React.FC = () => {
 
   const handleConfirmDelivery = async () => {
     if (!order) return;
+    
+    if (!proofBlob) {
+      alert('Please take or choose a photo as proof of delivery first.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      // 1. Upload proof of delivery photo first
+      const file = new File([proofBlob], `proof_${order.orderID}.jpg`, { type: 'image/jpeg' });
+      await productApi.uploadOrderResource(order.orderID, 'proofOfDelivery', file);
+      console.log('Proof of delivery photo uploaded successfully');
+
+      // 2. Mark order as delivered
       const message = note || 'Order delivered to customer.';
       await productApi.updateOrderStatus(order.orderID, 'delivered', message, note);
+
+      // 3. Stop geolocation tracking
+      try {
+        const { stopTracking } = await import('../../lib/backgroundGeolocation');
+        await stopTracking();
+      } catch (trackErr) {
+        console.error('Failed to stop geolocation tracking:', trackErr);
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
       navigate('/rider/dashboard');
     } catch (err) {
       console.error('Failed to mark order as delivered:', err);
+      alert(`Failed to complete delivery: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -463,7 +508,15 @@ export const MarkAsDeliveredPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-3">
             {/* Camera */}
             <button
-              onClick={() => setSelectedProof('camera')}
+              onClick={async () => {
+                setSelectedProof('camera');
+                try {
+                  const { CameraSource } = await import('@capacitor/camera');
+                  await handleCaptureImage(CameraSource.Camera);
+                } catch (err) {
+                  console.error('Failed to import CameraSource:', err);
+                }
+              }}
               className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
                 selectedProof === 'camera'
                   ? 'border-primary bg-primary/5'
@@ -486,7 +539,15 @@ export const MarkAsDeliveredPage: React.FC = () => {
 
             {/* Gallery */}
             <button
-              onClick={() => setSelectedProof('gallery')}
+              onClick={async () => {
+                setSelectedProof('gallery');
+                try {
+                  const { CameraSource } = await import('@capacitor/camera');
+                  await handleCaptureImage(CameraSource.Photos);
+                } catch (err) {
+                  console.error('Failed to import CameraSource:', err);
+                }
+              }}
               className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
                 selectedProof === 'gallery'
                   ? 'border-primary bg-primary/5'
@@ -530,6 +591,23 @@ export const MarkAsDeliveredPage: React.FC = () => {
               </p>
             </button>
           </div>
+
+          {/* Captured Proof Preview */}
+          {proofImage && (
+            <div className="mt-3 relative rounded-xl overflow-hidden border border-border bg-secondary flex items-center justify-center aspect-video max-h-48">
+              <img src={proofImage} alt="Proof of delivery preview" className="w-full h-full object-cover" />
+              <button
+                onClick={() => {
+                  setProofImage(null);
+                  setProofBlob(null);
+                }}
+                className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors"
+                title="Remove photo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* --- Confirm Delivery Checklist --- */}

@@ -12,7 +12,11 @@ type PayoutDetailsStepProps = {
 export const PayoutDetailsStep: React.FC<PayoutDetailsStepProps> = ({ onNext, onBack }) => {
   const draft = useRiderOnboardingStore((state) => state.draft);
   const setPayoutMode = useRiderOnboardingStore((state) => state.setPayoutMode);
-  const [payoutMethod, setPayoutMethod] = useState<'bank' | 'mpesa'>(draft.payoutInfo?.mode ?? 'mpesa');
+  const [payoutMethod, setPayoutMethod] = useState<'bank' | 'mpesa'>(
+    draft.payoutInfo?.mode === 'bank' || draft.payoutInfo?.mode === 'mpesa'
+      ? draft.payoutInfo.mode
+      : 'mpesa'
+  );
 
   useEffect(() => {
     setPayoutMode(payoutMethod);

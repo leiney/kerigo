@@ -28,9 +28,8 @@ export const LoginActivity: React.FC = () => {
         setSessions(data);
       }
     };
-
     loadSessions();
-
+    
     return () => {
       isMounted = false;
     };

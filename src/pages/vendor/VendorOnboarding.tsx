@@ -16,6 +16,7 @@ import { AddStoreStep } from './steps/AddStoreStep';
 import { PayoutMethodStep } from './steps/PayoutMethodStep';
 import { BankDetailsStep } from './steps/BankDetailsStep';
 import { MPesaDetailsStep } from './steps/MPesaDetailsStep';
+import { CustomPayoutStep } from './steps/CustomPayoutStep';
 import { CreatePasswordStep } from './steps/CreatePasswordStep';
 import { ReviewConfirmStep } from './steps/ReviewConfirmStep';
 import { SetupCompleteStep } from './steps/SetupCompleteStep';
@@ -55,6 +56,8 @@ export const VendorOnboarding: React.FC = () => {
 
     if (payoutMode === 'mpesa') {
       sequence.push('mpesa-details');
+    } else if (payoutMode === 'custom') {
+      sequence.push('custom-details');
     } else {
       sequence.push('bank-details');
     }
@@ -136,6 +139,8 @@ export const VendorOnboarding: React.FC = () => {
             onNext={(method) => {
               if (method === 'mpesa') {
                 handleNext('mpesa-details');
+              } else if (method === 'custom') {
+                handleNext('custom-details');
               } else {
                 handleNext('bank-details');
               }
@@ -147,6 +152,8 @@ export const VendorOnboarding: React.FC = () => {
         return <BankDetailsStep onNext={() => handleNext()} onBack={handleBack} />;
       case 'mpesa-details':
         return <MPesaDetailsStep onNext={() => handleNext()} onBack={handleBack} />;
+      case 'custom-details':
+        return <CustomPayoutStep onNext={() => handleNext()} onBack={handleBack} />;
       case 'create-password':
         return <CreatePasswordStep onNext={() => handleNext()} onBack={handleBack} />;
       case 'review-confirmation':

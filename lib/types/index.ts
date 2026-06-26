@@ -485,7 +485,7 @@ export interface ProductCreateResponse {
 }
 
 export type AccountType = 'individual' | 'organisation';
-export type PayoutMode = 'bank' | 'mpesa';
+export type PayoutMode = 'bank' | 'mpesa' | 'custom';
 
 export type BusinessType =
   | 'restaurant'
@@ -533,7 +533,8 @@ export interface BankPayoutDetails {
 
 export interface PayoutInfo {
   mode: PayoutMode;
-  details: MpesaPayoutDetails | BankPayoutDetails;
+  details: MpesaPayoutDetails | BankPayoutDetails | { customInstructions: string };
+  customInstructions?: string;
 }
 
 export interface KYCDocument {
@@ -630,6 +631,7 @@ export interface RegisterVendorPayload {
   password: string;
   payoutInfo: PayoutInfo;
   otherInfo: IndividualVendorOtherInfo | OrganisationVendorOtherInfo;
+  customInstructions?: string;
 }
 
 export interface RegisterVendorResponse {

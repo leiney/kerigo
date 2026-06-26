@@ -4,7 +4,6 @@ import {
   Search,
   SlidersHorizontal,
   Phone,
-  MessageSquare,
   ShoppingBag,
   Store,
   ChevronRight,
@@ -363,20 +362,23 @@ export const OrdersPage: React.FC = () => {
                   {/* Rider Section */}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-white shadow-sm">
-                        <img src={order.riderAvatarUrl} alt={order.riderName} className="w-full h-full object-cover" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-foreground">{order.riderName}</p>
-                        <p className="text-[10px] text-foreground/50">{order.riderRole}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      {getActionButton(Phone, 'Call')}
-                      {getActionButton(MessageSquare, 'Message')}
-                    </div>
+                      <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border border-white shadow-sm flex items-center justify-center text-sm font-bold text-foreground/80">
+                    {order.riderAvatarUrl ? (
+                      <img src={order.riderAvatarUrl} alt={order.riderName ?? 'Rider'} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{order.riderName?.charAt(0).toUpperCase() ?? 'R'}</span>
+                    )}
                   </div>
+                  <div>
+                    <p className="text-xs font-bold text-foreground">{order.riderName}</p>
+                    <p className="text-[10px] text-foreground/50">{order.riderRole}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {getActionButton(Phone, 'Call')}
+                </div>
+              </div>
                 </>
               ) : null}
             </motion.button>

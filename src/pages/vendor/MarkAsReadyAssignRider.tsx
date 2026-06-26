@@ -99,7 +99,8 @@ export const MarkAsReadyAssignRider: React.FC = () => {
       const riderObj = activeRider ? {
         id: activeRider.id || activeRider.riderID || activeRider.riderId,
         fullName: activeRider.fullName || activeRider.name || 'Rider',
-        estimatedPickupTime: pickupTime
+        estimatedPickupTime: pickupTime,
+        phoneNo: activeRider.phoneNo  || undefined
       } : undefined;
       const message = note || `Order ready for pickup. Assigned to ${riderObj?.fullName || 'auto-assigned rider'}.`;
 

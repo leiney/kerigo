@@ -34,6 +34,7 @@ export type VendorOnboardingDraft = {
   organizationDocuments: KYCDocument[];
   stores: VendorStoreDraft[];
   storeSetup?: 'one' | 'multiple';
+  customInstructions?: string;
 };
 
 export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
@@ -53,6 +54,7 @@ export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
   organizationDocuments: [],
   stores: [],
   storeSetup: 'one',
+  customInstructions: '',
 });
 
 const sanitizeSerialPart = (value: string) =>
@@ -120,6 +122,7 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
       password: draft.password,
       payoutInfo: draft.payoutInfo,
       otherInfo,
+      customInstructions: draft.customInstructions || undefined,
     };
   }
 
@@ -149,6 +152,7 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
     password: draft.password,
     payoutInfo: draft.payoutInfo,
     otherInfo,
+    customInstructions: draft.customInstructions || undefined,
   };
 };
 

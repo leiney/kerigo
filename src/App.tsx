@@ -157,6 +157,17 @@ export default function App() {
   
   useEffect(() => {
     setupRippleEffects();
+    
+    // Initialize background geolocation
+    const initTracking = async () => {
+      try {
+        const { initBackgroundGeolocation } = await import('./lib/backgroundGeolocation');
+        await initBackgroundGeolocation();
+      } catch (err) {
+        console.error('Failed to initialize background geolocation:', err);
+      }
+    };
+    initTracking();
   }, []);
 
   return (
@@ -164,8 +175,8 @@ export default function App() {
       <Routes>
           <Route path="/" element={<CustomerOnlyRoute><WelcomePage /></CustomerOnlyRoute>} />
 
-          <Route path="/login" element={<CustomerOnlyRoute><LoginPage /></CustomerOnlyRoute>} />
-          <Route path="/phone-login" element={<CustomerOnlyRoute><PhoneLoginPage /></CustomerOnlyRoute>} />
+          <Route path="/phone-login" element={<CustomerOnlyRoute><LoginPage /></CustomerOnlyRoute>} />
+          <Route path="/login" element={<CustomerOnlyRoute><PhoneLoginPage /></CustomerOnlyRoute>} />
           <Route path="/verify-identity" element={<CustomerOnlyRoute><VerifyIdentityPage /></CustomerOnlyRoute>} />
           <Route path="/register" element={<CustomerOnlyRoute><RegisterPage /></CustomerOnlyRoute>} />
           <Route path="/otp" element={<CustomerOnlyRoute><OTPPage /></CustomerOnlyRoute>} />
@@ -173,7 +184,7 @@ export default function App() {
           <Route path="/customer/orders" element={protect(<OrdersPage />)} />
           <Route path="/customer/orders/:orderId" element={protect(<OrderDetailsPage />)} />
           <Route path="/order/:orderId" element={protect(<OrderDetailsPage />)} />
-          <Route path="/customer/track-order" element={protect(<TrackOrder />)} />
+          <Route path="/customer/track-order/:orderId?" element={protect(<TrackOrder />)} />
           <Route path="/customer/profile" element={protect(<AccountSettings />)} />
           <Route path="/cart" element={<CustomerOnlyRoute><CartPage /></CustomerOnlyRoute>} />
           <Route path="/vendor-store" element={<CustomerOnlyRoute><VendorStorePage /></CustomerOnlyRoute>} />

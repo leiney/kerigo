@@ -204,10 +204,12 @@ export const productApi = {
     const response = await axiosInstance.post<ProductCreateResponse>('/products/extended/', formData);
     return response.data;
   },
+  
   getProducts: async (params?: Record<string, unknown>): Promise<ProductPayload[]> => {
     const response = await axiosInstance.get<ProductPayload[]>('/products/vendor', { params });
     return response.data;
   },
+
   getStores: async (): Promise<Store[]> => {
     const response = await axiosInstance.get<Store[]>('/product-stores/vendor');
     return response.data;
@@ -260,7 +262,7 @@ export const productApi = {
     return response.data;
   },
 
-  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string, fullName: string, estimatedPickupTime?: number }) => {
+  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string, fullName: string, estimatedPickupTime?: number , phoneNo?: string }) => {
     const response = await axiosInstance.patch(`/orders/${orderID}/tracking`, {
       status,
       message,
@@ -288,8 +290,21 @@ export const productApi = {
     return response.data;
   },
 
+  updateOrderRoute: async (orderID: string, latitude: number, longitude: number) => {
+    const response = await axiosInstance.patch(`/orders/${orderID}/route`, {
+      latitude,
+      longitude,
+    });
+    return response.data;
+  },
 
-
+  uploadOrderResource: async (orderID: string, uploadKey: string, file: Blob | File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('uploadKey', uploadKey);
+    const response = await axiosInstance.post(`/orders/upload-resource/${orderID}`, formData);
+    return response.data;
+  },
 };
 export const categoryApi = {
   getCategories: async (): Promise<CategoryItem[]> => {

@@ -74,12 +74,23 @@ axiosInstance.interceptors.response.use(
       const status = error.response?.status;
       const errorStatusCode = responseData?.error?.statusCode ?? responseData?.statusCode;
 
-      if (status === 401 || status === 403 || errorStatusCode === 401 || errorStatusCode === 403) {
+      const isAuthError = status === 401 || status === 403 || status === 430 || errorStatusCode === 401 || errorStatusCode === 403 || errorStatusCode === 430;
+
+      if (isAuthError) {
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.removeItem('token');
           }
           useAuthStore.getState().logout();
+
+          if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname + window.location.search;
+            const authPaths = ['/login', '/phone-login', '/otp', '/register', '/verify-identity', '/welcome', '/vendor-landing', '/rider-landing'];
+            const isOnAuthPath = authPaths.some(p => window.location.pathname.startsWith(p));
+            if (!isOnAuthPath && window.location.pathname !== '/') {
+              window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+            }
+          }
         } catch (logoutError) {
           console.error('Failed to log out user on auth error:', logoutError);
         }
@@ -87,8 +98,11 @@ axiosInstance.interceptors.response.use(
 
       // Show global error modal
       const errorMessage = extractErrorMessage(error);
+      
       try {
-        useErrorStore.getState().showError(errorMessage, 'Request Failed');
+        if (!isAuthError) {
+          useErrorStore.getState().showError(errorMessage, 'Request Failed');  
+        }
       } catch (modalError) {
         console.error('Failed to show error modal:', modalError);
       }

@@ -49,6 +49,7 @@ interface VendorOnboardingStore {
   updateStore: (id: string, store: VendorStoreDraft) => void;
   removeStore: (id: string) => void;
   setStoreSetup: (setup: 'one' | 'multiple') => void;
+  setCustomInstructions: (instructions: string) => void;
   reset: () => void;
 }
 
@@ -85,7 +86,10 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
                 details:
                   mode === 'mpesa'
                     ? { phoneNo: '' }
+                    : mode === 'custom'
+                    ? { customInstructions: state.draft.customInstructions ?? '' }
                     : { bank: '', branch: '', accountNumber: '', accountName: '', swiftCode: '' },
+                customInstructions: mode === 'custom' ? (state.draft.customInstructions ?? '') : undefined,
               },
             },
           };
@@ -121,7 +125,6 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
           }));
           return;
         }
-
         set((state) => ({
           attachments: { ...state.attachments, avatar: file }
         }));
@@ -183,6 +186,20 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
         })),
       removeStore: (id) => set((state) => ({ draft: { ...state.draft, stores: state.draft.stores.filter((store) => store.id !== id) } })),
       setStoreSetup: (setup) => set((state) => ({ draft: { ...state.draft, storeSetup: setup } })),
+      setCustomInstructions: (instructions) =>
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            customInstructions: instructions,
+            payoutInfo: state.draft.payoutInfo?.mode === 'custom'
+              ? {
+                  ...state.draft.payoutInfo,
+                  details: { customInstructions: instructions },
+                  customInstructions: instructions,
+                }
+              : state.draft.payoutInfo,
+          },
+        })),
       reset: () =>
         set({
           draft: createEmptyVendorOnboardingDraft(),

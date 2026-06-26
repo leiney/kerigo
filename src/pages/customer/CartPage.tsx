@@ -12,6 +12,7 @@ import { customerApi, productApi } from '../../../lib/api';
 import type { LocationDetails } from '../../../lib/types';
 import { UserProfile } from '@/src/types';
 import { StatusModal } from '../../components/shared/StatusModal';
+import axios from 'axios';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -226,23 +227,19 @@ export const CartPage: React.FC = () => {
     };
 
     try {
-      const response = await productApi.submitSignupOrder(payload);
-       
+      const response = await productApi.submitSignupOrder(payload);        
       
-     if (!user){
-        const user: UserProfile = {
-          id: response.user.id,
-          fullName: response.user.fullName || "",
-          email: response.user.email,
-          phoneNo: response.user.phoneNo || "",
-          userType: "customer",
-          username: response.user.username || "",
-          extraData: response.user.extraData || {},
-        };
-                
-        login({ token: response?.user.token || '', user });            
-
-     }
+      const user: UserProfile = {
+        id: response.user.id,
+        fullName: response.user.fullName || "",
+        email: response.user.email,
+        phoneNo: response.user.phoneNo || "",
+        userType: "customer",
+        username: response.user.username || "",
+        extraData: response.user.extraData || {},
+      };
+               
+      login({ token: response?.user.token || '', user });                  
       
       setStatusSheet({
         isOpen: true,
@@ -257,8 +254,9 @@ export const CartPage: React.FC = () => {
           navigate('/customer/');
         },
       });
+
     } catch (err: any) {
-      console.error('Checkout error:', err);
+      console.log(err);      
     } finally {
       setCheckoutLoading(false);
     }
@@ -547,9 +545,7 @@ export const CartPage: React.FC = () => {
           </motion.div>
         </div>
       </main>
-
-
-
+      
       <BottomSheet
         isOpen={showCheckoutDetailsSheet}
         onClose={() => {
