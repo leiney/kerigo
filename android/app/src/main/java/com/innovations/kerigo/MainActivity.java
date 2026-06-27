@@ -1,4 +1,4 @@
-package com.kerigo.app;
+package com.innovations.kerigo;
 
 import com.getcapacitor.BridgeActivity;
 

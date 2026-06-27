@@ -172,7 +172,7 @@ export const LoginPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
         onSubmit={handleLogin} 
-        className="space-y-4 relative z-10"
+        className="space-y-6 relative z-10"
       >
         {/* Email or Phone Input */}
         <Input
@@ -254,34 +254,29 @@ export const LoginPage: React.FC = () => {
         </Button>
       </motion.div>
 
-      {/* Continue to Shop Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45 }}
-        className="mt-3"
-      >
-        <Button 
-          type="button"
-          variant="outline" 
-          onClick={() => navigate('/')}
-          className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary text-primary"
-        >
-          <ShoppingBag className="h-5 w-5 text-primary" />
-          <span className="font-bold text-primary">Continue to shop</span>
-        </Button>
-      </motion.div>
+      <div className="fixed bottom-0 left-0 w-full">
+        <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="text-sm text-primary font-bold hover:text-primary/80 transition-colors"
+            >
+              Continue to shop
+            </button>
+          </div>
+      
 
-      {/* Security Message */}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-8 text-center flex items-center justify-center gap-2 text-xs text-foreground/50 font-medium"
-      >
-        <ShieldCheck className="h-4 w-4 text-primary" />
-        Your data is safe and secure with us.
-      </motion.div>      
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="py-4 text-center flex items-center justify-center gap-2 text-xs text-foreground/50 font-medium"
+        >
+          <ShieldCheck className="h-4 w-4 text-primary" />
+          Your data is safe and secure with us.
+        </motion.div>
+      </div>
+      
       {/* Bottom Decorative Leaves */}
       <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none overflow-hidden">
         <div className="absolute bottom-4 left-8 w-6 h-6 bg-primary/20 rounded-full blur-xl" />

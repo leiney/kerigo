@@ -154,12 +154,13 @@ export const PhoneLoginPage: React.FC = () => {
         onSubmit={handlePhoneLogin}
         className="space-y-4 relative z-10"
       >
-        <div className="pb-3">
+        <div className="pb-6">
             <Input
             type="tel"
             label="Phone number"
             placeholder="Enter your phone number"
             value={formData.phone}
+            
             onChange={(value) => setFormData({ ...formData, phone: String(value) })}
             leftIcon={<Phone className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
@@ -176,7 +177,7 @@ export const PhoneLoginPage: React.FC = () => {
           className="rounded-2xl h-14"
         />
 
-        <div className="flex justify-end">
+        <div className="flex justify-end py-6">
           <button
             type="button"
             className="text-sm text-primary font-bold hover:text-primary/80 transition-colors"
@@ -230,32 +231,32 @@ export const PhoneLoginPage: React.FC = () => {
       </motion.div>
 
       {/* Continue to Shop Button */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45 }}
-        className="mt-3"
-      >
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => navigate('/')}
-          className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 border-border bg-white hover:bg-secondary text-primary"
-        >
-          <ShoppingBag className="h-5 w-5 text-primary" />
-          <span className="font-bold text-primary">Continue to shop</span>
-        </Button>
-      </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-8 text-center flex items-center justify-center gap-2 text-xs text-foreground/50 font-medium"
-      >
-        <ShieldCheck className="h-4 w-4 text-primary" />
-        Your data is safe and secure with us.
-      </motion.div>
+
+       <div className="fixed bottom-0 left-0 w-full">
+        <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="text-sm text-primary font-bold hover:text-primary/80 transition-colors"
+            >
+              Continue to shop
+            </button>
+          </div>
+      
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="py-4 text-center flex items-center justify-center gap-2 text-xs text-foreground/50 font-medium"
+        >
+          <ShieldCheck className="h-4 w-4 text-primary" />
+          Your data is safe and secure with us.
+        </motion.div>
+       </div>
+
+
 
       <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none overflow-hidden">
         <div className="absolute bottom-4 left-8 w-6 h-6 bg-primary/20 rounded-full blur-xl" />

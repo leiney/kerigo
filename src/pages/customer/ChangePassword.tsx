@@ -43,7 +43,7 @@ export const ChangePassword: React.FC = () => {
     try {
       const payload = {
         oldPassword: formData.currentPassword,
-        newPassword: formData.newPassword,
+        password: formData.newPassword,
       };
 
       await authApi.changeLoggedInPassword(payload as any);
