@@ -1,4 +1,4 @@
-package com.innovations.kerigo;
+package com.stackloop.estore;
 
 import com.getcapacitor.BridgeActivity;
 

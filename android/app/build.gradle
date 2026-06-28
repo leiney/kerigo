@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.innovations.kerigo"
+    namespace = "com.stackloop.estore"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.innovations.kerigo"
+        applicationId "com.stackloop.estore"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
+        versionCode 3
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
