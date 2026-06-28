@@ -262,14 +262,6 @@ export const MarkAsDeliveredPage: React.FC = () => {
       const message = note || 'Order delivered to customer.';
       await productApi.updateOrderStatus(order.orderID, 'delivered', message, note);
 
-      // 3. Stop geolocation tracking
-      try {
-        const { stopTracking } = await import('../../lib/backgroundGeolocation');
-        await stopTracking();
-      } catch (trackErr) {
-        console.error('Failed to stop geolocation tracking:', trackErr);
-      }
-
       await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
       navigate('/rider/dashboard');
     } catch (err) {

@@ -74,14 +74,6 @@ export const MarkAsPickedUpPage: React.FC = () => {
       const message = note || 'Order picked up by rider.';
       await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note);
 
-      // Start geolocation tracking
-      try {
-        const { startTracking } = await import('../../lib/backgroundGeolocation');
-        await startTracking(order.orderID);
-      } catch (trackErr) {
-        console.error('Failed to start geolocation tracking:', trackErr);
-      }
-
       navigate('/rider/dashboard');
     } catch (err) {
       console.error('Failed to mark order as picked up:', err);

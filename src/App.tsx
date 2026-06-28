@@ -193,17 +193,6 @@ export default function App() {
   
   useEffect(() => {
     setupRippleEffects();
-    
-    // Initialize background geolocation
-    const initTracking = async () => {
-      try {
-        const { initBackgroundGeolocation } = await import('./lib/backgroundGeolocation');
-        await initBackgroundGeolocation();
-      } catch (err) {
-        console.error('Failed to initialize background geolocation:', err);
-      }
-    };
-    initTracking();
   }, []);
 
   return (

@@ -12,3 +12,6 @@ platforms:
             <uses-feature android:name="android.hardware.camera" android:required="false" />
             <uses-permission android:name="android.permission.INTERNET" />
           </manifest>
+
+  # Note: Background location permissions (ACCESS_BACKGROUND_LOCATION) have been removed
+  # The app now only uses foreground location access for rider navigation
