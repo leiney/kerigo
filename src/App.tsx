@@ -8,6 +8,8 @@ import '@stackloop/ui/theme.css';
 
 // Shared Pages
 import { WelcomePage } from './pages/shared/WelcomePage';
+import { ForgotPasswordPage } from './pages/shared/ForgotPasswordPage';
+import { Preferences } from '@capacitor/preferences';
 
 // Vendor Pages
 import { VendorLandingPage } from './pages/vendor/VendorLandingPage';
@@ -142,10 +144,44 @@ const UnauthorizedPage = () => {
 export default function App() {
   const errorModal = useErrorStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const protect = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['customer']}>{children}</ProtectedRoute>;
   const protectVendor = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['vendor']}>{children}</ProtectedRoute>;
   const protectRider = (children: React.ReactNode) => <ProtectedRoute allowedRoles={['rider', 'rider-admin']}>{children}</ProtectedRoute>;
 
+  useEffect(() => {
+    const checkForgotPasswordState = async () => {
+      try {
+        const { value } = await Preferences.get({ key: 'forgot_password_state' });
+        if (value) {
+          const parsed = JSON.parse(value);
+          if (parsed && parsed.step === 2) {
+            if (location.pathname !== '/forgot-password') {
+              navigate('/forgot-password', { replace: true });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking forgot password state:', err);
+      }
+    };
+    checkForgotPasswordState();
+  }, [location.pathname, navigate]);
+
+
+    useEffect(() => {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const authError = sessionStorage.getItem('auth_error');
+        if (authError) {
+          sessionStorage.removeItem('auth_error');
+          errorModal.showError(authError, 'Authentication Error');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to retrieve auth error from session storage:', err);
+    }
+  }, [location.pathname, errorModal]);
 
    useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -180,6 +216,7 @@ export default function App() {
           <Route path="/verify-identity" element={<CustomerOnlyRoute><VerifyIdentityPage /></CustomerOnlyRoute>} />
           <Route path="/register" element={<CustomerOnlyRoute><RegisterPage /></CustomerOnlyRoute>} />
           <Route path="/otp" element={<CustomerOnlyRoute><OTPPage /></CustomerOnlyRoute>} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/customer/" element={protect(<CustomerHomePage />)} />
           <Route path="/customer/orders" element={protect(<OrdersPage />)} />
           <Route path="/customer/orders/:orderId" element={protect(<OrderDetailsPage />)} />

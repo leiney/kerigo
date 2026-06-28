@@ -5,7 +5,8 @@ import { ChevronLeft, MapPin, Navigation } from 'lucide-react';
 import { motion } from 'motion/react';
 import { businessTypeOptions } from '../../lib/vendorOnboarding';
 import { requiredTextError, selectionError } from '../../lib/onboardingValidation';
-import type { LocationDetails, Store, BusinessType } from '../../../lib/types';
+import { BusinessType } from '../../../lib/types';
+import type { LocationDetails, Store } from '../../../lib/types';
 import { storeApi } from '../../../lib/api';
 
 type StoreFormState = {

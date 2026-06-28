@@ -1,6 +1,6 @@
+import { BusinessType } from '../../lib/types';
 import type {
   AccountType,
-  BusinessType,
   KYCDocument,
   LocationDetails,
   OrganisationVendorOtherInfo,
@@ -35,6 +35,7 @@ export type VendorOnboardingDraft = {
   stores: VendorStoreDraft[];
   storeSetup?: 'one' | 'multiple';
   customInstructions?: string;
+  businessType: BusinessType;
 };
 
 export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
@@ -47,7 +48,7 @@ export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
   individualDocuments: [],
   organizationInfo: {
     name: '',
-    businessType: 'other',
+    businessType: BusinessType.Other,
     registrationNo: '',
     taxIDNumber: '',
   },
@@ -55,6 +56,7 @@ export const createEmptyVendorOnboardingDraft = (): VendorOnboardingDraft => ({
   stores: [],
   storeSetup: 'one',
   customInstructions: '',
+  businessType: BusinessType.Other,
 });
 
 const sanitizeSerialPart = (value: string) =>
@@ -108,7 +110,7 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
       ),
       stores: draft.stores.map((store) => ({
         storeName: store.storeName.trim(),
-        businessType: store.businessType,
+        businessType: draft.businessType,
         cityTown: store.cityTown.trim(),
         locationDetails: normalizeLocationDetails(store.locationDetails),
       })),
@@ -129,13 +131,13 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
   const otherInfo: OrganisationVendorOtherInfo = {
     organizationInfo: {
       name: draft.organizationInfo.name.trim(),
-      businessType: draft.organizationInfo.businessType,
+      businessType: draft.businessType,
       registrationNo: draft.organizationInfo.registrationNo.trim(),
       taxIDNumber: draft.organizationInfo.taxIDNumber.trim(),
     },
     stores: draft.stores.map((store) => ({
       storeName: store.storeName.trim(),
-      businessType: store.businessType,
+      businessType: draft.businessType,
       cityTown: store.cityTown.trim(),
       locationDetails: normalizeLocationDetails(store.locationDetails),
     })),
@@ -157,24 +159,10 @@ export const buildVendorSignupPayload = (draft: VendorOnboardingDraft): Register
 };
 
 export const businessTypeOptions: Array<{ value: BusinessType; label: string }> = [
-  { value: 'restaurant', label: 'Restaurant' },
-  { value: 'fast_food', label: 'Fast Food' },
-  { value: 'cafe', label: 'Cafe' },
-  { value: 'bakery', label: 'Bakery' },
-  { value: 'cloud_kitchen', label: 'Cloud Kitchen' },
-  { value: 'supermarket', label: 'Supermarket' },
-  { value: 'grocery', label: 'Grocery' },
-  { value: 'butchery', label: 'Butchery' },
-  { value: 'fruit_vegetable', label: 'Fruit & Vegetable' },
-  { value: 'seafood', label: 'Seafood' },
-  { value: 'pharmacy', label: 'Pharmacy' },
-  { value: 'clinic', label: 'Clinic' },
-  { value: 'hospital', label: 'Hospital' },
-  { value: 'medical_store', label: 'Medical Store' },
-  { value: 'beauty_cosmetics', label: 'Beauty & Cosmetics' },
-  { value: 'convenience_store', label: 'Convenience Store' },
-  { value: 'wholesale', label: 'Wholesale' },
-  { value: 'other', label: 'Other' },
+  { value: BusinessType.Pharmacy, label: 'Pharmacy' },
+  { value: BusinessType.Food, label: 'Food' },
+  { value: BusinessType.Grocery, label: 'Grocery' },
+  { value: BusinessType.Other, label: 'Other' },
 ];
 
 export type VendorMultipartAttachments = {

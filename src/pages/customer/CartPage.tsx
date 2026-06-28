@@ -2,17 +2,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, BottomSheet, Input } from '@stackloop/ui';
 import {
-  ArrowLeft, Trash2, Minus, Plus, ShoppingBag, Truck, Percent, MapPin, ChevronRight, Home, User
+  ArrowLeft, Trash2, Minus, Plus, ShoppingBag, Truck, Percent, MapPin, ChevronRight, Home, User, Paperclip, Upload, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { selectCartCount, selectCartTotal, useCartStore } from '../../store/cartStore';
 import { useAuth } from '../../context/AuthContext';
-import { customerApi, productApi } from '../../../lib/api';
+import { customerApi, productApi, VendorsApi } from '../../../lib/api';
 import type { LocationDetails } from '../../../lib/types';
 import { UserProfile } from '@/src/types';
 import { StatusModal } from '../../components/shared/StatusModal';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
+import { buildFlattenedFormData } from '../../lib/multipart';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +31,63 @@ export const CartPage: React.FC = () => {
   const vendorName = useCartStore((state) => state.vendorName);
 
   const [orderNotes, setOrderNotes] = useState('');
+  const [isPrescriptionExpanded, setIsPrescriptionExpanded] = useState(false);
+  const [prescriptionImages, setPrescriptionImages] = useState<File[]>([]);
+  const [prescriptionPreviews, setPrescriptionPreviews] = useState<string[]>([]);
+
+  const { data: vendorDetails } = useQuery<any>({
+    queryKey: ['vendorDetails', vendorId || cartItems[0]?.vendorId],
+    queryFn: async () => {
+      const activeId = vendorId || cartItems[0]?.vendorId;
+      if (!activeId) {
+        throw new Error('No vendor ID provided');
+      }
+      return VendorsApi.getVendorsDetails(activeId);
+    },
+    enabled: !!(vendorId || cartItems[0]?.vendorId),
+  });
+
+  const isPharmaceutical = useMemo(() => {
+    if (!vendorDetails) return false;
+    const businessType = (
+      vendorDetails.businessType ||
+      vendorDetails.organizationInfo?.businessType ||
+      vendorDetails.otherInfo?.organizationInfo?.businessType ||
+      vendorDetails.otherInfo?.businessType ||
+      vendorDetails.vendor?.businessType ||
+      vendorDetails.vendor?.category ||
+      ''
+    ).toLowerCase();
+
+    return (
+      businessType.includes('pharm') ||
+      businessType.includes('clinic') ||
+      businessType.includes('hospital') ||
+      businessType.includes('medical')
+    );
+  }, [vendorDetails]);
+
+  const handlePrescriptionFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newFiles = Array.from(files);
+    setPrescriptionImages((prev) => [...prev, ...newFiles]);
+
+    const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+    setPrescriptionPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removePrescriptionImage = (index: number) => {
+    URL.revokeObjectURL(prescriptionPreviews[index]);
+    setPrescriptionImages((prev) => prev.filter((_, i) => i !== index));
+    setPrescriptionPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    return () => {
+      prescriptionPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [prescriptionPreviews]);
   const [checkoutFullName, setCheckoutFullName] = useState('');
   const [checkoutPhoneNo, setCheckoutPhoneNo] = useState('');
   const [showCheckoutDetailsSheet, setShowCheckoutDetailsSheet] = useState(false);
@@ -221,13 +280,15 @@ export const CartPage: React.FC = () => {
           vendor: {
             id: vendorId || cartItems[0]?.vendorId || 'id',
             name: vendorName || cartItems[0]?.vendorName || 'VENDOR_NAME',
-          }
+          },
+          ...(isPharmaceutical && prescriptionImages.length > 0 ? { images: prescriptionImages } : {}),
         },
       },
     };
 
     try {
-      const response = await productApi.submitSignupOrder(payload);        
+      const formData = buildFlattenedFormData(payload);
+      const response = await productApi.submitSignupOrder(formData);        
       
       {
         /*
@@ -255,6 +316,8 @@ export const CartPage: React.FC = () => {
           setStatusSheet((prev) => ({ ...prev, isOpen: false }));
           clearCart();
           setOrderNotes('');
+          setPrescriptionImages([]);
+          setPrescriptionPreviews([]);
           setShippingInfo(null);
           navigate('/customer/');
         },
@@ -347,7 +410,7 @@ export const CartPage: React.FC = () => {
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
 
@@ -510,6 +573,103 @@ export const CartPage: React.FC = () => {
               <p className="text-xs text-error">Pickup location is missing. Add items from a vendor first.</p>
             )}
           </motion.div>
+
+          {isPharmaceutical && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.42 }}
+              className="bg-white border border-border rounded-2xl overflow-hidden"
+            >
+              <button
+                type="button"
+                onClick={() => setIsPrescriptionExpanded(!isPrescriptionExpanded)}
+                className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary">
+                    <Paperclip className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-foreground">Prescription Instructions</p>
+                    <p className="text-xs text-foreground/50 mt-0.5">
+                      {prescriptionImages.length > 0
+                        ? `${prescriptionImages.length} photo(s) attached`
+                        : 'Upload prescription photos (optional)'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight
+                  className={`w-5 h-5 text-foreground/45 transition-transform duration-200 ${
+                    isPrescriptionExpanded ? 'rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence initial={false}>
+                {isPrescriptionExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="border-t border-border/60 bg-secondary/10"
+                  >
+                    <div className="p-4 space-y-4">
+                      {/* File Input and click target */}
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="prescription-upload"
+                          multiple
+                          accept="image/*"
+                          onChange={handlePrescriptionFileChange}
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="prescription-upload"
+                          className="flex flex-col items-center justify-center border-2 border-dashed border-border hover:border-primary/50 bg-white rounded-2xl p-6 text-center cursor-pointer transition-all hover:bg-primary/5 group"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-primary/5 text-primary flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                            <Upload className="w-5 h-5" />
+                          </div>
+                          <span className="text-sm font-bold text-foreground">Upload prescription photo</span>
+                          <span className="text-xs text-foreground/50 mt-1">
+                            Supports PNG, JPG, or WEBP
+                          </span>
+                        </label>
+                      </div>
+
+                      {/* Thumbnail Previews */}
+                      {prescriptionPreviews.length > 0 && (
+                        <div className="grid grid-cols-4 gap-3 pt-1">
+                          {prescriptionPreviews.map((url, index) => (
+                            <div
+                              key={url}
+                              className="relative aspect-square rounded-xl border border-border overflow-hidden bg-white shadow-sm group"
+                            >
+                              <img
+                                src={url}
+                                alt={`Prescription ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removePrescriptionImage(index)}
+                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -35,12 +35,12 @@ export const ReviewConfirmStep: React.FC<ReviewConfirmStepProps> = ({ onNext, on
       { label: 'Full Name', value: draft.fullName || '—' },
       { label: 'Email Address', value: draft.email || '—' },
       { label: 'Phone Number', value: draft.phoneNo || '—' },
+      { label: 'Business Type', value: draft.businessType || '—' },
       { label: 'Payout Method', value: payoutSummary },
       { label: 'Stores', value: String(draft.stores.length) },
       ...(draft.accountType === 'organisation'
         ? [
             { label: 'Organization Name', value: draft.organizationInfo.name || '—' },
-            { label: 'Business Type', value: draft.organizationInfo.businessType || 'other' },
             { label: 'KRA PIN', value: draft.organizationInfo.taxIDNumber || '—' },
           ]
         : []),

@@ -487,25 +487,12 @@ export interface ProductCreateResponse {
 export type AccountType = 'individual' | 'organisation';
 export type PayoutMode = 'bank' | 'mpesa' | 'custom';
 
-export type BusinessType =
-  | 'restaurant'
-  | 'fast_food'
-  | 'cafe'
-  | 'bakery'
-  | 'cloud_kitchen'
-  | 'supermarket'
-  | 'grocery'
-  | 'butchery'
-  | 'fruit_vegetable'
-  | 'seafood'
-  | 'pharmacy'
-  | 'clinic'
-  | 'hospital'
-  | 'medical_store'
-  | 'beauty_cosmetics'
-  | 'convenience_store'
-  | 'wholesale'
-  | 'other';
+export enum BusinessType {
+  Pharmacy = "pharmacy",
+  Food = "food",
+  Grocery = "grocery",
+  Other = "other"
+}
 
 export type RiderBusinessType =
   | 'delivery'
@@ -592,7 +579,7 @@ export interface OrganisationVehicleInfo {
 
 export interface OrganizationInfo {
   name: string;
-  businessType: RiderBusinessType;
+  businessType: RiderBusinessType | BusinessType;
   registrationNo: string;
   taxIDNumber: string;
 }

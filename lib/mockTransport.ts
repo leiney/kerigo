@@ -456,6 +456,14 @@ export const handleMockRequest = async <T>(config: RequestConfig): Promise<T> =>
     return clone({ message: 'Order status updated successfully', order }) as T;
   }
 
+  if (method === 'POST' && url === '/reset-code') {
+    return clone({ message: 'Verification code sent successfully' }) as T;
+  }
+
+  if (method === 'POST' && url === '/change-forgotten-password') {
+    return clone({ message: 'Password changed successfully' }) as T;
+  }
+
   throw new Error(`No mock handler registered for ${method} ${config.url}`);
 };
 

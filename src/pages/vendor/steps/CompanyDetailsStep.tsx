@@ -5,6 +5,7 @@ import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayou
 import { businessTypeOptions } from '../../../lib/vendorOnboarding';
 import { requiredTextError, selectionError, alphanumericError } from '../../../lib/onboardingValidation';
 import { useVendorOnboardingStore } from '../../../store/vendorOnboardingStore';
+import { BusinessType } from '../../../../lib/types';
 
 type CompanyDetailsStepProps = {
   onNext: () => void;
@@ -32,7 +33,7 @@ export const CompanyDetailsStep: React.FC<CompanyDetailsStepProps> = ({ onNext, 
       name: formData.companyName,
       registrationNo: formData.businessRegistrationNumber,
       taxIDNumber: formData.kraPIN,
-      businessType: formData.businessType || 'other',
+      businessType: formData.businessType || BusinessType.Other,
     });
   }, [formData, setOrganizationInfo]);
 

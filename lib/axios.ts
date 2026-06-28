@@ -75,6 +75,7 @@ axiosInstance.interceptors.response.use(
       const errorStatusCode = responseData?.error?.statusCode ?? responseData?.statusCode;
 
       const isAuthError = status === 401 || status === 403 || status === 430 || errorStatusCode === 401 || errorStatusCode === 403 || errorStatusCode === 430;
+      const errorMessage = extractErrorMessage(error);
 
       if (isAuthError) {
         try {
@@ -83,12 +84,18 @@ axiosInstance.interceptors.response.use(
           }
           useAuthStore.getState().logout();
 
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('auth_error', errorMessage);
+          }
+
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname + window.location.search;
             const authPaths = ['/login', '/phone-login', '/otp', '/register', '/verify-identity', '/welcome', '/vendor-landing', '/rider-landing'];
             const isOnAuthPath = authPaths.some(p => window.location.pathname.startsWith(p));
             if (!isOnAuthPath && window.location.pathname !== '/') {
               window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+            } else {
+              useErrorStore.getState().showError(errorMessage, 'Authentication Error');
             }
           }
         } catch (logoutError) {
@@ -97,8 +104,6 @@ axiosInstance.interceptors.response.use(
       }
 
       // Show global error modal
-      const errorMessage = extractErrorMessage(error);
-      
       try {
         if (!isAuthError) {
           useErrorStore.getState().showError(errorMessage, 'Request Failed');  

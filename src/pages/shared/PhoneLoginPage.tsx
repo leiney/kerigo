@@ -180,6 +180,7 @@ export const PhoneLoginPage: React.FC = () => {
         <div className="flex justify-end py-6">
           <button
             type="button"
+            onClick={() => navigate('/forgot-password')}
             className="text-sm text-primary font-bold hover:text-primary/80 transition-colors"
           >
             Forgot password?

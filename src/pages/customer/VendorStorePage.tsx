@@ -332,7 +332,7 @@ export const VendorStorePage: React.FC = () => {
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden ${
                 activeCategory === cat.name ? 'bg-primary/10' : 'bg-secondary'
               }`}>
-                <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-contain" />
               </div>
               <span className={`text-[11px] font-bold ${activeCategory === cat.name ? 'text-primary' : ''}`}>
                 {cat.name}
@@ -376,7 +376,7 @@ export const VendorStorePage: React.FC = () => {
                 >
                   {/* Item Image */}
                   <div className="w-22 h-22 rounded-2xl border border-border overflow-hidden shrink-0 bg-secondary">
-                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain" />
                   </div>
 
                   {/* Item Details */}

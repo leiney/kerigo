@@ -11,7 +11,7 @@ import BottomNav from '../../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 import { authApi } from '../../../../lib/api';
 import { UserProfile } from '../../../types';
-import { OrganizationInfo } from '../../../../lib/types';
+import { OrganizationInfo, BusinessType } from '../../../../lib/types';
 import { businessTypeOptions } from '../../../lib/vendorOnboarding';
 
 const CACHE_KEY = 'vendor_profile_cache';
@@ -34,14 +34,14 @@ export const VendorOrganizationDetails: React.FC = () => {
       const orgInfo = (otherInfo as any).organizationInfo || {};
       return {
         name: orgInfo.name || '',
-        businessType: orgInfo.businessType || 'other',
+        businessType: orgInfo.businessType || BusinessType.Other,
         registrationNo: orgInfo.registrationNo || '',
         taxIDNumber: orgInfo.taxIDNumber || '',
       };
     }
     return {
       name: '',
-      businessType: 'other',
+      businessType: BusinessType.Other,
       registrationNo: '',
       taxIDNumber: '',
     };
@@ -57,7 +57,7 @@ export const VendorOrganizationDetails: React.FC = () => {
         const orgInfo = (otherInfo as any).organizationInfo || {};
         setFormData({
           name: orgInfo.name || '',
-          businessType: orgInfo.businessType || 'other',
+          businessType: orgInfo.businessType || BusinessType.Other,
           registrationNo: orgInfo.registrationNo || '',
           taxIDNumber: orgInfo.taxIDNumber || '',
         });

@@ -127,6 +127,7 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({ onNext, onBa
         />
       </div>
 
+
       {/* Avatar Upload */}
       <div className="space-y-3 pt-1">
         <div>

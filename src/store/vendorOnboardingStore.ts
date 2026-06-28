@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { createEmptyVendorOnboardingDraft, type VendorOnboardingDraft, type VendorStoreDraft } from '../lib/vendorOnboarding';
+import { BusinessType } from '../../lib/types';
 import type { AccountType, KYCDocument, PayoutMode, OrganizationInfo } from '../../lib/types';
 
 interface PersistedFile {
@@ -50,6 +51,7 @@ interface VendorOnboardingStore {
   removeStore: (id: string) => void;
   setStoreSetup: (setup: 'one' | 'multiple') => void;
   setCustomInstructions: (instructions: string) => void;
+  setBusinessType: (businessType: BusinessType) => void;
   reset: () => void;
 }
 
@@ -116,7 +118,24 @@ export const useVendorOnboardingStore = create<VendorOnboardingStore>()(
         })),
       setIndividualDocumentFiles: (documents) => set((state) => ({ attachments: { ...state.attachments, individualDocuments: documents } })),
       setOrganizationInfo: (details) =>
-        set((state) => ({ draft: { ...state.draft, organizationInfo: { ...state.draft.organizationInfo, ...details } } })),
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            organizationInfo: { ...state.draft.organizationInfo, ...details },
+            ...(details.businessType ? { businessType: details.businessType as BusinessType } : {}),
+          },
+        })),
+      setBusinessType: (businessType) =>
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            businessType,
+            organizationInfo: {
+              ...state.draft.organizationInfo,
+              businessType,
+            },
+          },
+        })),
       setAvatarFile: (file) => {
         if (!file) {
           set((state) => ({

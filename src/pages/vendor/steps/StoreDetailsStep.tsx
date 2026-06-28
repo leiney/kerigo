@@ -28,6 +28,7 @@ type PickerState = {
 export const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ onNext, onBack }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const draft = useVendorOnboardingStore((state) => state.draft);
   const stores = useVendorOnboardingStore((state) => state.draft.stores);
   const addStore = useVendorOnboardingStore((state) => state.addStore);
   const updateStore = useVendorOnboardingStore((state) => state.updateStore);
@@ -52,7 +53,7 @@ export const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ onNext, onBa
     }
     return {
       storeName: '',
-      businessType: '',
+      businessType: draft.businessType,
       country: 'Kenya',
       locationDetails: {
         latitude: 0,
@@ -158,7 +159,6 @@ export const StoreDetailsStep: React.FC<StoreDetailsStepProps> = ({ onNext, onBa
           required
         />
       </div>
-
       {/* Store Location */}
       <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-3">
         <div className="flex items-center justify-between gap-3">

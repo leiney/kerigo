@@ -92,6 +92,17 @@ export const authApi = {
   resendCode: async (identifier: string): Promise<{ message: string }> => apiPost('/auth/login/resend-code/', { identifier }),
   refreshToken: async (): Promise<{ accessToken: string }> => apiPost('/auth/token/refresh/', {}),
   logout: async (): Promise<{ message: string }> => apiPost('/auth/logout/', {}),
+  
+  resetCode: async (payload: { data: { phoneNo?: string; email?: string }; channel: 'sms' | 'email' }): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/reset-code/', { ...payload.data, channel: payload.channel });
+    return response.data;
+  },
+
+  changeForgottenPassword: async (payload: { data: { phoneNo?: string; email?: string; resetCode: string; password?: string }; channel: 'sms' | 'email' }): Promise<{ message: string }> => {
+    const response = await axiosInstance.post('/change-forgotten-password/', { ...payload.data, channel: payload.channel });
+    return response.data;
+  },
+
   getCurrentUser: async (): Promise<AuthUser> => apiGet('/users/me/'),
   updateCurrentUser: async (payload: Partial<AuthUser>): Promise<AuthUser> => apiPatch('/users/me/', payload),
   setPassword: async (payload: PasswordPayload): Promise<{ message: string }> => apiPost('/auth/security/set-password/', payload),
@@ -227,7 +238,7 @@ export const productApi = {
     return response.data;
   },
 
-  submitSignupOrder: async (payload: Record<string, unknown>) =>{
+  submitSignupOrder: async (payload: FormData | Record<string, unknown>) =>{
     const response = await axiosInstance.post('/signup-on-order', payload);
     return response.data;
   }, 

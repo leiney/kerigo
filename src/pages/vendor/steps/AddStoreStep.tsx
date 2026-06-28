@@ -28,11 +28,12 @@ type PickerState = {
 export const AddStoreStep: React.FC<AddStoreStepProps> = ({ onNext, onBack }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const draft = useVendorOnboardingStore((state) => state.draft);
   const addStore = useVendorOnboardingStore((state) => state.addStore);
   const [hasAttemptedContinue, setHasAttemptedContinue] = useState(false);
   const [formData, setFormData] = useState<StoreFormState>({
     storeName: '',
-    businessType: '',
+    businessType: draft.businessType,
     country: 'Kenya',
     locationDetails: {
       latitude: 0,
@@ -136,7 +137,6 @@ export const AddStoreStep: React.FC<AddStoreStepProps> = ({ onNext, onBack }) =>
           required
         />
       </div>
-
       <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-3">
         {hasAttemptedContinue && (!formData.locationDetails.address || !formData.locationDetails.city) ? (
           <p className="text-xs text-error">Store location is required.</p>
