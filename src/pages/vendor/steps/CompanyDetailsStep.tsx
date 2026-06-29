@@ -4,6 +4,7 @@ import { Building2, Camera, Image as ImageIcon, X, FileText } from 'lucide-react
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { businessTypeOptions } from '../../../lib/vendorOnboarding';
 import { requiredTextError, selectionError, alphanumericError } from '../../../lib/onboardingValidation';
+import { alphanumericKeyDown } from '../../../lib/useAlphanumericInput';
 import { useVendorOnboardingStore } from '../../../store/vendorOnboardingStore';
 import { BusinessType } from '../../../../lib/types';
 
@@ -112,6 +113,7 @@ export const CompanyDetailsStep: React.FC<CompanyDetailsStepProps> = ({ onNext, 
             const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             setFormData({ ...formData, businessRegistrationNumber: sanitized });
           }}
+          onKeyDown={alphanumericKeyDown}
           error={registrationNumberError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"
@@ -129,6 +131,7 @@ export const CompanyDetailsStep: React.FC<CompanyDetailsStepProps> = ({ onNext, 
             const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             setFormData({ ...formData, kraPIN: sanitized });
           }}
+          onKeyDown={alphanumericKeyDown}
           error={kraPinError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"

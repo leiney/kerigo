@@ -4,6 +4,7 @@ import { User, Plus, Pencil, Trash2, CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { emailError, phoneError, requiredTextError } from '../../../lib/onboardingValidation';
+import { alphanumericKeyDown } from '../../../lib/useAlphanumericInput';
 import { generateDocumentSerial } from '../../../lib/riderOnboarding';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 
@@ -381,6 +382,7 @@ export const AddRidersStep: React.FC<AddRidersStepProps> = ({ onNext, onBack }) 
                   placeholder="Enter ID number"
                   value={sheetForm.idNumber}
                   onChange={(value) => setSheetForm((prev) => ({ ...prev, idNumber: String(value) }))}
+                  onKeyDown={alphanumericKeyDown}
                   error={sheetIdNumberError}
                   className="h-12 rounded-2xl text-sm"
                   required

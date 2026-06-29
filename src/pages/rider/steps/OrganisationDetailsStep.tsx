@@ -3,6 +3,7 @@ import { Input, Select } from '@stackloop/ui';
 import { Building2, FileText, Hash } from 'lucide-react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { requiredTextError, selectionError, alphanumericError } from '../../../lib/onboardingValidation';
+import { alphanumericKeyDown } from '../../../lib/useAlphanumericInput';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 import type { RiderBusinessType } from '../../../../lib/types';
 
@@ -107,6 +108,7 @@ export const OrganisationDetailsStep: React.FC<OrganisationDetailsStepProps> = (
             const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             setFormData({ ...formData, organisationNumber: sanitized });
           }}
+          onKeyDown={alphanumericKeyDown}
           error={organisationNumberError}
           leftIcon={<Hash className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"
@@ -123,6 +125,7 @@ export const OrganisationDetailsStep: React.FC<OrganisationDetailsStepProps> = (
             const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             setFormData({ ...formData, taxId: sanitized });
           }}
+          onKeyDown={alphanumericKeyDown}
           error={taxIdError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"

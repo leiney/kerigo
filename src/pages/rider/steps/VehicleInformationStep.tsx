@@ -3,6 +3,7 @@ import { Input, Select } from '@stackloop/ui';
 import { Bike, FileText, Palette } from 'lucide-react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { requiredTextError, selectionError, yearError, alphanumericError } from '../../../lib/onboardingValidation';
+import { alphanumericKeyDown } from '../../../lib/useAlphanumericInput';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 
 type VehicleInformationStepProps = {
@@ -96,6 +97,7 @@ export const VehicleInformationStep: React.FC<VehicleInformationStepProps> = ({ 
             const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
             setFormData({ ...formData, registrationNumber: sanitized });
           }}
+          onKeyDown={alphanumericKeyDown}
           error={registrationNumberError}
           leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"

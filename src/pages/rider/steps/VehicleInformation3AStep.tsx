@@ -4,6 +4,7 @@ import { Bike, FileText, Palette, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { requiredTextError, selectionError, yearError, alphanumericError } from '../../../lib/onboardingValidation';
+import { alphanumericKeyDown } from '../../../lib/useAlphanumericInput';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 
 type VehicleInformation3AStepProps = {
@@ -314,6 +315,7 @@ export const VehicleInformation3AStep: React.FC<VehicleInformation3AStepProps> =
                     const sanitized = String(value).replace(/[^A-Za-z0-9]/g, '').toUpperCase();
                     setFormData({ ...formData, regNumber: sanitized });
                   }}
+                  onKeyDown={alphanumericKeyDown}
                   error={registrationNumberError}
                   leftIcon={<FileText className="w-5 h-5 text-foreground/40" />}
                   className="h-14 rounded-2xl"
