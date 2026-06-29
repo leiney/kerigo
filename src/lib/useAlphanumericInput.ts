@@ -63,6 +63,81 @@ export const alphanumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) =>
   }
 };
 
+export const nameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowedKeys = [
+    'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'Home', 'End',
+  ];
+
+  if (allowedKeys.includes(e.key)) {
+    return;
+  }
+
+  if (e.ctrlKey || e.metaKey) {
+    return;
+  }
+
+  // Allow letters, spaces, hyphens, and apostrophes for names
+  if (!/^[A-Za-z\s'-]$/.test(e.key)) {
+    e.preventDefault();
+  }
+};
+
+export const emailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowedKeys = [
+    'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'Home', 'End',
+  ];
+
+  if (allowedKeys.includes(e.key)) {
+    return;
+  }
+
+  if (e.ctrlKey || e.metaKey) {
+    return;
+  }
+
+  // Allow letters, numbers, and email special characters: @ . _ -
+  if (!/^[A-Za-z0-9@._-]$/.test(e.key)) {
+    e.preventDefault();
+  }
+};
+
+export const numberOnlyKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allowedKeys = [
+    'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+    'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+    'Home', 'End',
+  ];
+
+  if (allowedKeys.includes(e.key)) {
+    return;
+  }
+
+  if (e.ctrlKey || e.metaKey) {
+    return;
+  }
+
+  // Allow only digits
+  if (!/^[0-9]$/.test(e.key)) {
+    e.preventDefault();
+  }
+};
+
 export const sanitizeAlphanumeric = (value: string): string => {
   return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+};
+
+export const sanitizeName = (value: string): string => {
+  return value.replace(/[^A-Za-z\s'-]/g, '');
+};
+
+export const sanitizeEmail = (value: string): string => {
+  return value.replace(/[^A-Za-z0-9@._-]/g, '');
+};
+
+export const sanitizeNumberOnly = (value: string): string => {
+  return value.replace(/[^0-9]/g, '');
 };

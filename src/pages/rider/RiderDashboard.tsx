@@ -156,18 +156,42 @@ export const RiderDashboard: React.FC = () => {
   const todayMidnight = new Date();
   todayMidnight.setHours(0, 0, 0, 0);
 
-  const todayCompletedOrders = completedOrders.filter((o: any) => {
+  const todayDeliveredOrders = ordersList.filter((o: any) => {
     const orderDate = new Date(o.orderDate);
-    return orderDate >= todayMidnight;
+    return o.orderStatus === 'delivered' && orderDate >= todayMidnight;
   });
 
-  const todayEarningsSum = todayCompletedOrders.reduce((sum: number, o: any) => sum + (o.shippingCharges || 0), 0);
+  const totalEarnings = ordersList.reduce((sum: number, o: any) => sum + (o.shippingCharges || 0), 0);
 
   const progressStats = [
-    { label: 'Completed orders', value: todayCompletedOrders.length.toString(), icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'Online time', value: '2h 15m', icon: Clock, color: 'text-info', bg: 'bg-info/10' },
-    { label: 'Earnings', value: `KES ${todayEarningsSum.toLocaleString()}`, icon: DollarSign, color: 'text-warning', bg: 'bg-warning/10' },
-    { label: 'Rating', value: '4.8', icon: Star, color: 'text-primary', bg: 'bg-primary/10' },
+    { 
+      label: 'Completed orders', 
+      value: todayDeliveredOrders.length > 0 ? todayDeliveredOrders.length.toString() : '0', 
+      icon: CheckCircle, 
+      color: 'text-primary', 
+      bg: 'bg-primary/10' 
+    },
+    { 
+      label: 'Online time', 
+      value: '--', 
+      icon: Clock, 
+      color: 'text-info', 
+      bg: 'bg-info/10' 
+    },
+    { 
+      label: 'Earnings', 
+      value: totalEarnings > 0 ? `KES ${totalEarnings.toLocaleString()}` : 'KES 0', 
+      icon: DollarSign, 
+      color: 'text-warning', 
+      bg: 'bg-warning/10' 
+    },
+    { 
+      label: 'Rating', 
+      value: '--', 
+      icon: Star, 
+      color: 'text-primary', 
+      bg: 'bg-primary/10' 
+    },
   ];
 
   return (
@@ -190,7 +214,7 @@ export const RiderDashboard: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-[10px] text-foreground/50 font-medium">Today's earnings</p>
-            <p className="text-lg font-extrabold text-foreground leading-none">KES {todayEarningsSum.toLocaleString()}</p>
+            <p className="text-lg font-extrabold text-foreground leading-none">KES {totalEarnings.toLocaleString()}</p>
           </div>
           <button className="relative p-2">
             <Bell className="w-5 h-5 text-foreground/70" />

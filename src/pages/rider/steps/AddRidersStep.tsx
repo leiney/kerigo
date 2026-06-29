@@ -4,7 +4,7 @@ import { User, Plus, Pencil, Trash2, CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { emailError, phoneError, requiredTextError } from '../../../lib/onboardingValidation';
-import { alphanumericKeyDown } from '../../../lib/useAlphanumericInput';
+import { nameKeyDown, emailKeyDown, numberOnlyKeyDown, sanitizeName, sanitizeEmail, sanitizeNumberOnly } from '../../../lib/useAlphanumericInput';
 import { generateDocumentSerial } from '../../../lib/riderOnboarding';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 
@@ -381,8 +381,8 @@ export const AddRidersStep: React.FC<AddRidersStepProps> = ({ onNext, onBack }) 
                   label="ID Number"
                   placeholder="Enter ID number"
                   value={sheetForm.idNumber}
-                  onChange={(value) => setSheetForm((prev) => ({ ...prev, idNumber: String(value) }))}
-                  onKeyDown={alphanumericKeyDown}
+                  onChange={(value) => setSheetForm((prev) => ({ ...prev, idNumber: sanitizeNumberOnly(String(value)) }))}
+                  onKeyDown={numberOnlyKeyDown}
                   error={sheetIdNumberError}
                   className="h-12 rounded-2xl text-sm"
                   required
@@ -392,7 +392,8 @@ export const AddRidersStep: React.FC<AddRidersStepProps> = ({ onNext, onBack }) 
                   label="Full Name"
                   placeholder="Enter full name"
                   value={sheetForm.name}
-                  onChange={(value) => setSheetForm((prev) => ({ ...prev, name: String(value) }))}
+                  onChange={(value) => setSheetForm((prev) => ({ ...prev, name: sanitizeName(String(value)) }))}
+                  onKeyDown={nameKeyDown}
                   error={sheetNameError}
                   className="h-12 rounded-2xl text-sm"
                   required
@@ -417,7 +418,8 @@ export const AddRidersStep: React.FC<AddRidersStepProps> = ({ onNext, onBack }) 
                   type="email"
                   placeholder="Enter email address"
                   value={sheetForm.email}
-                  onChange={(value) => setSheetForm((prev) => ({ ...prev, email: String(value) }))}
+                  onChange={(value) => setSheetForm((prev) => ({ ...prev, email: sanitizeEmail(String(value)) }))}
+                  onKeyDown={emailKeyDown}
                   error={sheetEmailError}
                   className="h-12 rounded-2xl text-sm"
                   required

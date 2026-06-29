@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 import { returnImageUrl } from '@/config';
+import { getOrderStatusLabel } from '../../lib/orderStatusUtils';
 import { Button, Badge, BottomSheet } from '@stackloop/ui';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -277,7 +278,7 @@ export const VendorDashboard: React.FC = () => {
 
   const renderRecentOrderRow = (order: any, idx: number) => {
     const isCompleted = order.orderStatus === 'delivered' || order.orderStatus === 'completed';
-    const statusLabel = isCompleted ? 'Completed' : 'Cancelled';
+    const statusLabel = getOrderStatusLabel(order.orderStatus);
     return (
       <div
         key={order.orderID}
@@ -768,7 +769,7 @@ export const VendorDashboard: React.FC = () => {
                     }
                     className="mt-1 font-bold rounded-full capitalize px-3 py-1 text-xs border-0"
                   >
-                    {selectedOrderForDetail.orderStatus}
+                    {getOrderStatusLabel(selectedOrderForDetail.orderStatus)}
                   </Badge>
                 </div>
                 <div className="text-right">

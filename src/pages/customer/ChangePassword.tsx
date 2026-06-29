@@ -5,6 +5,7 @@ import { Input, Button } from '@stackloop/ui';
 import BottomNav from '../../components/BottomNav';
 import CustomSettingsHeader from '@/src/components/layout/CustomSettingsHeader';
 import { authApi } from '../../../lib/api';
+import { StatusModal } from '@/src/components/shared/StatusModal';
 
 export const ChangePassword: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export const ChangePassword: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ confirm?: string }>({});
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const validateConfirm = (newPass: string, confirm: string) => {
     if (!confirm) {
@@ -47,6 +49,7 @@ export const ChangePassword: React.FC = () => {
       };
 
       await authApi.changeLoggedInPassword(payload as any);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Failed to update password', error);
     } finally {
@@ -122,6 +125,23 @@ export const ChangePassword: React.FC = () => {
 
       {/* --- Bottom Navigation --- */}
       <BottomNav />
+
+      {/* Success Modal */}
+      <StatusModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          navigate(-1);
+        }}
+        type="success"
+        title="Password Updated"
+        message="Your password has been successfully changed."
+        actionLabel="OK"
+        onAction={() => {
+          setShowSuccessModal(false);
+          navigate(-1);
+        }}
+      />
     </div>
   );
 };

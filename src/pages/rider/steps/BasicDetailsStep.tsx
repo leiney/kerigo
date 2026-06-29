@@ -3,6 +3,7 @@ import { Input } from '@stackloop/ui';
 import { User, Mail } from 'lucide-react';
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout';
 import { emailError, phoneError, requiredTextError } from '../../../lib/onboardingValidation';
+import { nameKeyDown, emailKeyDown, sanitizeName, sanitizeEmail } from '../../../lib/useAlphanumericInput';
 import { useRiderOnboardingStore } from '../../../store/riderOnboardingStore';
 
 type BasicDetailsStepProps = {
@@ -61,7 +62,8 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({ onNext, onBa
           label="Full Name"
           placeholder="Enter your full name"
           value={formData.fullName}
-          onChange={(value) => setFormData({ ...formData, fullName: String(value) })}
+          onChange={(value) => setFormData({ ...formData, fullName: sanitizeName(String(value)) })}
+          onKeyDown={nameKeyDown}
           error={fullNameError}
           leftIcon={<User className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"
@@ -88,7 +90,8 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({ onNext, onBa
           placeholder="Enter your email address"
           type="email"
           value={formData.email}
-          onChange={(value) => setFormData({ ...formData, email: String(value) })}
+          onChange={(value) => setFormData({ ...formData, email: sanitizeEmail(String(value)) })}
+          onKeyDown={emailKeyDown}
           error={emailAddressError}
           leftIcon={<Mail className="w-5 h-5 text-foreground/40" />}
           className="h-14 rounded-2xl"
