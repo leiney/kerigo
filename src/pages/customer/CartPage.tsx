@@ -15,6 +15,7 @@ import { StatusModal } from '../../components/shared/StatusModal';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { buildFlattenedFormData } from '../../lib/multipart';
+import { savePrescriptionImages, loadPrescriptionImages, clearPrescriptionImages } from '../../lib/prescriptionStorage';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +35,62 @@ export const CartPage: React.FC = () => {
   const [isPrescriptionExpanded, setIsPrescriptionExpanded] = useState(false);
   const [prescriptionImages, setPrescriptionImages] = useState<File[]>([]);
   const [prescriptionPreviews, setPrescriptionPreviews] = useState<string[]>([]);
+  const [checkoutFullName, setCheckoutFullName] = useState('');
+  const [checkoutPhoneNo, setCheckoutPhoneNo] = useState('');
+  const [showCheckoutDetailsSheet, setShowCheckoutDetailsSheet] = useState(false);
+  const [contactNameError, setContactNameError] = useState('');
+  const [contactPhoneError, setContactPhoneError] = useState('');
+  const [dropoffLocation, setDropoffLocation] = useState<LocationDetails | null>(null);
+  const [shippingInfo, setShippingInfo] = useState<{
+    vehicleType: string;
+    distanceKm: number;
+    estimatedTime: string;
+    deliveryFee: number;
+    serviceCharge: number;
+    charges: number;
+  } | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [statusSheet, setStatusSheet] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+    onAction?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+
+  // load prescription images from IndexedDB on mount
+  useEffect(() => {
+    const loadSavedPrescriptions = async () => {
+      const savedImages = await loadPrescriptionImages();
+      if (savedImages && savedImages.length > 0) {
+        setPrescriptionImages(savedImages);
+        const previews = savedImages.map((file) => URL.createObjectURL(file));
+        setPrescriptionPreviews(previews);
+      }
+    };
+    loadSavedPrescriptions();
+  }, []);
+
+  // Auto-submit order if returning from login with pending checkout
+  useEffect(() => {
+    const hasPendingCheckout = sessionStorage.getItem('pending-checkout') === 'true';
+    
+    if (hasPendingCheckout && isAuthenticated && cartItems.length > 0 && !checkoutLoading) {
+      sessionStorage.removeItem('pending-checkout');
+      // delay kidogo
+      setTimeout(() => {
+        void handleCheckout();
+      }, 500);
+    }
+  }, [isAuthenticated, cartItems.length, checkoutLoading]);
 
   const { data: vendorDetails } = useQuery<any>({
     queryKey: ['vendorDetails', vendorId || cartItems[0]?.vendorId],
@@ -71,16 +128,28 @@ export const CartPage: React.FC = () => {
     const files = e.target.files;
     if (!files) return;
     const newFiles = Array.from(files);
-    setPrescriptionImages((prev) => [...prev, ...newFiles]);
+    const updatedImages = [...prescriptionImages, ...newFiles];
+    setPrescriptionImages(updatedImages);
 
     const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
     setPrescriptionPreviews((prev) => [...prev, ...newPreviews]);
+
+    // Save to IndexedDB
+    savePrescriptionImages(updatedImages);
   };
 
-  const removePrescriptionImage = (index: number) => {
+  const removePrescriptionImage = async (index: number) => {
     URL.revokeObjectURL(prescriptionPreviews[index]);
-    setPrescriptionImages((prev) => prev.filter((_, i) => i !== index));
+    const updatedImages = prescriptionImages.filter((_, i) => i !== index);
+    setPrescriptionImages(updatedImages);
     setPrescriptionPreviews((prev) => prev.filter((_, i) => i !== index));
+    
+    // Update IndexedDB
+    if (updatedImages.length > 0) {
+      await savePrescriptionImages(updatedImages);
+    } else {
+      await clearPrescriptionImages();
+    }
   };
 
   useEffect(() => {
@@ -88,37 +157,6 @@ export const CartPage: React.FC = () => {
       prescriptionPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [prescriptionPreviews]);
-  const [checkoutFullName, setCheckoutFullName] = useState('');
-  const [checkoutPhoneNo, setCheckoutPhoneNo] = useState('');
-  const [showCheckoutDetailsSheet, setShowCheckoutDetailsSheet] = useState(false);
-  const [contactNameError, setContactNameError] = useState('');
-  const [contactPhoneError, setContactPhoneError] = useState('');
-  const [dropoffLocation, setDropoffLocation] = useState<LocationDetails | null>(null);
-  const [shippingInfo, setShippingInfo] = useState<{
-    vehicleType: string;
-    distanceKm: number;
-    estimatedTime: string;
-    deliveryFee: number;
-    serviceCharge: number;
-    charges: number;
-  } | null>(null);
-  const { login } = useAuth();
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingError, setShippingError] = useState<string | null>(null);
-  const [hasAttemptedCheckout, setHasAttemptedCheckout] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [statusSheet, setStatusSheet] = useState<{
-    isOpen: boolean;
-    type: 'success' | 'error' | 'info';
-    title: string;
-    message: string;
-    onAction?: () => void;
-  }>({
-    isOpen: false,
-    type: 'success',
-    title: '',
-    message: '',
-  });
 
   const subtotal = selectCartTotal(cartItems);
   const cartCount = selectCartCount(cartItems);
@@ -241,6 +279,16 @@ export const CartPage: React.FC = () => {
       return;
     }
 
+    // If not authenticated, save prescription images and redirect to login
+    if (!isAuthenticated) {
+      if (prescriptionImages.length > 0) {
+        await savePrescriptionImages(prescriptionImages);
+      }
+      sessionStorage.setItem('pending-checkout', 'true');
+      navigate('/login', { state: { from: { pathname: '/cart' } } });
+      return;
+    }
+
     setCheckoutLoading(true);
 
     
@@ -312,13 +360,14 @@ export const CartPage: React.FC = () => {
         type: 'success',
         title: 'Order Placed!',
         message: 'Your order has been submitted successfully.',
-        onAction: () => {
+        onAction: async () => {
           setStatusSheet((prev) => ({ ...prev, isOpen: false }));
           clearCart();
           setOrderNotes('');
           setPrescriptionImages([]);
           setPrescriptionPreviews([]);
           setShippingInfo(null);
+          await clearPrescriptionImages();
           navigate('/customer/');
         },
       });
@@ -762,6 +811,9 @@ export const CartPage: React.FC = () => {
                 }
                 if (!phone) {
                   setContactPhoneError('Phone number is required.');
+                  invalid = true;
+                } else if (phone.length !== 13) {
+                  setContactPhoneError('Phone number must be exactly 13 characters including country code (e.g., 254712345678).');
                   invalid = true;
                 }
                 if (invalid) {

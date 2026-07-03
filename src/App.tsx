@@ -175,7 +175,7 @@ export default function App() {
         const authError = sessionStorage.getItem('auth_error');
         if (authError) {
           sessionStorage.removeItem('auth_error');
-          errorModal.showError(authError, 'Authentication Error');
+          errorModal.showError(authError, 'Login Required');
         }
       }
     } catch (err) {
@@ -194,6 +194,29 @@ export default function App() {
   useEffect(() => {
     setupRippleEffects();
   }, []);
+
+  // Listen for auth errors from axios interceptor
+  useEffect(() => {
+    const handleAuthError = (event: CustomEvent) => {
+      const { message, redirectPath } = event.detail;
+      
+      // Show error message
+      errorModal.showError(message, 'Login Required');
+      
+      // Navigate using router if there's a redirect path
+      if (redirectPath) {
+        navigate(redirectPath, { replace: true });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth-error', handleAuthError as EventListener);
+      
+      return () => {
+        window.removeEventListener('auth-error', handleAuthError as EventListener);
+      };
+    }
+  }, [navigate, errorModal]);
 
   return (
     <ToastProvider position="bottom-center">

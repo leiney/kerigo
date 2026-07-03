@@ -127,7 +127,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
                     }`}
                     onClick={handlePrimaryClick}
                   >
-                    {actionLabel || (type === 'error' ? 'Retry' : 'OK')}
+                    {actionLabel || 'OK'}
                   </Button>
 
                   {secondaryActionLabel && (

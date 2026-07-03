@@ -41,7 +41,7 @@ const maskIdentifier = (value: string, type: 'sms' | 'email'): string => {
 
 export const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<number>(1); // 1: Enter Identifier & Password, 2: Enter Code Only
+  const [step, setStep] = useState<number>(1); 
   const [channel, setChannel] = useState<'sms' | 'email'>('sms');
   const [phoneNo, setPhoneNo] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -53,6 +53,7 @@ export const ForgotPasswordPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
 
   // Load state from Capacitor Preferences on mount
   useEffect(() => {
@@ -141,6 +142,8 @@ export const ForgotPasswordPage: React.FC = () => {
       setSuccessMessage(`Reset code sent to your ${channel === 'email' ? 'email address' : 'phone number'}`);
       await saveState(2, identifier, channel, password);
       setStep(2);
+      // Start 30-second cooldown
+      setResendCooldown(30);
     } catch (error: any) {
       console.error('Reset code request failed:', error);
       setErrorMessage(error?.message || 'Failed to send reset code. Please try again.');
@@ -209,6 +212,28 @@ export const ForgotPasswordPage: React.FC = () => {
       handleCancel();
     }
   };
+  // Countdown timer for resend code
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [resendCooldown]);
+
   // clear state when the user navigates away from the page
   useEffect(() => {
     return () => {
@@ -421,9 +446,14 @@ export const ForgotPasswordPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSendCode}
-                  className="text-primary font-bold hover:underline"
+                  disabled={resendCooldown > 0 || isLoading}
+                  className={`font-bold ${
+                    resendCooldown > 0 || isLoading
+                      ? 'text-foreground/30 cursor-not-allowed'
+                      : 'text-primary hover:underline'
+                  }`}
                 >
-                  Resend Code
+                  {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
                 </button>
                
               </div>

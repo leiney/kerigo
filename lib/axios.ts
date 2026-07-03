@@ -78,32 +78,38 @@ axiosInstance.interceptors.response.use(
       const errorMessage = extractErrorMessage(error);
 
       if (isAuthError) {
+        
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.removeItem('token');
+
           }
           useAuthStore.getState().logout();
-
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('auth_error', errorMessage);
           }
-
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname + window.location.search;
             const authPaths = ['/login', '/phone-login', '/otp', '/register', '/verify-identity', '/welcome', '/vendor-landing', '/rider-landing'];
             const isOnAuthPath = authPaths.some(p => window.location.pathname.startsWith(p));
-            if (!isOnAuthPath && window.location.pathname !== '/') {
-              window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
-            } else {
-              useErrorStore.getState().showError(errorMessage, 'Authentication Error');
-            }
+            
+            // ill d custom event for App.tsx to handle navigation
+            window.dispatchEvent(new CustomEvent('auth-error', {
+              detail: {
+                message: errorMessage,
+                redirectPath: !isOnAuthPath && window.location.pathname !== '/' 
+                  ? `/login?redirect=${encodeURIComponent(currentPath)}`
+                  : null
+              }
+            }));
           }
         } catch (logoutError) {
           console.error('Failed to log out user on auth error:', logoutError);
         }
       }
 
-      // Show global error modal
+
+
       try {
         if (!isAuthError) {
           useErrorStore.getState().showError(errorMessage, 'Request Failed');  

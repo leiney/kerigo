@@ -98,9 +98,16 @@ export const LoginPage: React.FC = () => {
           return;
         }
 
+        // Check if there's a pending checkout
+        const hasPendingCheckout = sessionStorage.getItem('pending-checkout') === 'true';
         
-        const destination = from ?? getLandingPath(user.userType);
-        navigate(destination, { replace: true });
+        if (hasPendingCheckout) {
+          sessionStorage.removeItem('pending-checkout');
+          navigate('/cart', { replace: true });
+        } else {
+          const destination = from ?? getLandingPath(user.userType);
+          navigate(destination, { replace: true });
+        }
       })
       .catch((error) => {
         console.error('Login error:', error);
