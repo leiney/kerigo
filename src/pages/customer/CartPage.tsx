@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, BottomSheet, Input } from '@stackloop/ui';
 import {
-  ArrowLeft, Trash2, Minus, Plus, ShoppingBag, Truck, Percent, MapPin, ChevronRight, Home, User, Paperclip, Upload, X
+  ArrowLeft, Trash2, Minus, Plus, ShoppingBag, Truck, Percent, MapPin, ChevronRight, Home, User, Paperclip, Upload, X, CreditCard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
@@ -285,7 +285,12 @@ export const CartPage: React.FC = () => {
         await savePrescriptionImages(prescriptionImages);
       }
       sessionStorage.setItem('pending-checkout', 'true');
-      navigate('/login', { state: { from: { pathname: '/cart' } } });
+      navigate('/login', { 
+        state: { 
+          from: { pathname: '/cart' },
+          phoneNumber: currentPhoneNo 
+        } 
+      });
       return;
     }
 
@@ -741,6 +746,59 @@ export const CartPage: React.FC = () => {
               Optional. Helpful for delivery or item preferences.
             </p>
           </motion.div>
+
+          {vendorDetails?.payoutInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.47 }}
+              className="bg-white border border-border rounded-2xl p-4"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">Payment Details</span>
+              </div>
+              
+              <div className="space-y-2">
+                {vendorDetails.payoutInfo.mode === 'mpesa' && (
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-xs text-foreground/60">M-Pesa Phone</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {vendorDetails.payoutInfo.details.phoneNo}
+                    </span>
+                  </div>
+                )}
+                
+                {vendorDetails.payoutInfo.mode === 'bank' && (
+                  <>
+                    <div className="flex items-center justify-between py-2">
+                      <span className="text-xs text-foreground/60">Bank Name</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {vendorDetails.payoutInfo.details.bank}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-2">
+                      <span className="text-xs text-foreground/60">Account Number</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {vendorDetails.payoutInfo.details.accountNumber}
+                      </span>
+                    </div>
+                  </>
+                )}
+                
+                {vendorDetails.payoutInfo.mode === 'custom' && (
+                  <div className="py-2">
+                    <p className="text-xs text-foreground/60 mb-1">Payment Instructions</p>
+                    <p className="text-sm text-foreground">
+                      {vendorDetails.payoutInfo.details.customInstructions || 'Contact vendor for payment details'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

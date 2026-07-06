@@ -21,14 +21,16 @@ export const PhoneLoginPage: React.FC = () => {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [formData, setFormData] = useState({
-    phone: '',
-    password: '',
-  });
-
   const searchParams = new URLSearchParams(location.search);
   const redirectParam = searchParams.get('redirect');
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? redirectParam ?? undefined;
+  const from = (location.state as { from?: { pathname?: string }; phoneNumber?: string } | null)?.from?.pathname ?? redirectParam ?? undefined;
+  const phoneNumberFromState = (location.state as { phoneNumber?: string } | null)?.phoneNumber ?? '';
+  
+  // Pre-fill phone number if coming from cart checkout
+  const [formData, setFormData] = useState({
+    phone: phoneNumberFromState,
+    password: '',
+  });
 
   const resolveRole = (roleValue: unknown): UserRole => {
     const validRoles: UserRole[] = ['customer', 'vendor', 'rider', 'rider-admin'];
@@ -159,8 +161,7 @@ export const PhoneLoginPage: React.FC = () => {
             type="tel"
             label="Phone number"
             placeholder="Enter your phone number"
-            value={formData.phone}
-            
+            value={formData.phone}            
             onChange={(value) => setFormData({ ...formData, phone: String(value) })}
             leftIcon={<Phone className="w-5 h-5 text-foreground/40" />}
             className="rounded-2xl h-14"
@@ -175,6 +176,7 @@ export const PhoneLoginPage: React.FC = () => {
           onChange={(value) => setFormData({ ...formData, password: String(value) })}
           leftIcon={<Lock className="w-5 h-5 text-foreground/40" />}
           className="rounded-2xl h-14"
+          autoFocus={!!phoneNumberFromState}
         />
 
         <div className="flex justify-end py-6">

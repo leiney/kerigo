@@ -74,11 +74,10 @@ axiosInstance.interceptors.response.use(
       const status = error.response?.status;
       const errorStatusCode = responseData?.error?.statusCode ?? responseData?.statusCode;
 
-      const isAuthError = status === 401 || status === 403 || status === 430 || errorStatusCode === 401 || errorStatusCode === 403 || errorStatusCode === 430;
+      const isAuthError = status === 401 || status === 403 || status === 430 || status===431 || errorStatusCode === 401 || errorStatusCode === 403 || errorStatusCode === 430 || errorStatusCode ===431;
       const errorMessage = extractErrorMessage(error);
 
       if (isAuthError) {
-        
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.removeItem('token');

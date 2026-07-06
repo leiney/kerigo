@@ -39,10 +39,10 @@ export const CustomerHomePage: React.FC = () => {
   const cartItems = useCartStore((state) => state.items);
   const cartCount = selectCartCount(cartItems);
   const user = useAuthStore((state) => state.user);
-  const avatarUrl = user?.avatarUrl ?? user?.avatar ?? '/placeholder-avatar.webp';
   const greetingName = user?.fullName
     ? user.fullName.split(' ')[0]
     : (user?.username ?? 'User');
+  const userInitial = greetingName.charAt(0).toUpperCase();
 
   const latestOrderQuery = useQuery<any>({
     queryKey: ['customerLatestOrder'],
@@ -154,13 +154,7 @@ export const CustomerHomePage: React.FC = () => {
   const getPastOrderStatus = (order: any): string => {
     return formatStatus(order.orderStatus ?? 'Unknown');
   };
-  const getPastOrderStatusClasses = (status: string): string => {
-    const normalized = status.toLowerCase();
-    if (normalized === 'new' || normalized === 'received') return 'bg-primary/10 text-primary';
-    if (normalized === 'delivered') return 'bg-primary/10 text-primary';
-    if (['confirmed', 'preparing', 'on the way', 'on_the_way'].includes(normalized)) return 'bg-yellow-100 text-yellow-700';
-    return 'bg-gray-100 text-gray-600';
-  };
+ 
   const getPastOrderPrice = (order: any): number => Number(order.amount ?? 0);
   const getPastOrderDate = (order: any): string => {
     return formatRelativeDate(order?.orderDate ?? order?.date);
@@ -283,11 +277,9 @@ export const CustomerHomePage: React.FC = () => {
       {/* --- Header --- */}
       <header className="px-4 pt-5 pb-3 flex items-start justify-between sticky top-0 bg-background z-40">
         <div className="flex items-center gap-3">
-          <img
-            src={avatarUrl}
-            alt={greetingName}
-            className="w-10 h-10 rounded-full object-cover border border-border shadow-sm bg-white"
-          />
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-border shadow-sm">
+            <span className="text-primary font-bold text-lg">{userInitial}</span>
+          </div>
           <div>
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
