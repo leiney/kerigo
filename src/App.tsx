@@ -198,9 +198,7 @@ export default function App() {
   // Listen for auth errors from axios interceptor
   useEffect(() => {
     const handleAuthError = (event: CustomEvent) => {
-      const { message, redirectPath } = event.detail;      
-      // show error message
-      errorModal.showError(message, 'Login Required');      
+      const { redirectPath } = event.detail;      
       // navigate using router if there's a redirect path
       if (redirectPath) {
         navigate(redirectPath, { replace: true });

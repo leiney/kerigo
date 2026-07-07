@@ -81,17 +81,18 @@ axiosInstance.interceptors.response.use(
         try {
           if (typeof localStorage !== 'undefined') {
             localStorage.removeItem('token');
-
           }
           useAuthStore.getState().logout();
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('auth_error', errorMessage);
-          }
+          
           if (typeof window !== 'undefined') {
             const currentPath = window.location.pathname + window.location.search;
             const authPaths = ['/login', '/phone-login', '/otp', '/register', '/verify-identity', '/welcome', '/vendor-landing', '/rider-landing'];
             const isOnAuthPath = authPaths.some(p => window.location.pathname.startsWith(p));
             
+            if (!isOnAuthPath && typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem('auth_error', errorMessage);
+            }
+
             // ill d custom event for App.tsx to handle navigation
             window.dispatchEvent(new CustomEvent('auth-error', {
               detail: {
@@ -107,11 +108,18 @@ axiosInstance.interceptors.response.use(
         }
       }
 
-
-
       try {
         if (!isAuthError) {
           useErrorStore.getState().showError(errorMessage, 'Request Failed');  
+        } else {
+          const isOnAuthPath = typeof window !== 'undefined' && 
+            ['/login', '/phone-login', '/otp', '/register', '/verify-identity', '/welcome', '/vendor-landing', '/rider-landing']
+              .some(p => window.location.pathname.startsWith(p));
+          
+          useErrorStore.getState().showError(
+            errorMessage,
+            isOnAuthPath ? 'Authentication Failed' : 'Login Required'
+          );
         }
       } catch (modalError) {
         console.error('Failed to show error modal:', modalError);
