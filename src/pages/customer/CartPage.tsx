@@ -279,20 +279,7 @@ export const CartPage: React.FC = () => {
       return;
     }
 
-    // If not authenticated, save prescription images and redirect to login
-    if (!isAuthenticated) {
-      if (prescriptionImages.length > 0) {
-        await savePrescriptionImages(prescriptionImages);
-      }
-      sessionStorage.setItem('pending-checkout', 'true');
-      navigate('/login', { 
-        state: { 
-          from: { pathname: '/cart' },
-          phoneNumber: currentPhoneNo 
-        } 
-      });
-      return;
-    }
+    
 
     setCheckoutLoading(true);
 
@@ -378,6 +365,19 @@ export const CartPage: React.FC = () => {
       });
 
     } catch (err: any) {
+      if (!isAuthenticated) {
+        if (prescriptionImages.length > 0) {
+          await savePrescriptionImages(prescriptionImages);
+        }
+        sessionStorage.setItem('pending-checkout', 'true');
+        navigate('/login', { 
+          state: { 
+            from: { pathname: '/cart' },
+            phoneNumber: currentPhoneNo 
+          } 
+        });
+        return;
+      }
       console.log(err);      
     } finally {
       setCheckoutLoading(false);

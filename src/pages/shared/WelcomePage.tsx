@@ -1,19 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell,
+  Info,
   ArrowRight,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import PullToRefresh from '../../components/PullToRefresh';
 import BottomNav from '../../components/BottomNav';
 import { VendorsApi } from '../../../lib/api';
 import type { VendorSummary } from '../../../lib/types';
 import { returnImageUrl } from '../../../config';
 import { useQuery } from '@tanstack/react-query';
+import { App } from '@capacitor/app';
 
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [showAppInfo, setShowAppInfo] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('1.0.0');
 
   const vendorsQuery = useQuery<VendorSummary[]>({
     queryKey: ['vendors'],
@@ -33,16 +36,29 @@ export const WelcomePage: React.FC = () => {
   const isLoading = vendorsQuery.isLoading;
   const vendors = vendorsQuery.data ?? [];
 
+  const handleInfoClick = async () => {
+    try {
+      const info = await App.getInfo();
+      setAppVersion(info.version);
+    } catch (error) {
+      console.error('Failed to get app info:', error);
+    }
+    setShowAppInfo(true);
+  };
+
   return (
     <PullToRefresh onRefresh={async () => { await vendorsQuery.refetch(); }}>
       <div className="min-h-screen bg-white text-foreground font-sans antialiased pb-24">
       {/* Header / Hero Section */}
       <div className="px-5 pt-6 pb-8">
-        {/* Logo & Notification Bell */}
+        {/* Logo & Info Icon */}
         <header className="flex items-center justify-between mb-8">
           <img src='/kerigo.png' alt="KeriGo Logo" className="h-12 sm:h-14" />
-          <button className="p-2 rounded-full hover:bg-secondary transition-colors">
-            <Bell className="w-6 h-6 text-foreground/70" />
+          <button 
+            onClick={handleInfoClick}
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <Info className="w-6 h-6 text-foreground/70" />
           </button>
         </header>
 
@@ -180,6 +196,82 @@ export const WelcomePage: React.FC = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      {/* App Info Modal */}
+      <AnimatePresence>
+        {showAppInfo && (
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAppInfo(false)}
+              className="absolute inset-0 bg-black/60"
+            />
+
+            {/* Modal Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="relative z-10 bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowAppInfo(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-secondary text-foreground/40 hover:text-foreground/70 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Icon */}
+              <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Info className="w-8 h-8 text-primary" />
+              </div>
+
+              {/* Title & Description */}
+              <h3 className="text-lg font-bold text-foreground text-center mb-2">
+                About KeriGo
+              </h3>
+              <p className="text-sm text-foreground/60 text-center leading-relaxed mb-6">
+                KeriGo Delivery App is your reliable local delivery partner. We connect you with trusted vendors for food, groceries, pharmacy and more delivered fast, safe and right to your doorstep.
+              </p>
+
+              {/* App Details */}
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-foreground/70">App Name</span>
+                  <span className="text-sm font-semibold text-foreground">KeriGo Delivery App</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-foreground/70">Powered By</span>
+                  <span className="text-sm font-semibold text-foreground">Slicksales Ltd</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-border/50">
+                  <span className="text-sm text-foreground/70">App Version</span>
+                  <span className="text-sm font-semibold text-foreground">{appVersion}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm text-foreground/70">Copyright</span>
+                  <span className="text-sm font-semibold text-foreground">©2026 KeriGo Solutions Limited</span>
+                </div>
+              </div>
+
+              {/* OK Button */}
+              <button
+                onClick={() => setShowAppInfo(false)}
+                className="w-full bg-primary text-white font-bold py-3 rounded-2xl shadow-lg hover:bg-primary/90 transition-colors"
+              >
+                OK
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       </div>
     </PullToRefresh>
   );

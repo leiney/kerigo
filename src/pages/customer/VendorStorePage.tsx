@@ -17,7 +17,7 @@ import { returnImageUrl } from '../../../config';
 export const VendorStorePage: React.FC = () => {
   const navigate = useNavigate();
   const { name: vendorId } = useParams<{ name: string }>();
-  const [activeCategory, setActiveCategory] = useState('Buckets');
+  const [activeCategory, setActiveCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [vendorLocation, setVendorLocation] = useState<Pick<LocationDetails, 'latitude' | 'longitude' | 'address' | 'city' | 'country' | 'postalCode'> | null>(null);
   const cartItems = useCartStore((state) => state.items);
@@ -89,7 +89,7 @@ export const VendorStorePage: React.FC = () => {
 
   useEffect(() => {
     if (!storeData) return;
-    if (storeData.categories.length > 0 && activeCategory === 'Buckets') {
+    if (storeData.categories.length > 0 && !activeCategory) {
       setActiveCategory(storeData.categories[0].name);
     }
     if (storeData.vendor && vendorDetailsQuery.data?.location) {
