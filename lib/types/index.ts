@@ -650,3 +650,17 @@ export enum OrderTrackingStatus {
   CANCELLED = 'cancelled',
 }
 
+export interface RiderDashboardStats {
+  completedOrders: number;
+  onlineTime: number;
+  earnings: number;
+  avgRating: number;
+}
+
+export interface VendorDashboardStats {
+  revenue: number;
+  orders: number;
+  avgPrepTime: number;
+  avgRating: number;
+}
+

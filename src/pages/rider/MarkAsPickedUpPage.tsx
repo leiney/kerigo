@@ -72,7 +72,7 @@ export const MarkAsPickedUpPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const message = note || 'Order picked up by rider.';
-      await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note);
+      await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note, true);
 
       navigate('/rider/dashboard');
     } catch (err) {

@@ -6,6 +6,7 @@ import { returnImageUrl } from '@/config';
 import { getOrderStatusLabel } from '../../lib/orderStatusUtils';
 import { Button, Badge, BottomSheet } from '@stackloop/ui';
 import { motion, AnimatePresence } from 'motion/react';
+import { VendorDashboardStats } from '@/lib/types';
 import {
   ArrowLeft,
   X,
@@ -72,6 +73,15 @@ export const VendorDashboard: React.FC = () => {
     staleTime: 1000 * 15,
     refetchOnWindowFocus: false,
   });
+
+  const {data: stats} = useQuery<VendorDashboardStats>({
+      queryKey: ['vendorstats'],
+      queryFn: async () =>{
+        const response = await productApi.fetchVendorDashboardStats()
+        return response || {}
+      }
+    })
+  console.log(stats)
 
   const { data: preparingOrders = [], isLoading: isLoadingPreparing } = useQuery<any[]>({
     queryKey: ['vendorOrders', 'preparing'],
@@ -348,24 +358,24 @@ export const VendorDashboard: React.FC = () => {
             <div className="flex-1">
               <p className="text-sm text-white/90">Today's Revenue</p>
               <div className="flex items-end relative gap-3">
-                <p className="text-xl sm:text-2xl font-extrabold tracking-tight">KES {todayRevenue.toLocaleString()}</p>
+                <p className="text-xl sm:text-2xl font-extrabold tracking-tight">KES {stats?.revenue ? stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : todayRevenue.toLocaleString()}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-center text-right">
                 <Package className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{totalOrdersCount}</span>
+                <span className="font-bold text-sm">{stats?.orders ?? totalOrdersCount}</span>
                 <span className="text-[11px] text-white/75">Orders</span>
               </div>
               <div className="flex flex-col items-center text-right">
                 <Clock className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{staticStats.prepTime}</span>
+                <span className="font-bold text-sm">{stats?.avgPrepTime ?? staticStats.prepTime}</span>
                 <span className="text-[11px] text-white/75">Avg. prep time</span>
               </div>
               <div className="flex flex-col items-center text-right">
                 <Star className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{staticStats.rating}</span>
+                <span className="font-bold text-sm">{stats?.avgRating ? stats.avgRating.toFixed(1) : staticStats.rating}</span>
                 <span className="text-[11px] text-white/75">Rating</span>
               </div>
             </div>

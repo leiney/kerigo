@@ -28,6 +28,7 @@ import { startDeliveryTracking, stopDeliveryTracking, isTracking } from '../../l
 import { Geolocation } from '@capacitor/geolocation';
 import { Browser } from '@capacitor/browser';
 import { Radio, MapPinned } from 'lucide-react';
+import { RiderDashboardStats } from '@/lib/types';
 
 interface Coordinates {
   lat: number;
@@ -83,15 +84,50 @@ export const RiderDashboard: React.FC = () => {
     },
   });
 
+  const {data: stats} = useQuery<RiderDashboardStats>({
+    queryKey: ['riderstats'],
+    queryFn: async () =>{
+      const response = await productApi.fetchRiderDashboardStats()
+      return response || {}
+    }
+  })
+
+  console.log(stats, "this is the stats for rider")
+
+  // Format online time from minutes to readable format
+  const formatOnlineTime = (minutes: number) => {
+    if (!minutes || minutes === 0) return '0 mins';
+    
+    if (minutes < 60) {
+      return `${minutes} min${minutes !== 1 ? 's' : ''}`;
+    }
+    
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours < 24) {
+      if (remainingMinutes === 0) {
+        return `${hours} hr${hours !== 1 ? 's' : ''}`;
+      }
+      return `${hours} hr${hours !== 1 ? 's' : ''} ${remainingMinutes} min${remainingMinutes !== 1 ? 's' : ''}`;
+    }
+    
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    
+    if (remainingHours === 0) {
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    }
+    return `${days} day${days !== 1 ? 's' : ''} ${remainingHours} hr${remainingHours !== 1 ? 's' : ''}`;
+  };
+
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
   };
 
   const handleAcceptOrder = async (orderId: string) => {
     try {
-      await productApi.updateOrderStatus(orderId, 'on_the_way', 'Order picked up by rider', undefined, undefined, {
-        pickedUp: true
-      });
+      await productApi.updateOrderStatus(orderId, 'on_the_way', 'Order picked up by rider', undefined, true);
       
       await startDeliveryTracking(orderId);
       setTrackingOrderId(orderId);
@@ -201,28 +237,28 @@ export const RiderDashboard: React.FC = () => {
   const progressStats = [
     { 
       label: 'Completed orders', 
-      value: todayDeliveredOrders.length > 0 ? todayDeliveredOrders.length.toString() : '0', 
+      value: stats?.completedOrders !== undefined ? stats.completedOrders.toString() : (todayDeliveredOrders.length > 0 ? todayDeliveredOrders.length.toString() : '0'), 
       icon: CheckCircle, 
       color: 'text-primary', 
       bg: 'bg-primary/10' 
     },
     { 
       label: 'Online time', 
-      value: '--', 
+      value: formatOnlineTime(stats?.onlineTime || 0), 
       icon: Clock, 
       color: 'text-info', 
       bg: 'bg-info/10' 
     },
     { 
       label: 'Earnings', 
-      value: totalEarnings > 0 ? `KES ${totalEarnings.toLocaleString()}` : 'KES 0', 
+      value: stats?.earnings ? `KES ${stats.earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : (totalEarnings > 0 ? `KES ${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'KES 0.00'), 
       icon: DollarSign, 
       color: 'text-warning', 
       bg: 'bg-warning/10' 
     },
     { 
       label: 'Rating', 
-      value: '--', 
+      value: stats?.avgRating ? stats.avgRating.toFixed(1) : '--', 
       icon: Star, 
       color: 'text-primary', 
       bg: 'bg-primary/10' 
@@ -297,10 +333,13 @@ export const RiderDashboard: React.FC = () => {
                     : 'text-foreground/50 hover:bg-secondary'
                   }`}
               >
-                {tab} {tab === 'pending' && `(${pendingOrders.length})`}
-                {tab === 'active' && `(${activeOrders.length})`}
-                {tab === 'completed' && `(${completedOrders.length})`}
-                {tab === 'cancelled' && `(${cancelledOrders.length})`}
+                <div className="flex flex-col justify-center items-center">
+                  {tab} {tab === 'pending' && <small>{pendingOrders.length}</small> }
+                  {tab === 'active' &&   <small>{activeOrders.length}</small>}
+                  {tab === 'completed' &&  <small>{completedOrders.length}</small> }
+                  {tab === 'cancelled' &&  <small>{cancelledOrders.length}</small> }
+
+                </div>
               </button>
             ))}
           </div>
@@ -382,7 +421,7 @@ export const RiderDashboard: React.FC = () => {
                     {/* Card Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="font-bold text-sm text-foreground shrink-0">Order #{(order.orderNo || order.orderID).slice(-6).toUpperCase()}</span>
+                        <span className="font-bold text-sm text-foreground shrink-0">Order #{(order.orderNo?.toString() || order.orderID)?.slice(-6).toUpperCase()}</span>
                         <Badge
                           variant="default"
                           className={`${statusColor} text-[10px] font-semibold px-2 py-0.5 rounded-full truncate`}

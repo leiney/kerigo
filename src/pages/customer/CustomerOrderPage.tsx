@@ -66,11 +66,6 @@ export const CustomerHomePage: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
-
-
-
-
-
   const normalizePastOrders = (raw: any): any[] => {
     if (!raw) return [];
     if (Array.isArray(raw)) return raw;
@@ -258,6 +253,19 @@ export const CustomerHomePage: React.FC = () => {
 
   const latestOrder = latestOrderQuery.data;
   const pastOrders = normalizePastOrders(pastOrdersQuery.data);
+  
+  const { data: relatedProducts } = useQuery<any[]>({
+    queryKey: ['relatedProducts', latestOrder?.orderID],
+    queryFn: async () => {
+      const response = await productApi.getRelatedProducts(latestOrder?.orderID);
+      console.log('Related Products Response:', response);
+      return response || [];
+    },
+    enabled: !!latestOrder?.orderID,
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
+  });
+
   const latestOrderSteps: OrderStep[] =
     Array.isArray(latestOrder?.steps) && latestOrder.steps.length
       ? latestOrder.steps

@@ -219,6 +219,15 @@ export const productApi = {
     const response = await axiosInstance.post<ProductCreateResponse>('/products/extended/', formData);
     return response.data;
   },
+
+  fetchRiderDashboardStats: async () =>{
+    const response = await axiosInstance.get("/dashboard/rider/stats")
+    return response.data
+  },
+  fetchVendorDashboardStats: async () =>{
+    const response = await axiosInstance.get("/dashboard/vendor/stats")
+    return response.data
+  },
   
   getProducts: async (params?: Record<string, unknown>): Promise<ProductPayload[]> => {
     const response = await axiosInstance.get<ProductPayload[]>('/products/vendor', { params });
@@ -277,15 +286,18 @@ export const productApi = {
     return response.data;
   },
 
-  getRelatedProducts: async (OrderID? : string) =>{
-    const response = await axiosInstance.get('/products/related')
+  getRelatedProducts: async (orderID?: string) =>{
+    const params = orderID ? { orderID } : {};
+    const response = await axiosInstance.get('/products/related', { params })
+    console.log('Related Products Response:', response.data)
     return response.data
 
   },
 
-  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string; fullName: string; estimatedPickupTime?: number; phoneNo?: string; riderAccepted?: boolean } | Record<string, unknown>, customFields?: Record<string, unknown>) => {
+  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, pickedUp?: boolean, rider?: { id: string; fullName: string; estimatedPickupTime?: number; phoneNo?: string; } | Record<string, unknown>, customFields?: Record<string, unknown>) => {
     const payload: Record<string, unknown> = {
       status,
+      pickedUp,
       message,
       vendorNotes,
       rider,
@@ -363,6 +375,8 @@ export const VendorsApi = {
     return response.data;
   }
 }
+
+
 
 export const storeApi = {
   createStore: async (payload: Store): Promise<Store> => {
