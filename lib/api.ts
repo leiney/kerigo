@@ -277,13 +277,26 @@ export const productApi = {
     return response.data;
   },
 
-  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string, fullName: string, estimatedPickupTime?: number , phoneNo?: string }) => {
-    const response = await axiosInstance.patch(`/orders/${orderID}/tracking`, {
+  getRelatedProducts: async (OrderID? : string) =>{
+    const response = await axiosInstance.get('/products/related')
+    return response.data
+
+  },
+
+  updateOrderStatus: async (orderID: string, status: string, message?: string, vendorNotes?: string, rider?: { id: string; fullName: string; estimatedPickupTime?: number; phoneNo?: string; riderAccepted?: boolean } | Record<string, unknown>, customFields?: Record<string, unknown>) => {
+    const payload: Record<string, unknown> = {
       status,
       message,
       vendorNotes,
       rider,
-    });
+    };
+    
+    // Merge custom fields at root level of extraData
+    if (customFields) {
+      Object.assign(payload, customFields);
+    }
+    
+    const response = await axiosInstance.patch(`/orders/${orderID}/tracking`, payload);
     return response.data;
   },
 

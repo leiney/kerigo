@@ -26,6 +26,7 @@ import { productApi } from '@/lib/api';
 import { returnImageUrl } from '@/config';
 import { Geolocation } from '@capacitor/geolocation';
 import { Browser } from '@capacitor/browser';
+import { stopDeliveryTracking } from '../../lib/backgroundGeolocation';
 
 interface Coordinates {
   lat: number;
@@ -261,6 +262,8 @@ export const MarkAsDeliveredPage: React.FC = () => {
       // mrk order as delivered
       const message = note || 'Order delivered to customer.';
       await productApi.updateOrderStatus(order.orderID, 'delivered', message, note);
+
+      await stopDeliveryTracking();
 
       await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
       navigate('/rider/dashboard');

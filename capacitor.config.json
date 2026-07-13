@@ -2,5 +2,15 @@
   "appId": "com.stackloop.estore",
   "appName": "KeriGo",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "BackgroundGeolocation": {
+      "android": {
+        "notificationTitle": "Delivery App",
+        "notificationText": "Tracking active for delivery",
+        "notificationIcon": "mipmap/ic_launcher",
+        "serviceType": "location"
+      }
+    }
+  }
 }

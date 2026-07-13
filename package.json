@@ -25,6 +25,7 @@
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
+    "@capgo/background-geolocation": "^8.3.1",
     "@google/genai": "^1.29.0",
     "@stackloop/ui": "^4.3.1",
     "@tailwindcss/vite": "^4.1.14",

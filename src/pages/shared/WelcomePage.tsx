@@ -16,7 +16,8 @@ import { App } from '@capacitor/app';
 export const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
   const [showAppInfo, setShowAppInfo] = useState(false);
-  const [appVersion, setAppVersion] = useState<string>('1.0.0');
+  const [appVersion, setAppVersion] = useState<string>('1.3.4');
+  const currentYear = new Date().getFullYear();
 
   const vendorsQuery = useQuery<VendorSummary[]>({
     queryKey: ['vendors'],
@@ -257,7 +258,7 @@ export const WelcomePage: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-foreground/70">Copyright</span>
-                  <span className="text-sm font-semibold text-foreground">©2026 KeriGo Solutions Limited</span>
+                  <span className="text-sm font-semibold text-foreground">©{currentYear} KeriGo Solutions Limited</span>
                 </div>
               </div>
 

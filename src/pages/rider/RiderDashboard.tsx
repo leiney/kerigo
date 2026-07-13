@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Menu,
@@ -24,8 +24,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 import BottomNav from '../../components/BottomNav';
 import PullToRefresh from '../../components/PullToRefresh';
+import { startDeliveryTracking, stopDeliveryTracking, isTracking } from '../../lib/backgroundGeolocation';
 import { Geolocation } from '@capacitor/geolocation';
 import { Browser } from '@capacitor/browser';
+import { Radio, MapPinned } from 'lucide-react';
 
 interface Coordinates {
   lat: number;
@@ -64,8 +66,9 @@ const progressStatsPlaceholder = [];
 
 export const RiderDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'cancelled'>('active');
+  const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'completed' | 'cancelled'>('pending');
   const [isOnline, setIsOnline] = useState(true);
+  const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -83,6 +86,30 @@ export const RiderDashboard: React.FC = () => {
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
   };
+
+  const handleAcceptOrder = async (orderId: string) => {
+    try {
+      await productApi.updateOrderStatus(orderId, 'on_the_way', 'Order picked up by rider', undefined, undefined, {
+        pickedUp: true
+      });
+      
+      await startDeliveryTracking(orderId);
+      setTrackingOrderId(orderId);
+      
+      await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
+    } catch (error) {
+      console.error('Failed to accept order:', error);
+      alert('Failed to accept order. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (trackingOrderId) {
+        stopDeliveryTracking();
+      }
+    };
+  }, [trackingOrderId]);
 
   const formatStatus = (status: string) => {
     if (!status) return '';
@@ -143,15 +170,23 @@ export const RiderDashboard: React.FC = () => {
 
   const ordersList = Array.isArray(fetchedRiderOrders) ? fetchedRiderOrders : [];
 
-  const activeOrders = ordersList.filter((o: any) => o.orderStatus !== 'completed' && o.orderStatus !== 'delivered' && o.orderStatus !== 'cancelled');
+  const pendingOrders = ordersList.filter((o: any) => {
+    return o.orderStatus === 'on_the_way' && !o.extraData?.pickedUp;
+  });
+
+  const activeOrders = ordersList.filter((o: any) => {
+    return o.orderStatus === 'on_the_way' && o.extraData?.pickedUp;
+  });
   const completedOrders = ordersList.filter((o: any) => o.orderStatus === 'completed' || o.orderStatus === 'delivered');
   const cancelledOrders = ordersList.filter((o: any) => o.orderStatus === 'cancelled');
 
-  const currentTabOrders = activeTab === 'active' 
-    ? activeOrders 
-    : activeTab === 'completed' 
-      ? completedOrders 
-      : cancelledOrders;
+  const currentTabOrders = activeTab === 'pending'
+    ? pendingOrders
+    : activeTab === 'active' 
+      ? activeOrders 
+      : activeTab === 'completed' 
+        ? completedOrders 
+        : cancelledOrders;
 
   const todayMidnight = new Date();
   todayMidnight.setHours(0, 0, 0, 0);
@@ -225,6 +260,22 @@ export const RiderDashboard: React.FC = () => {
         </div>
       </header>
 
+      {/* Tracking Status Banner */}
+      {trackingOrderId && (
+        <div className="mx-4 mt-3 bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
+          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shrink-0 animate-pulse">
+            <Radio className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-green-700">Live Tracking Active</p>
+            <p className="text-[10px] text-green-600 mt-0.5">
+              Customer can now track your location in real-time
+            </p>
+          </div>
+          <MapPinned className="w-5 h-5 text-green-600 shrink-0" />
+        </div>
+      )}
+
       <div className="px-4 py-4 space-y-5">
         {/* --- My Orders Section --- */}
         <section>
@@ -237,7 +288,7 @@ export const RiderDashboard: React.FC = () => {
 
           {/* Tabs */}
           <div className="flex p-1 bg-white border border-border/50 rounded-xl mb-4">
-            {['active', 'completed', 'cancelled'].map((tab) => (
+            {['pending', 'active', 'completed', 'cancelled'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -246,7 +297,8 @@ export const RiderDashboard: React.FC = () => {
                     : 'text-foreground/50 hover:bg-secondary'
                   }`}
               >
-                {tab} {tab === 'active' && `(${activeOrders.length})`}
+                {tab} {tab === 'pending' && `(${pendingOrders.length})`}
+                {tab === 'active' && `(${activeOrders.length})`}
                 {tab === 'completed' && `(${completedOrders.length})`}
                 {tab === 'cancelled' && `(${cancelledOrders.length})`}
               </button>
@@ -393,9 +445,49 @@ export const RiderDashboard: React.FC = () => {
                       </div>
                     </div>
 
+                    {activeTab === 'pending' && (
+                      <>
+                        {/* Action Buttons for Pending Orders */}
+                        <div className="flex gap-2 mb-3">
+                          <Button
+                            variant="outline"
+                            className="flex-1 border-border hover:bg-secondary text-foreground/70 h-9 text-xs font-semibold gap-1.5"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const loc = order.extraData?.location;
+                              const dest = (loc?.latitude !== undefined && loc?.longitude !== undefined)
+                                ? { lat: loc.latitude, lng: loc.longitude }
+                                : dropoffAddress;
+                              startRiderNavigation(dest);
+                            }}
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-primary" /> Navigate
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="flex-1 border-border hover:bg-secondary text-foreground/70 h-9 text-xs font-semibold gap-1.5"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (order.extraData?.customer?.phoneNo) {
+                                window.location.href = `tel:${order.extraData.customer.phoneNo}`;
+                              }
+                            }}
+                          >
+                            <Phone className="w-3.5 h-3.5" /> Call
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => handleAcceptOrder(order.orderID)}
+                          className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-11 text-sm gap-2"
+                        >
+                          <CheckCircle className="w-5 h-5" /> Mark as Picked Up
+                        </Button>
+                      </>
+                    )}
+
                     {activeTab === 'active' && (
                       <>
-                        {/* Action Buttons */}
+                        {/* Action Buttons for Active Orders */}
                         <div className="flex gap-2 mb-3">
                           <Button
                             variant="outline"
