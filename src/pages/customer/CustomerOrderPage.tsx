@@ -608,11 +608,8 @@ export const CustomerHomePage: React.FC = () => {
 
         {/* --- Recommendations --- */}
         <section>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center mb-4">
             <h3 className="text-base font-bold text-foreground">You may also be interested in</h3>
-            <button className="text-primary text-xs font-semibold flex items-center gap-1">
-              See all <ChevronRight className="w-3.5 h-3.5" />
-            </button>
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-3 px-3">
