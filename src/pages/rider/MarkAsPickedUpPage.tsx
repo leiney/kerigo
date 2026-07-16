@@ -15,7 +15,8 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { Button, Badge } from '@stackloop/ui';
+import { Button, Badge, BottomSheet } from '@stackloop/ui';
+import { startDeliveryTracking } from '../../lib/backgroundGeolocation';
 import { motion, AnimatePresence } from 'motion/react';
 import { productApi } from '@/lib/api';
 import { returnImageUrl } from '@/config';
@@ -35,6 +36,7 @@ export const MarkAsPickedUpPage: React.FC = () => {
   const [note, setNote] = useState('');
   const [itemsExpanded, setItemsExpanded] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLocationSheet, setShowLocationSheet] = useState(false);
 
   const formatOrderDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -68,11 +70,22 @@ export const MarkAsPickedUpPage: React.FC = () => {
   };
 
   const handleConfirmPickup = async () => {
+    setShowLocationSheet(true);
+  };
+
+  const handleConfirmLocationAccess = async () => {
     if (!order) return;
+    setShowLocationSheet(false);
     setIsSubmitting(true);
     try {
       const message = note || 'Order picked up by rider.';
       await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note, true);
+      
+      try {
+        await startDeliveryTracking(order.orderID);
+      } catch (trackErr) {
+        console.error('Failed to start delivery tracking:', trackErr);
+      }
 
       navigate('/rider/dashboard');
     } catch (err) {
@@ -80,6 +93,10 @@ export const MarkAsPickedUpPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancelLocationAccess = () => {
+    setShowLocationSheet(false);
   };
 
   if (!order) {
@@ -385,6 +402,50 @@ export const MarkAsPickedUpPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Background Location Disclosure Bottom Sheet */}
+      <BottomSheet
+        isOpen={showLocationSheet}
+        onClose={handleCancelLocationAccess}
+        className="max-h-[90vh]"
+        animate={false}
+      >
+        <div className="pb-8 text-foreground px-4">
+          <div className="flex flex-col items-center text-center mt-4 mb-6">
+            <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-7 h-7 text-primary animate-bounce" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">
+              Background Location Permission
+            </h3>
+            <p className="text-xs text-foreground/50 mt-1">
+              Active Delivery Tracking Required
+            </p>
+          </div>
+
+          <div className="bg-secondary/40 rounded-2xl p-4 mb-6 border border-border/40">
+            <p className="text-sm text-foreground/75 leading-relaxed text-center">
+              Kerigo collects your location in the background while you are actively delivering orders. This allows customers and vendors to track delivery progress in real time, even if the app is minimized or the screen is off. Location tracking stops when your delivery ends.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button
+              className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3.5 text-sm rounded-xl flex items-center justify-center gap-2"
+              onClick={handleConfirmLocationAccess}
+            >
+              Allow Location Access
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-border text-foreground/60 hover:bg-secondary font-bold py-3.5 text-sm rounded-xl"
+              onClick={handleCancelLocationAccess}
+            >
+              Not Now
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 };
