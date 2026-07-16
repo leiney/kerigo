@@ -78,14 +78,18 @@ export const MarkAsPickedUpPage: React.FC = () => {
     setShowLocationSheet(false);
     setIsSubmitting(true);
     try {
-      const message = note || 'Order picked up by rider.';
-      await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note, true);
-      
+      // Request background location permission by starting delivery tracking first
       try {
         await startDeliveryTracking(order.orderID);
       } catch (trackErr) {
         console.error('Failed to start delivery tracking:', trackErr);
+        alert('Location tracking could not start. Please make sure to grant "Allow all the time" location access in your system settings.');
+        setIsSubmitting(false);
+        return;
       }
+
+      const message = note || 'Order picked up by rider.';
+      await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note, true);
 
       navigate('/rider/dashboard');
     } catch (err) {

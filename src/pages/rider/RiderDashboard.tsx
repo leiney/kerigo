@@ -142,15 +142,15 @@ export const RiderDashboard: React.FC = () => {
 
   const handleAcceptOrder = async (orderId: string) => {
     try {
-      await productApi.updateOrderStatus(orderId, 'on_the_way', 'Order picked up by rider', undefined, true);
-      
+      // Start tracking first so permission requests are triggered before backend updates
       await startDeliveryTracking(orderId);
       setTrackingOrderId(orderId);
       
+      await productApi.updateOrderStatus(orderId, 'on_the_way', 'Order picked up by rider', undefined, true);
       await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
     } catch (error) {
       console.error('Failed to accept order:', error);
-      alert('Failed to accept order. Please try again.');
+      alert('Location tracking could not start. Please make sure to grant "Allow all the time" location access in your system settings.');
     }
   };
 
