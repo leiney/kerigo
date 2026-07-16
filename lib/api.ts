@@ -286,8 +286,12 @@ export const productApi = {
     return response.data;
   },
 
-  getRelatedProducts: async (orderID?: string) =>{
-    const params = orderID ? { orderID } : {};
+  getRelatedProducts: async (orderID?: string, page: number = 1, size: number = 10) =>{
+    const params = {
+      ...(orderID ? { orderID } : {}),
+      page,
+      size,
+    };
     const response = await axiosInstance.get('/products/related', { params })
     console.log('Related Products Response:', response.data)
     return response.data

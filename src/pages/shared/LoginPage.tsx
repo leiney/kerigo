@@ -131,7 +131,8 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-foreground font-sans antialiased px-5 pb-10 relative overflow-hidden">
+    <div className="min-h-screen bg-white text-foreground font-sans antialiased px-5 pb-10 relative overflow-y-auto flex flex-col justify-between">
+      <div>
       
      
       {/* Header / Logo */}
@@ -263,7 +264,9 @@ export const LoginPage: React.FC = () => {
         </Button>
       </motion.div>
 
-      <div className="fixed bottom-0 left-0 w-full">
+      </div>
+
+      <div className="w-full mt-8 z-10">
         <div className="flex justify-center">
             <button
               type="button"

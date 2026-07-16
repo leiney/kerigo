@@ -465,17 +465,20 @@ export interface ProductPayload {
   productID?: string;
   name: string;
   description: string;
+  brand?: string | null;
   category: ProductCategoryPayload[];
-  tags: string[];
-  returnPolicy: ProductReturnPolicyPayload;
+  concerns: any[];
+  info: ProductInfoPayload | null;
   rating?: number;
   reviewCount?: number;
-  active: boolean;
+  isNew: boolean;
+  variants: ProductVariantPayload[];
   taxCodes: string[];
-  info: ProductInfoPayload;
+  active: boolean;
+  returnPolicy: ProductReturnPolicyPayload;
+  ownerID?: string;
   createdAt?: string;
   updatedAt?: string;
-  variants: ProductVariantPayload[];
 }
 
 export interface ProductCreateResponse {

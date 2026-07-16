@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -17,10 +17,9 @@ import { motion } from 'motion/react';
 import BottomNav from '../../components/BottomNav';
 import { useAuthStore } from '../../store/authStore';
 import { selectCartCount, useCartStore } from '../../store/cartStore';
-import {  productApi } from '../../../lib/api';
+import { productApi, VendorsApi } from '../../../lib/api';
 import { returnImageUrl } from '../../../config';
-import { mockData } from '../../../lib/mockData';
-import type {  OrderStep } from '../../../lib/types';
+import type {  OrderStep, ProductPayload } from '../../../lib/types';
 import PullToRefresh from '../../components/PullToRefresh';
 
 
@@ -39,6 +38,7 @@ export const CustomerHomePage: React.FC = () => {
   const cartItems = useCartStore((state) => state.items);
   const cartCount = selectCartCount(cartItems);
   const user = useAuthStore((state) => state.user);
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
   const greetingName = user?.fullName
     ? user.fullName.split(' ')[0]
     : (user?.username ?? 'User');
@@ -254,14 +254,13 @@ export const CustomerHomePage: React.FC = () => {
   const latestOrder = latestOrderQuery.data;
   const pastOrders = normalizePastOrders(pastOrdersQuery.data);
   
-  const { data: relatedProducts } = useQuery<any[]>({
+  const { data: relatedProducts = [], isLoading: relatedProductsLoading } = useQuery<ProductPayload[]>({
     queryKey: ['relatedProducts', latestOrder?.orderID],
     queryFn: async () => {
-      const response = await productApi.getRelatedProducts(latestOrder?.orderID);
+      const response = await productApi.getRelatedProducts(latestOrder?.orderID, 1, 10);
       console.log('Related Products Response:', response);
       return response || [];
     },
-    enabled: !!latestOrder?.orderID,
     staleTime: 1000 * 60,
     refetchOnWindowFocus: false,
   });
@@ -617,30 +616,115 @@ export const CustomerHomePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-3 px-3">
-            {mockData.customer.home.recommendations.map((item, idx) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6 + idx * 0.1 }}
-                whileTap={{ scale: 0.98 }}
-                className="min-w-36 bg-white rounded-2xl p-2 border border-border/50 shadow-sm flex flex-col items-start text-start"
-              >
-                <div className="w-full h-20 rounded-lg overflow-hidden mb-2.5 bg-gray-100">
-                  <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+            {relatedProductsLoading ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="min-w-36 bg-white rounded-2xl p-2 border border-border/50 shadow-sm animate-pulse">
+                  <div className="w-full h-20 rounded-lg bg-gray-200 mb-2.5" />
+                  <div className="h-3 w-20 bg-gray-200 rounded-md mb-1.5" />
+                  <div className="h-2.5 w-16 bg-gray-200 rounded-md" />
                 </div>
-                <h4 className="font-bold text-xs text-foreground">{item.name}</h4>
-                <p className="text-[11px] text-foreground/50 mt-0.5">
-                  KES {item.price.toLocaleString()} {item.unit}
-                </p>
-                <Button
-                  variant="ghost"
-                  className="mt-2.5 w-full bg-primary/5 text-primary hover:bg-primary/10 rounded-lg h-7 text-[10px] font-bold px-2"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5 mr-1" /> Buy
-                </Button>
-              </motion.div>
-            ))}
+              ))
+            ) : relatedProducts.length === 0 ? (
+              <div className="text-center py-6 text-foreground/40 text-xs">
+                No recommendations available
+              </div>
+            ) : (
+              relatedProducts.map((product, idx) => {
+                const variant = product.variants?.[0];
+                if (!variant) return null;
+                
+                const imageId = variant.images?.[0];
+                const imageUrl = (typeof imageId === 'string') ? returnImageUrl(imageId) : '/logo.png';
+                const price = variant.price;
+                const unit = variant.unit || 'Piece';
+                const productId = product.productID || product.name;
+                const variantId = variant.variantID;
+                const ownerId = product.ownerID;
+                
+                const handleAddToCart = async () => {
+                  if (!ownerId || !variantId) return;
+
+                  setAddingProductId(productId);
+                  try {
+                    const vendorDetails = await VendorsApi.getVendorsDetails(ownerId);
+                    const vendorName = vendorDetails?.vendorName || vendorDetails?.name || product.name || 'Vendor';
+                    const location = vendorDetails?.location;
+                    const pickupLocation = location ? {
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                      address: location.address || '',
+                      city: location.city || '',
+                      country: location.country || '',
+                      postalCode: location.postalCode || location.postcode || '',
+                    } : undefined;
+
+                    const cartStore = useCartStore.getState();
+                    cartStore.addItem({
+                      id: variantId,
+                      name: product.name,
+                      store: vendorName,
+                      price: price,
+                      image: imageUrl,
+                      productID: productId,
+                      variantID: variantId,
+                      vendorId: ownerId,
+                      vendorName: vendorName,
+                      pickupLocation: pickupLocation,
+                    });
+                  } catch (error) {
+                    console.error('Failed to fetch vendor details:', error);
+                    const cartStore = useCartStore.getState();
+                    cartStore.addItem({
+                      id: variantId,
+                      name: product.name,
+                      store: product.name || 'Vendor',
+                      price: price,
+                      image: imageUrl,
+                      productID: productId,
+                      variantID: variantId,
+                      vendorId: ownerId,
+                      vendorName: product.name || 'Vendor',
+                    });
+                  } finally {
+                    setAddingProductId(null);
+                  }
+                };
+
+                 return (
+                   <motion.div
+                     key={variantId || idx}
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     transition={{ delay: 0.6 + idx * 0.1 }}
+                     whileTap={{ scale: 0.98 }}
+                     className="min-w-36 bg-white rounded-2xl p-2 border border-border/50 shadow-sm flex flex-col items-start text-start"
+                   >
+                     <div className="w-full h-20 rounded-lg overflow-hidden mb-2.5 bg-gray-100">
+                       <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                     </div>
+                     <h4 className="font-bold text-xs text-foreground line-clamp-1">{product.name}</h4>
+                     <p className="text-[11px] text-foreground/50 mt-0.5">
+                       KES {price.toLocaleString()} {unit}
+                     </p>
+                     <Button
+                       variant="ghost"
+                       onClick={handleAddToCart}
+                       disabled={addingProductId === productId}
+                       className="mt-2.5 w-full bg-primary/5 text-primary hover:bg-primary/10 rounded-lg h-7 text-[10px] font-bold px-2 py-0"
+                     >
+                       {addingProductId === productId ? (
+                         <span>Adding...</span>
+                       ) : (
+                         <>
+                           <ShoppingCart className="w-3.5 h-3.5 mr-1" /> Buy
+                         </>
+                       )}
+                     </Button>
+                   </motion.div>
+                 );
+              })
+            )}
           </div>
         </section>
       </div>

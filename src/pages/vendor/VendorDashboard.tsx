@@ -108,7 +108,7 @@ export const VendorDashboard: React.FC = () => {
   const { data: recentOrders = [], isLoading: isLoadingRecent } = useQuery<any[]>({
     queryKey: ['vendorOrders', 'recent'],
     queryFn: async () => {
-      const response = await productApi.getVendorOrders({ status: 'completed,delivered,cancelled' });
+      const response = await productApi.getVendorOrders({ orderStatus: 'completed,delivered,cancelled' });
       console.log('Fetched Recent Vendor Orders:', response);
       return response || [];
     },
