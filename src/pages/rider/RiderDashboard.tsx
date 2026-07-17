@@ -300,7 +300,7 @@ export const RiderDashboard: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-[10px] text-foreground/50 font-medium">Today's earnings</p>
-            <p className="text-lg font-extrabold text-foreground leading-none">KES {totalEarnings.toLocaleString()}</p>
+            <p className="text-lg font-extrabold text-foreground leading-none">KES {stats?.earnings ? stats.earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : totalEarnings.toLocaleString()}</p>
           </div>
           <button className="relative p-2">
             <Bell className="w-5 h-5 text-foreground/70" />
@@ -648,10 +648,10 @@ export const RiderDashboard: React.FC = () => {
       <BottomSheet
         isOpen={showLocationSheet}
         onClose={handleCancelLocationAccess}
-        className="max-h-[90vh]"
+        className="max-h-[90vh] z-100"
         animate={false}
       >
-        <div className="pb-8 text-foreground px-4">
+        <div className="pb-8 text-foreground px-4 ">
           <div className="flex flex-col items-center text-center mt-4 mb-6">
             <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <MapPin className="w-7 h-7 text-primary animate-bounce" />

@@ -1,11 +1,12 @@
 import { BackgroundGeolocation } from '@capgo/background-geolocation';
 import { CapacitorHttp } from '@capacitor/core';
 import { productApi } from '@/lib/api';
+import { BASE_URL, TENANT_ID } from '@/config';
 
 let isTrackingActive = false;
 let currentOrderId: string | null = null;
 
-export const TRACKING_DISTANCE_FILTER_METERS = 100; // GPS triggers after moving 10 meters
+export const TRACKING_DISTANCE_FILTER_METERS = 1000; // GPS triggers after moving 1000 meters
 
 export const startDeliveryTracking = async (orderId: string): Promise<void> => {
   try {
@@ -37,9 +38,19 @@ export const startDeliveryTracking = async (orderId: string): Promise<void> => {
       };
 
       try {
-        const response = await CapacitorHttp.post({
-          url: `${process.env.VITE_API_BASE_URL || 'http://localhost:8000'}/orders/${currentOrderId}/route`,
-          headers: { 'Content-Type': 'application/json' },
+        const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-tenant-id': TENANT_ID,
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await CapacitorHttp.patch({
+          url: `${BASE_URL}/orders/${currentOrderId}/route`,
+          headers,
           data: payload,
         });
 
@@ -73,7 +84,10 @@ export const stopDeliveryTracking = async (): Promise<void> => {
     await BackgroundGeolocation.stop();
     console.log(`[BackgroundGeolocation] Tracking stopped for order: ${orderId}`);
 
-    await flushOfflineQueue();
+    // Flush offline queue before nullifying currentOrderId
+    if (orderId) {
+      await flushOfflineQueueForOrder(orderId);
+    }
   } catch (error) {
     console.error('[BackgroundGeolocation] Error stopping tracking:', error);
   }
@@ -99,21 +113,41 @@ const saveToOfflineQueue = async (data: Record<string, unknown>): Promise<void> 
 };
 
 const flushOfflineQueue = async (): Promise<void> => {
+  // Use the current order ID if available
+  const orderId = currentOrderId;
+  if (!orderId) {
+    console.log('[BackgroundGeolocation] No active order ID, skipping flush');
+    return;
+  }
+  await flushOfflineQueueForOrder(orderId);
+};
+
+const flushOfflineQueueForOrder = async (orderId: string): Promise<void> => {
   try {
     const queue = JSON.parse(localStorage.getItem('offline_locations') || '[]');
     if (queue.length === 0) return;
 
-    console.log(`[BackgroundGeolocation] Flushing ${queue.length} offline locations`);
+    console.log(`[BackgroundGeolocation] Flushing ${queue.length} offline locations for order: ${orderId}`);
 
-    const response = await CapacitorHttp.post({
-      url: `${process.env.VITE_API_BASE_URL || 'http://localhost:8000'}/orders/${currentOrderId || 'unknown'}/route/batch`,
-      headers: { 'Content-Type': 'application/json' },
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'x-tenant-id': TENANT_ID,
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await CapacitorHttp.patch({
+      url: `${BASE_URL}/orders/${orderId}/route/batch`,
+      headers,
       data: { positions: queue },
     });
 
     if (response.status === 200) {
       localStorage.removeItem('offline_locations');
-      console.log(`[BackgroundGeolocation] Offline queue flushed successfully`);
+      console.log(`[BackgroundGeolocation] Offline queue flushed successfully for order: ${orderId}`);
     }
   } catch (error) {
     console.log('[BackgroundGeolocation] Still offline, keeping locations buffered.');

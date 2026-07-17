@@ -31,6 +31,7 @@ export const MarkAsReadyAssignRider: React.FC = () => {
   const [autoAssign, setAutoAssign] = useState(false);
   const [pickupTime, setPickupTime] = useState(5);
   const [note, setNote] = useState('');
+  const [showAllRiders, setShowAllRiders] = useState(false);
 
   const orderFromState = location.state?.order;
   const orderId = orderFromState?.orderID || location.state?.orderId;
@@ -49,11 +50,12 @@ export const MarkAsReadyAssignRider: React.FC = () => {
   const longitude = order?.extraData?.vendor?.location?.longitude;
 
   const { data: fetchedRiders = [] } = useQuery<any[]>({
-    queryKey: ['nearbyRiders', latitude, longitude],
+    queryKey: ['nearbyRiders', latitude, longitude, showAllRiders],
     queryFn: async () => {
       if (!latitude || !longitude) return [];
-      const response = await productApi.getAllRiders(latitude, longitude, 'motorbike', 3);
-      console.log('Fetched Nearby Riders:', response);
+      const limit = showAllRiders ? 20 : 3;
+      const response = await productApi.getAllRiders(latitude, longitude, 'motorbike', limit);
+      console.log(`Fetched ${limit} Nearby Riders:`, response);
       return response || [];
     },
     enabled: !!latitude && !!longitude,
@@ -109,6 +111,7 @@ export const MarkAsReadyAssignRider: React.FC = () => {
         'on_the_way',
         message,
         note,
+        undefined, // pickedUp parameter
         riderObj
       );
       queryClient.invalidateQueries({ queryKey: ['vendorOrders'] });
@@ -339,8 +342,11 @@ export const MarkAsReadyAssignRider: React.FC = () => {
                 No nearby riders found for this vendor location.
               </div>
             )}
-            <button className="w-full py-3 text-center text-primary text-xs font-semibold flex items-center justify-center gap-1 hover:bg-secondary/50 transition-colors">
-              View more riders <ChevronDown className="w-3.5 h-3.5" />
+            <button 
+              onClick={() => setShowAllRiders(!showAllRiders)}
+              className="w-full py-3 text-center text-primary text-xs font-semibold flex items-center justify-center gap-1 hover:bg-secondary/50 transition-colors"
+            >
+              {showAllRiders ? 'Show less riders' : 'View more riders'} {showAllRiders ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           </div>
         </motion.div>

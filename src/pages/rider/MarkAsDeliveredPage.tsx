@@ -354,7 +354,7 @@ export const MarkAsDeliveredPage: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="font-bold text-sm text-foreground shrink-0">Order #{(order.orderNo || order.orderID).slice(-6).toUpperCase()}</span>
+              <span className="font-bold text-sm text-foreground shrink-0">Order #{String(order.orderNo || order.orderID).slice(-6).toUpperCase()}</span>
               <Badge
                 variant="success"
                 className="bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-full truncate"

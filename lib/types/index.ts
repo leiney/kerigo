@@ -646,11 +646,7 @@ export interface RegisterRiderResponse {
 }
 
 export enum OrderTrackingStatus {
-  RECEIVED = 'new',
-  PREPARING = 'preparing',
-  ON_THE_WAY = 'on_the_way',
-  DELIVERED = 'delivered',
-  CANCELLED = 'cancelled',
+c
 }
 
 export interface RiderDashboardStats {

@@ -23,7 +23,9 @@ import {
   Star,
   Bell,
   Clock,
-  Package
+  Package,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import PullToRefresh from '../../components/PullToRefresh';
@@ -48,6 +50,8 @@ const EmptyState: React.FC<{ message: string; subMessage?: string }> = ({ messag
   );
 };
 
+type TabType = 'new' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled';
+
 export const VendorDashboard: React.FC = () => {
   const navigate = useNavigate();
 
@@ -60,70 +64,71 @@ export const VendorDashboard: React.FC = () => {
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
+  // Tab State
+  const [activeTab, setActiveTab] = useState<TabType>('new');
+
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
   const queryClient = useQueryClient();
 
-  // Fetch Vendor Orders by status parameters
-  const { data: newOrders = [], isLoading: isLoadingNew } = useQuery<any[]>({
-    queryKey: ['vendorOrders', 'new'],
+  // Fetch Vendor Orders by status with pagination
+  const { data: ordersData, isLoading } = useQuery<any>({
+    queryKey: ['vendorOrders', activeTab, page],
     queryFn: async () => {
-      const response = await productApi.getVendorOrders({ orderStatus: 'new' });
-      console.log('Fetched New Vendor Orders:', response);
-      return response || [];
+      const params: any = { 
+        orderStatus: activeTab,
+        page,
+        size: pageSize
+      };
+      const response = await productApi.getVendorOrders(params);
+      console.log(`Fetched ${activeTab} Vendor Orders:`, response);
+      console.log('Response type:', typeof response, Array.isArray(response) ? 'array' : 'object');
+      return response || { count: 0, results: [] };
     },
     staleTime: 1000 * 15,
     refetchOnWindowFocus: false,
   });
 
-  const {data: stats} = useQuery<VendorDashboardStats>({
-      queryKey: ['vendorstats'],
-      queryFn: async () =>{
-        const response = await productApi.fetchVendorDashboardStats()
-        return response || {}
-      }
-    })
-  console.log(stats)
-
-  const { data: preparingOrders = [], isLoading: isLoadingPreparing } = useQuery<any[]>({
-    queryKey: ['vendorOrders', 'preparing'],
+  const { data: stats } = useQuery<VendorDashboardStats>({
+    queryKey: ['vendorstats'],
     queryFn: async () => {
-      const response = await productApi.getVendorOrders({ orderStatus: 'preparing' });
-      console.log('Fetched Preparing Vendor Orders:', response);
-      return response || [];
+      const response = await productApi.fetchVendorDashboardStats()
+      return response || {}
+    }
+  })
+
+  // Handle both paginated and non-paginated responses
+  const orders = Array.isArray(ordersData) ? ordersData : (ordersData?.results || ordersData || []);
+  const totalCount = Array.isArray(ordersData) ? ordersData.length : (ordersData?.count || 0);
+  const totalPages = Array.isArray(ordersData) ? 1 : Math.ceil(totalCount / pageSize);
+
+  // Reset to page 1 when tab changes
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setPage(1);
+  };
+
+  const isLoadingOrders = isLoading;
+
+  // Compute stats from all orders (we'll fetch these separately or compute from all tabs)
+  const { data: allOrdersData } = useQuery<{ results: any[] }>({
+    queryKey: ['vendorOrders', 'all'],
+    queryFn: async () => {
+      const response = await productApi.getVendorOrders({});
+      return response || { results: [] };
     },
     staleTime: 1000 * 15,
     refetchOnWindowFocus: false,
   });
 
-  const { data: readyOrders = [], isLoading: isLoadingReady } = useQuery<any[]>({
-    queryKey: ['vendorOrders', 'on_the_way'],
-    queryFn: async () => {
-      const response = await productApi.getVendorOrders({ orderStatus: 'on_the_way' });
-      console.log('Fetched Ready Vendor Orders:', response);
-      return response || [];
-    },
-    staleTime: 1000 * 15,
-    refetchOnWindowFocus: false,
-  });
-
-  const { data: recentOrders = [], isLoading: isLoadingRecent } = useQuery<any[]>({
-    queryKey: ['vendorOrders', 'recent'],
-    queryFn: async () => {
-      const response = await productApi.getVendorOrders({ orderStatus: 'completed,delivered,cancelled' });
-      console.log('Fetched Recent Vendor Orders:', response);
-      return response || [];
-    },
-    staleTime: 1000 * 15,
-    refetchOnWindowFocus: false,
-  });
-
-  const isLoading = isLoadingNew || isLoadingPreparing || isLoadingReady || isLoadingRecent;
-
-  // Compute stats
-  const todayRevenue = recentOrders
+  const allOrders = allOrdersData?.results || [];
+  const todayRevenue = allOrders
     .filter((o: any) => o.orderStatus === 'delivered' || o.orderStatus === 'completed')
     .reduce((sum: number, o: any) => sum + (o.subTotal || 0), 0);
 
-  const totalOrdersCount = newOrders.length + preparingOrders.length + readyOrders.length + recentOrders.length;
+  const totalOrdersCount = allOrders.length;
 
   const handleOpenConfirm = (order: any) => {
     setSelectedOrder(order);
@@ -176,10 +181,11 @@ export const VendorDashboard: React.FC = () => {
     }
   };
 
-  const renderOrderCard = (order: any, idx: number, type: 'new' | 'preparing' | 'ready') => {
-    const isNew = type === 'new';
-    const isPreparing = type === 'preparing';
-    const isReady = type === 'ready';
+  const renderOrderCard = (order: any, idx: number) => {
+    const orderStatus = order.orderStatus || activeTab;
+    const isNew = orderStatus === 'new';
+    const isPreparing = orderStatus === 'preparing';
+    const isReady = orderStatus === 'on_the_way';
 
     return (
       <motion.div
@@ -286,668 +292,561 @@ export const VendorDashboard: React.FC = () => {
     );
   };
 
-  const renderRecentOrderRow = (order: any, idx: number) => {
-    const isCompleted = order.orderStatus === 'delivered' || order.orderStatus === 'completed';
-    const statusLabel = getOrderStatusLabel(order.orderStatus);
-    return (
-      <div
-        key={order.orderID}
-        onClick={() => {
-          setSelectedOrderForDetail(order);
-          setShowDetailModal(true);
-        }}
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-secondary/20 transition-colors"
-      >
-        <div>
-          <p className="font-bold text-xs">#{order.orderNo || order.orderID.slice(-6).toUpperCase()}</p>
-          <p className="text-[11px] text-foreground/50 mt-0.5">
-            {new Date(order.orderDate).toLocaleDateString()} {formatOrderTime(order.orderDate)}
-          </p>
-        </div>
-        <div className="text-center">
-          <p className="font-bold text-xs">KES {(order.subTotal || 0).toLocaleString()}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={isCompleted ? 'success' : 'danger'}
-            className={`${isCompleted
-                ? 'bg-primary/10 text-primary'
-                : 'bg-error/10 text-error'
-              } text-[10px] font-semibold px-2 py-0.5 rounded-full border-0`}
-          >
-            {statusLabel}
-          </Badge>
-          <ChevronRight className="w-3.5 h-3.5 text-foreground/30" />
-        </div>
-      </div>
-    );
-  };
-
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['vendorOrders'] });
   };
 
+  const tabs: { key: TabType; label: string }[] = [
+    { key: 'new', label: 'New' },
+    { key: 'preparing', label: 'Preparing' },
+    { key: 'on_the_way', label: 'Ready' },
+    { key: 'delivered', label: 'Delivered' },
+    { key: 'cancelled', label: 'Cancelled' },
+  ];
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-background text-foreground font-sans antialiased pt-20 pb-20">
-      {/* --- Header --- */}
-      <header className="px-4 p-4 mb-2 flex items-center justify-between border-b border-border top-0 fixed w-full bg-background z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-            <ShoppingBag className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">Dashboard</h1>
-            <p className="text-[10px] text-foreground/50">Overview & Stats</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="relative p-2">
-            <Bell className="w-5 h-5 text-foreground/70" />
-            <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-background">
-              3
-            </span>
-          </button>
-        </div>
-      </header>
-
-      {/* --- Revenue Summary --- */}
-      <section className="px-4  mb-6">
-        <div className="bg-primary rounded-2xl p-3 text-white shadow-sm shadow-primary/10">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-sm text-white/90">Today's Revenue</p>
-              <div className="flex items-end relative gap-3">
-                <p className="text-xl sm:text-2xl font-extrabold tracking-tight">KES {stats?.revenue ? stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : todayRevenue.toLocaleString()}</p>
-              </div>
+        {/* --- Header --- */}
+        <header className="px-4 p-4 mb-2 flex items-center justify-between border-b border-border top-0 fixed w-full bg-background z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <ShoppingBag className="w-5 h-5 text-primary" />
             </div>
-
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-center text-right">
-                <Package className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{stats?.orders ?? totalOrdersCount}</span>
-                <span className="text-[11px] text-white/75">Orders</span>
-              </div>
-              <div className="flex flex-col items-center text-right">
-                <Clock className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{stats?.avgPrepTime ?? staticStats.prepTime}</span>
-                <span className="text-[11px] text-white/75">Avg. prep time</span>
-              </div>
-              <div className="flex flex-col items-center text-right">
-                <Star className="w-4 h-4 text-white/90 mb-1" />
-                <span className="font-bold text-sm">{stats?.avgRating ? stats.avgRating.toFixed(1) : staticStats.rating}</span>
-                <span className="text-[11px] text-white/75">Rating</span>
-              </div>
+            <div>
+              <h1 className="text-base font-bold text-foreground">Dashboard</h1>
+              <p className="text-[10px] text-foreground/50">Overview & Stats</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* --- New Orders Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-base">New Orders</h2>
-            <Badge variant="default" className="bg-primary/10 text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full border-0">
-              {newOrders.length}
-            </Badge>
-          </div>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'new' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1].map((i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
-                    <div className="space-y-2">
-                      <div className="h-4 w-28 bg-secondary rounded-lg" />
-                      <div className="h-3 w-16 bg-secondary rounded-lg" />
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-right">
-                    <div className="h-4 w-16 bg-secondary rounded-lg" />
-                    <div className="h-3 w-12 bg-secondary rounded-lg" />
-                  </div>
-                </div>
-                <div className="space-y-2 pt-2 border-t border-border/40">
-                  <div className="h-3.5 w-full bg-secondary rounded-lg" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : newOrders.length === 0 ? (
-          <EmptyState message="No new orders" subMessage="New orders will appear here as they are placed by customers." />
-        ) : (
-          <div className="space-y-3">
-            {newOrders.slice(0, 3).map((order, idx) => renderOrderCard(order, idx, 'new'))}
-          </div>
-        )}
-      </section>
-
-      {/* --- Preparing Orders Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-base">Preparing Orders</h2>
-            <Badge variant="default" className="bg-warning/10 text-warning text-[11px] font-semibold px-2 py-0.5 rounded-full border-0">
-              {preparingOrders.length}
-            </Badge>
-          </div>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'preparing' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1].map((i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
-                    <div className="space-y-2">
-                      <div className="h-4 w-28 bg-secondary rounded-lg" />
-                      <div className="h-3 w-16 bg-secondary rounded-lg" />
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-right">
-                    <div className="h-4 w-16 bg-secondary rounded-lg" />
-                    <div className="h-3 w-12 bg-secondary rounded-lg" />
-                  </div>
-                </div>
-                <div className="space-y-2 pt-2 border-t border-border/40">
-                  <div className="h-3.5 w-full bg-secondary rounded-lg" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : preparingOrders.length === 0 ? (
-          <EmptyState message="No preparing orders" subMessage="Confirmed orders that you are preparing will show up here." />
-        ) : (
-          <div className="space-y-3">
-            {preparingOrders.slice(0, 3).map((order, idx) => renderOrderCard(order, idx, 'preparing'))}
-          </div>
-        )}
-      </section>
-
-      {/* --- Ready for Pickup Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h2 className="font-bold text-base">Ready for Pickup</h2>
-            <Badge variant="default" className="bg-primary/10 text-primary text-[11px] font-semibold px-2 py-0.5 rounded-full border-0">
-              {readyOrders.length}
-            </Badge>
-          </div>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'ready' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1].map((i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
-                    <div className="space-y-2">
-                      <div className="h-4 w-28 bg-secondary rounded-lg" />
-                      <div className="h-3 w-16 bg-secondary rounded-lg" />
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-right">
-                    <div className="h-4 w-16 bg-secondary rounded-lg" />
-                    <div className="h-3 w-12 bg-secondary rounded-lg" />
-                  </div>
-                </div>
-                <div className="space-y-2 pt-2 border-t border-border/40">
-                  <div className="h-3.5 w-full bg-secondary rounded-lg" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : readyOrders.length === 0 ? (
-          <EmptyState message="No orders ready for pickup" subMessage="Orders marked as ready for rider collection will be listed here." />
-        ) : (
-          <div className="space-y-3">
-            {readyOrders.slice(0, 3).map((order, idx) => renderOrderCard(order, idx, 'ready'))}
-          </div>
-        )}
-      </section>
-
-      {/* --- Recent Orders Section --- */}
-      <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-base">Recent Orders</h2>
-          <button onClick={() => navigate('/vendor/orders', { state: { tab: 'recent' } })} className="text-primary text-xs font-semibold flex items-center gap-1">
-            View all <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        {isLoading ? (
-          <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50 animate-pulse">
-            {[1, 2].map((i) => (
-              <div key={i} className="flex items-center justify-between p-4">
-                <div className="space-y-2">
-                  <div className="h-3.5 w-20 bg-secondary rounded-lg" />
-                  <div className="h-3 w-32 bg-secondary rounded-lg" />
-                </div>
-                <div>
-                  <div className="h-3.5 w-16 bg-secondary rounded-lg" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-16 bg-secondary rounded-full" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : recentOrders.length === 0 ? (
-          <EmptyState message="No recent orders" subMessage="Completed and cancelled orders will be archived here." />
-        ) : (
-          <div className="bg-white rounded-2xl border border-border/50 shadow-sm overflow-hidden divide-y divide-border/50">
-            {recentOrders.slice(0, 5).map((order, idx) => renderRecentOrderRow(order, idx))}
-          </div>
-        )}
-      </section>
-
-      {/* --- Bottom Navigation --- */}
-      <BottomNav />
-
-      {/* --- Bottom Sheets --- */}
-
-      {/* 1. Confirm Order Bottom Sheet */}
-      <BottomSheet
-        isOpen={showConfirmSheet}
-        onClose={() => setShowConfirmSheet(false)}
-        className="max-h-[90vh]"
-        animate={false}
-      >
-        <div className="pb-8 text-foreground">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="text-lg font-bold">
-              Confirm Order #{selectedOrder?.orderNo || selectedOrder?.orderID?.slice(-6).toUpperCase()}
-            </h3>
-          </div>
-
-          <p className="text-sm text-foreground/60 mb-4">
-            You are about to confirm and start preparing this order.
-          </p>
-
-          {/* Customer & amount card */}
-          <div className="bg-white border border-border/50 rounded-xl p-4 mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <p className="font-bold text-sm">{selectedOrder?.extraData?.customer?.name || 'Customer'}</p>
-                <p className="text-[11px] text-foreground/50">
-                  {selectedOrder?.shippingCharges > 0 ? 'Delivery' : 'Pickup'} • {selectedOrder?.extraData?.distanceKm ? `${selectedOrder.extraData.distanceKm.toFixed(1)} km` : 'N/A'}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-sm">KES {(selectedOrder?.subTotal || 0).toLocaleString()}</p>
-              <Badge variant="success" className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full mt-1 border-0">
-                Paid
-              </Badge>
-            </div>
-          </div>
-
-          {/* Confirmation summary card */}
-          <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-              </div>
-              <div>
-                <p className="font-bold text-sm text-primary">Order will be confirmed</p>
-                <p className="text-[11px] text-foreground/60 mt-0.5">The customer will be notified and the order will move to Preparing Orders.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* What happens next */}
-          <div className="bg-white border border-border/50 rounded-xl p-4 mb-6">
-            <p className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-3">What happens next?</p>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Clock className="w-4 h-4 text-warning mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold">Start preparing</p>
-                  <p className="text-[11px] text-foreground/50">The prep timer will start once you confirm.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Truck className="w-4 h-4 text-primary mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold">Rider assigned</p>
-                  <p className="text-[11px] text-foreground/50">A delivery partner will be assigned to pickup.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Bell className="w-4 h-4 text-info mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold">Customer notified</p>
-                  <p className="text-[11px] text-foreground/50">The customer will receive order updates.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Button className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3" onClick={handleConfirmOrder}>
-              Confirm Order
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full border-primary text-primary hover:bg-primary/5 font-bold py-3"
-              onClick={() => setShowConfirmSheet(false)}
-            >
-              Go Back
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
-
-      {/* 2. Cancel Order Bottom Sheet */}
-      <BottomSheet isOpen={showCancelSheet} animate={false} onClose={() => setShowCancelSheet(false)} className="max-h-[90vh]">
-        <div className="pb-8 text-foreground">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-bold text-error">Cancel Order #{selectedOrder?.orderNo || selectedOrder?.orderID?.slice(-6).toUpperCase()}</h3>
-            <button onClick={() => setShowCancelSheet(false)}>
-              <XCircle className="w-6 h-6 text-foreground/30" />
+          <div className="flex items-center gap-3">
+            <button className="relative p-2">
+              <Bell className="w-5 h-5 text-foreground/70" />
+              <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-background">
+                3
+              </span>
             </button>
           </div>
+        </header>
 
-          <p className="text-sm text-foreground/60 mb-4">Canceling this order will notify the customer and process a refund.</p>
-
-          {/* Customer & amount card */}
-          <div className="bg-white border border-border/50 rounded-xl p-4 mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-error/10 rounded-full flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-error" />
-              </div>
-              <div>
-                <p className="font-bold text-sm">{selectedOrder?.extraData?.customer?.name || 'Customer'}</p>
-                <p className="text-[11px] text-foreground/50">
-                  {selectedOrder?.shippingCharges > 0 ? 'Delivery' : 'Pickup'} • {selectedOrder?.extraData?.distanceKm ? `${selectedOrder.extraData.distanceKm.toFixed(1)} km` : 'N/A'}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-sm">KES {(selectedOrder?.subTotal || 0).toLocaleString()}</p>
-              <Badge variant="success" className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full mt-1 border-0">Paid</Badge>
-            </div>
-          </div>
-
-          {/* Refund summary card */}
-          <div className="bg-error/5 border border-error/10 rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="font-bold text-sm">Refund to customer</p>
-                  <p className="text-[11px] text-foreground/50 mt-0.5">The full amount will be refunded to the customer.</p>
+        {/* --- Revenue Summary --- */}
+        <section className="px-4 mb-6">
+          <div className="bg-primary rounded-2xl p-3 text-white shadow-sm shadow-primary/10">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm text-white/90">Today's Revenue</p>
+                <div className="flex items-end relative gap-3">
+                  <p className="text-xl sm:text-2xl font-extrabold tracking-tight">KES {stats?.revenue ? stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : todayRevenue.toLocaleString()}</p>
                 </div>
               </div>
-              <span className="font-bold text-primary text-xs ">KES {(selectedOrder?.subTotal || 0).toLocaleString()}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="w-5 h-5 text-primary" />
-              <p className="text-[11px] text-foreground/50">Refund will be processed automatically to the original payment method.</p>
+
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col items-center text-right">
+                  <Package className="w-4 h-4 text-white/90 mb-1" />
+                  <span className="font-bold text-sm">{stats?.orders ?? totalOrdersCount}</span>
+                  <span className="text-[11px] text-white/75">Orders</span>
+                </div>
+                <div className="flex flex-col items-center text-right">
+                  <Clock className="w-4 h-4 text-white/90 mb-1" />
+                  <span className="font-bold text-sm">{stats?.avgPrepTime ?? staticStats.prepTime}</span>
+                  <span className="text-[11px] text-white/75">Avg. prep time</span>
+                </div>
+                <div className="flex flex-col items-center text-right">
+                  <Star className="w-4 h-4 text-white/90 mb-1" />
+                  <span className="font-bold text-sm">{stats?.avgRating ? stats.avgRating.toFixed(1) : staticStats.rating}</span>
+                  <span className="text-[11px] text-white/75">Rating</span>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div className="mb-6">
-            <label className="text-xs font-bold text-foreground/60 mb-2 block">Reason for cancellation <span className="text-foreground/40 font-normal">(optional)</span></label>
-            <div className="bg-white border border-border rounded-xl px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-foreground/40">Select a reason</span>
-              <ChevronDown className="w-4 h-4 text-foreground/30" />
+        {/* --- Orders Section with Tabs --- */}
+        <section className="px-4 mb-6">
+          {/* Tabs */}
+          <div className="flex p-1 bg-white border border-border/50 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => handleTabChange(tab.key)}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap min-w-fit ${activeTab === tab.key
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-foreground/50 hover:bg-secondary'
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Order Count */}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-base">
+              {tabs.find(t => t.key === activeTab)?.label} Orders
+            </h2>
+            <span className="text-xs text-foreground/50 font-medium">
+              {totalCount} {totalCount === 1 ? 'order' : 'orders'}
+            </span>
+          </div>
+
+          {/* Order Cards */}
+          {isLoadingOrders ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm animate-pulse space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-full bg-secondary shrink-0" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-28 bg-secondary rounded-lg" />
+                        <div className="h-3 w-16 bg-secondary rounded-lg" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-right">
+                      <div className="h-4 w-16 bg-secondary rounded-lg" />
+                      <div className="h-3 w-12 bg-secondary rounded-lg" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 pt-2 border-t border-border/40">
+                    <div className="h-3.5 w-full bg-secondary rounded-lg" />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : orders.length === 0 ? (
+            <EmptyState 
+              message={`No ${activeTab.replace('_', ' ')} orders`} 
+              subMessage={`${tabs.find(t => t.key === activeTab)?.label} orders will appear here.`} 
+            />
+          ) : (
+            <>
+              <div className="space-y-3">
+                {orders.map((order: any, idx: number) => renderOrderCard(order, idx))}
+              </div>
 
-          <div className="space-y-3">
-            <Button className="w-full bg-error hover:bg-error/95 text-white font-bold py-3 gap-2" onClick={handleCancelOrder}>
-              <RotateCcw className="w-4 h-4" /> Cancel Order & Refund
-            </Button>
-            <Button variant="outline" className="w-full border-success text-primary hover:bg-primary/5 font-bold py-3" onClick={() => setShowCancelSheet(false)}>
-              Keep Order
-            </Button>
-          </div>
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="flex items-center gap-1 px-4 py-2 bg-white border border-border/50 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </button>
+                  <span className="text-xs text-foreground/60 font-medium">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="flex items-center gap-1 px-4 py-2 bg-white border border-border/50 rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+                  >
+                    Next
+                    <ChevronRightIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
 
-          <p className="text-center text-[10px] text-foreground/40 mt-4 flex items-center justify-center gap-1"><Info className="w-3 h-3" /> This order will be removed from New Orders.</p>
-        </div>
-      </BottomSheet>
+        {/* --- Bottom Navigation --- */}
+        <BottomNav />
 
-      {/* 3. Full Screen Order Details Modal */}
-      <AnimatePresence>
-        {showDetailModal && selectedOrderForDetail && (
-          <motion.div
-            initial={{ opacity: 0, y: '100%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            className="fixed inset-0 bg-background text-foreground z-50 overflow-y-auto flex flex-col"
-          >
-            {/* Header */}
-            <header className="px-4 py-4 flex items-center justify-between border-b border-border bg-white sticky top-0 z-10 shrink-0">
+        {/* --- Bottom Sheets --- */}
+
+        {/* 1. Confirm Order Bottom Sheet */}
+        <BottomSheet
+          isOpen={showConfirmSheet}
+          onClose={() => setShowConfirmSheet(false)}
+          className="max-h-[90vh]"
+          animate={false}
+        >
+          <div className="pb-8 text-foreground">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-bold">
+                Confirm Order #{selectedOrder?.orderNo || selectedOrder?.orderID?.slice(-6).toUpperCase()}
+              </h3>
+            </div>
+
+            <p className="text-sm text-foreground/60 mb-4">
+              You are about to confirm and start preparing this order.
+            </p>
+
+            {/* Customer & amount card */}
+            <div className="bg-white border border-border/50 rounded-xl p-4 mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">{selectedOrder?.extraData?.customer?.name || 'Customer'}</p>
+                  <p className="text-[11px] text-foreground/50">
+                    {selectedOrder?.shippingCharges > 0 ? 'Delivery' : 'Pickup'} • {selectedOrder?.extraData?.distanceKm ? `${selectedOrder.extraData.distanceKm.toFixed(1)} km` : 'N/A'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-sm">KES {(selectedOrder?.subTotal || 0).toLocaleString()}</p>
+                <Badge variant="success" className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full mt-1 border-0">
+                  Paid
+                </Badge>
+              </div>
+            </div>
+
+            {/* Confirmation summary card */}
+            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-primary">Order will be confirmed</p>
+                  <p className="text-[11px] text-foreground/60 mt-0.5">The customer will be notified and the order will move to Preparing Orders.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* What happens next */}
+            <div className="bg-white border border-border/50 rounded-xl p-4 mb-6">
+              <p className="text-xs font-bold text-foreground/40 uppercase tracking-wider mb-3">What happens next?</p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Clock className="w-4 h-4 text-warning mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold">Start preparing</p>
+                    <p className="text-[11px] text-foreground/50">The prep timer will start once you confirm.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Truck className="w-4 h-4 text-primary mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold">Rider assigned</p>
+                    <p className="text-[11px] text-foreground/50">A delivery partner will be assigned to pickup.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Bell className="w-4 h-4 text-info mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold">Customer notified</p>
+                    <p className="text-[11px] text-foreground/50">The customer will receive order updates.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3" onClick={handleConfirmOrder}>
+                Confirm Order
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full border-primary text-primary hover:bg-primary/5 font-bold py-3"
+                onClick={() => setShowConfirmSheet(false)}
+              >
+                Go Back
+              </Button>
+            </div>
+          </div>
+        </BottomSheet>
+
+        {/* 2. Cancel Order Bottom Sheet */}
+        <BottomSheet isOpen={showCancelSheet} animate={false} onClose={() => setShowCancelSheet(false)} className="max-h-[90vh]">
+          <div className="pb-8 text-foreground">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-bold text-error">Cancel Order #{selectedOrder?.orderNo || selectedOrder?.orderID?.slice(-6).toUpperCase()}</h3>
+              <button onClick={() => setShowCancelSheet(false)}>
+                <XCircle className="w-6 h-6 text-foreground/30" />
+              </button>
+            </div>
+
+            <p className="text-sm text-foreground/60 mb-4">Canceling this order will notify the customer and process a refund.</p>
+
+            {/* Customer & amount card */}
+            <div className="bg-white border border-border/50 rounded-xl p-4 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-error/10 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5 text-error" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">{selectedOrder?.extraData?.customer?.name || 'Customer'}</p>
+                  <p className="text-[11px] text-foreground/50">
+                    {selectedOrder?.shippingCharges > 0 ? 'Delivery' : 'Pickup'} • {selectedOrder?.extraData?.distanceKm ? `${selectedOrder.extraData.distanceKm.toFixed(1)} km` : 'N/A'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-sm">KES {(selectedOrder?.subTotal || 0).toLocaleString()}</p>
+                <Badge variant="success" className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full mt-1 border-0">Paid</Badge>
+              </div>
+            </div>
+
+            {/* Refund summary card */}
+            <div className="bg-error/5 border border-error/10 rounded-xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-bold text-sm">Refund to customer</p>
+                    <p className="text-[11px] text-foreground/50 mt-0.5">The full amount will be refunded to the customer.</p>
+                  </div>
+                </div>
+                <span className="font-bold text-primary text-xs ">KES {(selectedOrder?.subTotal || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-primary" />
+                <p className="text-[11px] text-foreground/50">Refund will be processed automatically to the original payment method.</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="text-xs font-bold text-foreground/60 mb-2 block">Reason for cancellation <span className="text-foreground/40 font-normal">(optional)</span></label>
+              <div className="bg-white border border-border rounded-xl px-4 py-3 flex items-center justify-between">
+                <span className="text-sm text-foreground/40">Select a reason</span>
+                <ChevronDown className="w-4 h-4 text-foreground/30" />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button className="w-full bg-error hover:bg-error/95 text-white font-bold py-3 gap-2" onClick={handleCancelOrder}>
+                <RotateCcw className="w-4 h-4" /> Cancel Order & Refund
+              </Button>
+              <Button variant="outline" className="w-full border-success text-primary hover:bg-primary/5 font-bold py-3" onClick={() => setShowCancelSheet(false)}>
+                Keep Order
+              </Button>
+            </div>
+
+            <p className="text-center text-[10px] text-foreground/40 mt-4 flex items-center justify-center gap-1"><Info className="w-3 h-3" /> This order will be removed from New Orders.</p>
+          </div>
+        </BottomSheet>
+
+        {/* 3. Full Screen Order Details Modal */}
+        <AnimatePresence>
+          {showDetailModal && selectedOrderForDetail && (
+            <motion.div
+              initial={{ opacity: 0, y: '100%' }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              className="fixed inset-0 bg-background text-foreground z-50 overflow-y-auto flex flex-col"
+            >
+              {/* Header */}
+              <header className="px-4 py-4 flex items-center justify-between border-b border-border bg-white sticky top-0 z-10 shrink-0">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-foreground" />
+                  </button>
+                  <div>
+                    <h1 className="text-base font-bold text-foreground">Order Details</h1>
+                    <p className="text-xs text-foreground/50">
+                      #{selectedOrderForDetail.orderNo || selectedOrderForDetail.orderID.slice(-6).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowDetailModal(false)}
-                  className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors"
+                  className="p-2 -mr-2 rounded-full hover:bg-secondary transition-colors"
                 >
-                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                  <X className="w-5 h-5 text-foreground/50" />
                 </button>
-                <div>
-                  <h1 className="text-base font-bold text-foreground">Order Details</h1>
-                  <p className="text-xs text-foreground/50">
-                    #{selectedOrderForDetail.orderNo || selectedOrderForDetail.orderID.slice(-6).toUpperCase()}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowDetailModal(false)}
-                className="p-2 -mr-2 rounded-full hover:bg-secondary transition-colors"
-              >
-                <X className="w-5 h-5 text-foreground/50" />
-              </button>
-            </header>
+              </header>
 
-            {/* Content */}
-            <div className="flex-1 p-4 space-y-5 pb-24">
-              {/* Status & Date */}
-              <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-foreground/45 uppercase tracking-wider font-semibold">Status</p>
-                  <Badge
-                    variant={
-                      selectedOrderForDetail.orderStatus === 'new'
-                        ? 'default'
-                        : selectedOrderForDetail.orderStatus === 'preparing'
-                          ? 'warning'
-                          : selectedOrderForDetail.orderStatus === 'on_the_way'
-                            ? 'info'
-                            : selectedOrderForDetail.orderStatus === 'delivered' || selectedOrderForDetail.orderStatus === 'completed'
-                              ? 'success'
-                              : 'danger'
-                    }
-                    className="mt-1 font-bold rounded-full capitalize px-3 py-1 text-xs border-0"
-                  >
-                    {getOrderStatusLabel(selectedOrderForDetail.orderStatus)}
-                  </Badge>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-foreground/45 uppercase tracking-wider font-semibold">Order Date</p>
-                  <p className="text-xs font-bold text-foreground mt-1">
-                    {new Date(selectedOrderForDetail.orderDate).toLocaleDateString()} {formatOrderTime(selectedOrderForDetail.orderDate)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Customer & Location */}
-              <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm space-y-4">
-                <div>
-                  <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-2">Customer details</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                      <Star className="w-5 h-5 text-star text-primary fill-primary" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-foreground">
-                        {selectedOrderForDetail.extraData?.customer?.name || 'Customer'}
-                      </p>
-                      <p className="text-xs text-foreground/50 mt-0.5">
-                        Distance: {selectedOrderForDetail.extraData?.distanceKm ? `${selectedOrderForDetail.extraData.distanceKm.toFixed(1)} km` : 'N/A'}
-                      </p>
-                    </div>
+              {/* Content */}
+              <div className="flex-1 p-4 space-y-5 pb-24">
+                {/* Status & Date */}
+                <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-foreground/45 uppercase tracking-wider font-semibold">Status</p>
+                    <Badge
+                      variant={
+                        selectedOrderForDetail.orderStatus === 'new'
+                          ? 'default'
+                          : selectedOrderForDetail.orderStatus === 'preparing'
+                            ? 'warning'
+                            : selectedOrderForDetail.orderStatus === 'on_the_way'
+                              ? 'info'
+                              : selectedOrderForDetail.orderStatus === 'delivered' || selectedOrderForDetail.orderStatus === 'completed'
+                                ? 'success'
+                                : 'danger'
+                      }
+                      className="mt-1 font-bold rounded-full capitalize px-3 py-1 text-xs border-0"
+                    >
+                      {getOrderStatusLabel(selectedOrderForDetail.orderStatus)}
+                    </Badge>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-foreground/45 uppercase tracking-wider font-semibold">Order Date</p>
+                    <p className="text-xs font-bold text-foreground mt-1">
+                      {new Date(selectedOrderForDetail.orderDate).toLocaleDateString()} {formatOrderTime(selectedOrderForDetail.orderDate)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-border/50">
-                  <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-2">Shipping location</p>
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                      <MapPin className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground">
-                        {selectedOrderForDetail.extraData?.location?.description ||
-                          selectedOrderForDetail.extraData?.location?.address ||
-                          'No address description provided'}
-                      </p>
-                      {selectedOrderForDetail.extraData?.location?.latitude && (
-                        <p className="text-[10px] text-foreground/45 mt-1 font-mono">
-                          Coordinates: {selectedOrderForDetail.extraData.location.latitude.toFixed(5)}, {selectedOrderForDetail.extraData.location.longitude.toFixed(5)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm space-y-3">
-                <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-1">Items list</p>
-                <div className="divide-y divide-border/50">
-                  {selectedOrderForDetail.orderItems?.map((item: any, idx: number) => {
-                    const itemImageId = item.variant?.images?.[0] || item.images?.[0];
-                    const itemImageUrl = itemImageId ? returnImageUrl(itemImageId.toString()) : '/logo.png';
-                    const price = item.variant?.price || item.price || 0;
-                    return (
-                      <div key={idx} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                        <div className="w-12 h-12 border border-border rounded-xl bg-secondary/30 overflow-hidden shrink-0 flex items-center justify-center">
-                          <img src={itemImageUrl} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-sm text-foreground truncate">{item.name}</h4>
-                          <p className="text-xs text-foreground/50 mt-0.5">
-                            KES {price.toLocaleString()} × {item.quantity}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-sm text-foreground">
-                            KES {(price * item.quantity).toLocaleString()}
-                          </p>
-                        </div>
+                {/* Customer & Location */}
+                <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm space-y-4">
+                  <div>
+                    <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-2">Customer details</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                        <Star className="w-5 h-5 text-star text-primary fill-primary" />
                       </div>
-                    );
-                  })}
+                      <div>
+                        <p className="font-bold text-sm text-foreground">
+                          {selectedOrderForDetail.extraData?.customer?.name || 'Customer'}
+                        </p>
+                        <p className="text-xs text-foreground/50 mt-0.5">
+                          Distance: {selectedOrderForDetail.extraData?.distanceKm ? `${selectedOrderForDetail.extraData.distanceKm.toFixed(1)} km` : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-border/50">
+                    <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-2">Shipping location</p>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">
+                          {selectedOrderForDetail.extraData?.location?.description ||
+                            selectedOrderForDetail.extraData?.location?.address ||
+                            'No address description provided'}
+                        </p>
+                        {selectedOrderForDetail.extraData?.location?.latitude && (
+                          <p className="text-[10px] text-foreground/45 mt-1 font-mono">
+                            Coordinates: {selectedOrderForDetail.extraData.location.latitude.toFixed(5)}, {selectedOrderForDetail.extraData.location.longitude.toFixed(5)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm space-y-3">
+                  <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-1">Items list</p>
+                  <div className="divide-y divide-border/50">
+                    {selectedOrderForDetail.orderItems?.map((item: any, idx: number) => {
+                      const itemImageId = item.variant?.images?.[0] || item.images?.[0];
+                      const itemImageUrl = itemImageId ? returnImageUrl(itemImageId.toString()) : '/logo.png';
+                      const price = item.variant?.price || item.price || 0;
+                      return (
+                        <div key={idx} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                          <div className="w-12 h-12 border border-border rounded-xl bg-secondary/30 overflow-hidden shrink-0 flex items-center justify-center">
+                            <img src={itemImageUrl} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-sm text-foreground truncate">{item.name}</h4>
+                            <p className="text-xs text-foreground/50 mt-0.5">
+                              KES {price.toLocaleString()} × {item.quantity}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-sm text-foreground">
+                              KES {(price * item.quantity).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Payment Summary */}
+                <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm space-y-3">
+                  <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-1">Payment summary</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between text-foreground/60">
+                      <span>Subtotal</span>
+                      <span>KES {(selectedOrderForDetail.subTotal || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-foreground/60">
+                      <span>Shipping Charges</span>
+                      <span>KES {(selectedOrderForDetail.shippingCharges || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-foreground/60">
+                      <span>Taxes</span>
+                      <span>KES {(selectedOrderForDetail.tax || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-base text-foreground pt-2 border-t border-border/50">
+                      <span>Total Amount</span>
+                      <span className="text-primary">KES {(selectedOrderForDetail.total || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Payment Summary */}
-              <div className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm space-y-3">
-                <p className="text-xs font-bold text-foreground/45 uppercase tracking-wider mb-1">Payment summary</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-foreground/60">
-                    <span>Subtotal</span>
-                    <span>KES {(selectedOrderForDetail.subTotal || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-foreground/60">
-                    <span>Shipping Charges</span>
-                    <span>KES {(selectedOrderForDetail.shippingCharges || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-foreground/60">
-                    <span>Taxes</span>
-                    <span>KES {(selectedOrderForDetail.tax || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-base text-foreground pt-2 border-t border-border/50">
-                    <span>Total Amount</span>
-                    <span className="text-primary">KES {(selectedOrderForDetail.total || 0).toLocaleString()}</span>
-                  </div>
-                </div>
+              {/* Footer Action Bar */}
+              <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-border bg-white z-10 flex gap-3 shadow-lg shrink-0">
+                {selectedOrderForDetail.orderStatus === 'new' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        handleOpenConfirm(selectedOrderForDetail);
+                      }}
+                      className="flex-1 bg-primary hover:bg-primary/95 text-white font-bold py-3"
+                    >
+                      Confirm Order
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowDetailModal(false);
+                        handleOpenCancel(selectedOrderForDetail);
+                      }}
+                      className="flex-1 border-error text-error hover:bg-error/5 font-bold py-3"
+                    >
+                      Cancel Order
+                    </Button>
+                  </>
+                )}
+                {selectedOrderForDetail.orderStatus === 'preparing' && (
+                  <Button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      navigate('/vendor/mark-as-ready-assign-rider', { state: { order: selectedOrderForDetail } });
+                    }}
+                    className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3"
+                  >
+                    Mark as Ready & Assign Rider
+                  </Button>
+                )}
+                {selectedOrderForDetail.orderStatus === 'on_the_way' && (
+                  <Button
+                    disabled
+                    className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 opacity-65 border-0"
+                  >
+                    Awaiting Rider Collection
+                  </Button>
+                )}
+                {(selectedOrderForDetail.orderStatus === 'delivered' || selectedOrderForDetail.orderStatus === 'completed') && (
+                  <Button
+                    disabled
+                    className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 opacity-65 border-0"
+                  >
+                    Order Delivered & Completed
+                  </Button>
+                )}
+                {selectedOrderForDetail.orderStatus === 'cancelled' && (
+                  <Button
+                    disabled
+                    className="w-full bg-error text-white font-bold py-3 opacity-65 border-0"
+                  >
+                    Order Cancelled
+                  </Button>
+                )}
               </div>
-            </div>
-
-            {/* Footer Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-border bg-white z-10 flex gap-3 shadow-lg shrink-0">
-              {selectedOrderForDetail.orderStatus === 'new' && (
-                <>
-                  <Button
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      handleOpenConfirm(selectedOrderForDetail);
-                    }}
-                    className="flex-1 bg-primary hover:bg-primary/95 text-white font-bold py-3"
-                  >
-                    Confirm Order
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      handleOpenCancel(selectedOrderForDetail);
-                    }}
-                    className="flex-1 border-error text-error hover:bg-error/5 font-bold py-3"
-                  >
-                    Cancel Order
-                  </Button>
-                </>
-              )}
-              {selectedOrderForDetail.orderStatus === 'preparing' && (
-                <Button
-                  onClick={() => {
-                    setShowDetailModal(false);
-                    navigate('/vendor/mark-as-ready-assign-rider', { state: { order: selectedOrderForDetail } });
-                  }}
-                  className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3"
-                >
-                  Mark as Ready & Assign Rider
-                </Button>
-              )}
-              {selectedOrderForDetail.orderStatus === 'on_the_way' && (
-                <Button
-                  disabled
-                  className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 opacity-65 border-0"
-                >
-                  Awaiting Rider Collection
-                </Button>
-              )}
-              {(selectedOrderForDetail.orderStatus === 'delivered' || selectedOrderForDetail.orderStatus === 'completed') && (
-                <Button
-                  disabled
-                  className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 opacity-65 border-0"
-                >
-                  Order Delivered & Completed
-                </Button>
-              )}
-              {selectedOrderForDetail.orderStatus === 'cancelled' && (
-                <Button
-                  disabled
-                  className="w-full bg-error text-white font-bold py-3 opacity-65 border-0"
-                >
-                  Order Cancelled
-                </Button>
-              )}
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
       </AnimatePresence>
       </div>
     </PullToRefresh>
