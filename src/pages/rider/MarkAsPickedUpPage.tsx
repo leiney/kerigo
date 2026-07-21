@@ -70,23 +70,11 @@ export const MarkAsPickedUpPage: React.FC = () => {
   };
 
   const handleConfirmPickup = async () => {
-    setShowLocationSheet(true);
-  };
-
-  const handleConfirmLocationAccess = async () => {
     if (!order) return;
-    setShowLocationSheet(false);
     setIsSubmitting(true);
     try {
-      // Request background location permission by starting delivery tracking first
-      try {
-        await startDeliveryTracking(order.orderID);
-      } catch (trackErr) {
-        console.error('Failed to start delivery tracking:', trackErr);
-        alert('Location tracking could not start. Please make sure to grant "Allow all the time" location access in your system settings.');
-        setIsSubmitting(false);
-        return;
-      }
+      // Start tracking first (disabled)
+      await startDeliveryTracking(order.orderID);
 
       const message = note || 'Order picked up by rider.';
       await productApi.updateOrderStatus(order.orderID, 'on_the_way', message, note, true);
@@ -94,9 +82,14 @@ export const MarkAsPickedUpPage: React.FC = () => {
       navigate('/rider/dashboard');
     } catch (err) {
       console.error('Failed to mark order as picked up:', err);
+      alert('Failed to mark order as picked up: ' + (err instanceof Error ? err.message : 'Unknown error'));
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmLocationAccess = async () => {
+    // Left as a stub to avoid compilation issues, no longer called
   };
 
   const handleCancelLocationAccess = () => {
@@ -407,7 +400,8 @@ export const MarkAsPickedUpPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Background Location Disclosure Bottom Sheet */}
+      {/* Background Location Disclosure Bottom Sheet Commented Out for Play Store approval */}
+      {/*
       <BottomSheet
         isOpen={showLocationSheet}
         onClose={handleCancelLocationAccess}
@@ -450,6 +444,7 @@ export const MarkAsPickedUpPage: React.FC = () => {
           </div>
         </div>
       </BottomSheet>
+      */}
     </div>
   );
 };

@@ -142,7 +142,7 @@ export const RiderDashboard: React.FC = () => {
 
   const handleAcceptOrder = async (orderId: string) => {
     try {
-      // Start tracking first so permission requests are triggered before backend updates
+      // Start tracking first 
       await startDeliveryTracking(orderId);
       setTrackingOrderId(orderId);
       
@@ -150,7 +150,7 @@ export const RiderDashboard: React.FC = () => {
       await queryClient.invalidateQueries({ queryKey: ['riderOrders'] });
     } catch (error) {
       console.error('Failed to accept order:', error);
-      alert('Location tracking could not start. Please make sure to grant "Allow all the time" location access in your system settings.');
+      alert('Failed to accept order: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -532,8 +532,8 @@ export const RiderDashboard: React.FC = () => {
                         </div>
                         <Button
                           onClick={() => {
-                            setPendingAcceptOrderId(order.orderID);
-                            setShowLocationSheet(true);
+                            // Directly accept order without requiring background location permission sheet
+                            handleAcceptOrder(order.orderID);
                           }}
                           className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-11 text-sm gap-2"
                         >
@@ -644,7 +644,8 @@ export const RiderDashboard: React.FC = () => {
         </section>
       </div>
 
-      {/* Background Location Disclosure Bottom Sheet */}
+      {/* Background Location Disclosure Bottom Sheet Commented Out for Play Store approval */}
+      {/*
       <BottomSheet
         isOpen={showLocationSheet}
         onClose={handleCancelLocationAccess}
@@ -687,6 +688,7 @@ export const RiderDashboard: React.FC = () => {
           </div>
         </div>
       </BottomSheet>
+      */}
 
       {/* --- Bottom Navigation --- */}
       <BottomNav />

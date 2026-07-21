@@ -1,4 +1,4 @@
-import { BackgroundGeolocation } from '@capgo/background-geolocation';
+// import { BackgroundGeolocation } from '@capgo/background-geolocation';
 import { CapacitorHttp } from '@capacitor/core';
 import { productApi } from '@/lib/api';
 import { BASE_URL, TENANT_ID } from '@/config';
@@ -17,8 +17,9 @@ export const startDeliveryTracking = async (orderId: string): Promise<void> => {
     currentOrderId = orderId;
     isTrackingActive = true;
 
-    console.log(`[BackgroundGeolocation] Starting tracking for order: ${orderId}`);
+    console.log(`[BackgroundGeolocation] (Disabled) Mock starting tracking for order: ${orderId}`);
 
+    /*
     await BackgroundGeolocation.start({
       backgroundTitle: "Delivery Route Active",
       backgroundMessage: "Your coordinates are streaming live to the delivery system.",
@@ -65,8 +66,9 @@ export const startDeliveryTracking = async (orderId: string): Promise<void> => {
         await saveToOfflineQueue(payload);
       }
     });
+    */
 
-    console.log(`[BackgroundGeolocation] Tracking started successfully for order: ${orderId}`);
+    console.log(`[BackgroundGeolocation] (Disabled) Mock tracking started successfully for order: ${orderId}`);
   } catch (error) {
     console.error('[BackgroundGeolocation] Failed to start tracking:', error);
     isTrackingActive = false;
@@ -81,8 +83,9 @@ export const stopDeliveryTracking = async (): Promise<void> => {
     const orderId = currentOrderId;
     currentOrderId = null;
 
-    await BackgroundGeolocation.stop();
-    console.log(`[BackgroundGeolocation] Tracking stopped for order: ${orderId}`);
+    // Commented out for Play Store approval
+    // await BackgroundGeolocation.stop();
+    console.log(`[BackgroundGeolocation] (Disabled) Mock tracking stopped for order: ${orderId}`);
 
     // Flush offline queue before nullifying currentOrderId
     if (orderId) {
@@ -156,9 +159,10 @@ const flushOfflineQueueForOrder = async (orderId: string): Promise<void> => {
 
 export const initBackgroundGeolocation = async (): Promise<void> => {
   try {
-    console.log('[BackgroundGeolocation] Initializing...');
-    const permissionStatus = await BackgroundGeolocation.checkPermissions();
-    console.log('[BackgroundGeolocation] Permission status:', permissionStatus);
+    console.log('[BackgroundGeolocation] (Disabled) Initializing mock background geolocation...');
+    // Commented out for Play Store approval
+    // const permissionStatus = await BackgroundGeolocation.checkPermissions();
+    // console.log('[BackgroundGeolocation] Permission status:', permissionStatus);
   } catch (error) {
     console.error('[BackgroundGeolocation] Initialization error:', error);
   }

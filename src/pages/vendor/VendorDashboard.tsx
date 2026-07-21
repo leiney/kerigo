@@ -186,6 +186,7 @@ export const VendorDashboard: React.FC = () => {
     const isNew = orderStatus === 'new';
     const isPreparing = orderStatus === 'preparing';
     const isReady = orderStatus === 'on_the_way';
+    const isPickedUp = order.extraData?.pickedUp === true;
 
     return (
       <motion.div
@@ -231,9 +232,9 @@ export const VendorDashboard: React.FC = () => {
                   : isReady
                     ? 'bg-primary/10 text-primary'
                     : 'bg-primary/10 text-primary'
-                }`}
+              }`}
             >
-              {isReady ? 'Awaiting Rider' : order.shippingCharges > 0 ? 'Delivery' : 'Pickup'}
+              {isReady ? (isPickedUp ? 'Rider En Route' : 'Awaiting Collection') : order.shippingCharges > 0 ? 'Delivery' : 'Pickup'}
             </Badge>
           </div>
 
@@ -283,7 +284,7 @@ export const VendorDashboard: React.FC = () => {
                 className="text-white bg-primary hover:bg-primary/90 text-xs font-semibold h-9 px-6 opacity-65"
                 onClick={(e) => e.stopPropagation()}
               >
-                Awaiting Rider
+                {isPickedUp ? 'Rider En Route' : 'Awaiting Collection'}
               </Button>
             )}
           </div>
@@ -825,7 +826,7 @@ export const VendorDashboard: React.FC = () => {
                     disabled
                     className="w-full bg-primary hover:bg-primary/95 text-white font-bold py-3 opacity-65 border-0"
                   >
-                    Awaiting Rider Collection
+                    {selectedOrderForDetail.extraData?.pickedUp ? 'Rider En Route - Out for Delivery' : 'Awaiting Rider Collection'}
                   </Button>
                 )}
                 {(selectedOrderForDetail.orderStatus === 'delivered' || selectedOrderForDetail.orderStatus === 'completed') && (
